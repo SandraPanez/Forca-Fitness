@@ -86,10 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnYesCancel.addEventListener('click', () => {
-        // Redirigir o limpiar formulario
+        // Descartar datos ingresados y redirigir a la pantalla principal (Criterio de Aceptación 2)
         form.reset();
-        modal.style.display = 'none';
-        // En una app real redigiría al inicio
+        window.location.href = '/'; 
     });
 
     // 4. Contador de caracteres para Observaciones Médicas (T_03)
@@ -119,8 +118,21 @@ document.addEventListener('DOMContentLoaded', () => {
     async function cargarDisciplinas() {
         const container = document.getElementById('disciplinas-container');
         try {
-            const response = await fetch('/api/matriculas/disciplinas');
-            const result = await response.json();
+            // MOCK TEMPORAL: Para poder probar el formulario sin base de datos conectada
+            const result = {
+                success: true,
+                data: [
+                    { id: 1, nombre: 'Boxeo', descripcion: 'Técnica y condición física' },
+                    { id: 2, nombre: 'Jiu Jitsu', descripcion: 'Control y técnica de suelo' },
+                    { id: 3, nombre: 'MMA', descripcion: 'Artes marciales mixtas' },
+                    { id: 4, nombre: 'Capoeira', descripcion: 'Arte marcial afrobrasileña' },
+                    { id: 5, nombre: 'Cross Training', descripcion: 'Preparación física integral' }
+                ]
+            };
+            
+            // Lógica original comentada para usar con BD real:
+            // const response = await fetch('/api/matriculas/disciplinas');
+            // const result = await response.json();
             
             if (result.success && result.data.length > 0) {
                 container.innerHTML = ''; // Limpiar mensaje de carga
