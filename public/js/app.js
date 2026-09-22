@@ -76,6 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Cerrar modal con la tecla Escape (Mejora T_07)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+        }
+    });
+
     // 5. Cargar disciplinas desde la base de datos (T_04)
     async function cargarDisciplinas() {
         const container = document.getElementById('disciplinas-container');
