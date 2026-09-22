@@ -60,6 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // En una app real redigiría al inicio
     });
 
+    // 4. Contador de caracteres para Observaciones Médicas (T_03)
+    const observacionesInput = document.getElementById('observaciones_medicas');
+    const obsCounter = document.getElementById('obs_counter');
+
+    observacionesInput.addEventListener('input', () => {
+        const currentLength = observacionesInput.value.length;
+        obsCounter.textContent = `${currentLength} / 250 caracteres`;
+    });
+
     // Cerrar modal al clickear fuera
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {

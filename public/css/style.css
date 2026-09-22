@@ -449,6 +449,13 @@ body {
     margin-top: 0.5rem;
 }
 
+.char-counter {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
 /* Validaciones Visuales (T_02) */
 .was-validated input:invalid,
 .was-validated select:invalid,
