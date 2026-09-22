@@ -75,4 +75,37 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.style.display = 'none';
         }
     });
+
+    // 5. Cargar disciplinas desde la base de datos (T_04)
+    async function cargarDisciplinas() {
+        const container = document.getElementById('disciplinas-container');
+        try {
+            const response = await fetch('/api/matriculas/disciplinas');
+            const result = await response.json();
+            
+            if (result.success && result.data.length > 0) {
+                container.innerHTML = ''; // Limpiar mensaje de carga
+                result.data.forEach(d => {
+                    const label = document.createElement('label');
+                    label.className = 'disciplina-card';
+                    label.innerHTML = `
+                        <div class="disciplina-info">
+                            <span class="disciplina-name">${d.nombre}</span>
+                            <span class="disciplina-desc">${d.descripcion}</span>
+                        </div>
+                        <input type="checkbox" name="disciplinas" value="${d.id}">
+                    `;
+                    container.appendChild(label);
+                });
+            } else {
+                container.innerHTML = '<div class="text-muted">No hay disciplinas disponibles.</div>';
+            }
+        } catch (error) {
+            console.error('Error cargando disciplinas:', error);
+            container.innerHTML = '<div class="error-message">Error al cargar disciplinas. Asegúrate de tener la BD conectada.</div>';
+        }
+    }
+    
+    // Llamar a la API al cargar la página
+    cargarDisciplinas();
 });
