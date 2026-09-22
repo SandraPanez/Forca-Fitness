@@ -449,6 +449,19 @@ body {
     margin-top: 0.5rem;
 }
 
+/* Validaciones Visuales (T_02) */
+.was-validated input:invalid,
+.was-validated select:invalid,
+.was-validated textarea:invalid {
+    border-color: var(--danger-color);
+    background-color: #fffafa;
+}
+
+.was-validated input:invalid:focus,
+.was-validated select:invalid:focus {
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .grid-2-cols {

@@ -1,0 +1,69 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Establecer fecha actual
+    const currentDateElement = document.getElementById('currentDate');
+    const today = new Date();
+    currentDateElement.textContent = today.toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+
+    // 2. Manejo de formulario (Validaciones básicas para T_01/T_06)
+    const form = document.getElementById('matriculaForm');
+    const errorDiv = document.getElementById('disciplinas-error');
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // Agregar clase para mostrar estilos de error en campos obligatorios vacíos (T_02)
+        form.classList.add('was-validated');
+
+        // Validar que el formulario HTML nativo esté completo
+        if (!form.checkValidity()) {
+            return; // Detiene el envío si faltan campos obligatorios
+        }
+        
+        // Validar que al menos una disciplina esté seleccionada
+        const disciplinas = document.querySelectorAll('input[name="disciplinas"]:checked');
+        
+        if (disciplinas.length === 0) {
+            errorDiv.style.display = 'block';
+            // Scroll a la sección de disciplinas
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        errorDiv.style.display = 'none';
+        
+        // TODO (T_08): Aquí llamaremos a la API (POST /api/matriculas) en el siguiente commit
+        alert('Formulario validado correctamente. En el próximo commit esto se enviará a la base de datos.');
+    });
+
+    // 3. Lógica del botón cancelar (T_07 - Implementar botón Cancelar con confirmación de abandono)
+    const btnCancel = document.getElementById('btn-cancel');
+    const modal = document.getElementById('cancelModal');
+    const btnNoCancel = document.getElementById('btn-no-cancel');
+    const btnYesCancel = document.getElementById('btn-yes-cancel');
+
+    btnCancel.addEventListener('click', () => {
+        modal.style.display = 'flex';
+    });
+
+    btnNoCancel.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    btnYesCancel.addEventListener('click', () => {
+        // Redirigir o limpiar formulario
+        form.reset();
+        modal.style.display = 'none';
+        // En una app real redigiría al inicio
+    });
+
+    // Cerrar modal al clickear fuera
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
