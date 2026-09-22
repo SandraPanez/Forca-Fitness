@@ -107,5 +107,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Llamar a la API al cargar la página
-    cargarDisciplinas();
+    cargarDisciplinas().then(() => {
+        // T_05: Lógica para contar disciplinas seleccionadas dinámicamente
+        const checkboxes = document.querySelectorAll('input[name="disciplinas"]');
+        const countBadge = document.getElementById('disciplinas-count');
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('input[name="disciplinas"]:checked').length;
+                if (selectedCount > 0) {
+                    countBadge.style.display = 'inline-block';
+                    countBadge.textContent = `${selectedCount} seleccionada${selectedCount > 1 ? 's' : ''}`;
+                } else {
+                    countBadge.style.display = 'none';
+                }
+            });
+        });
+    });
 });
