@@ -202,7 +202,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
 
-                        <!-- TODO (T_24): Mostrar observaciones médicas -->
+                        <hr class="panel-divider">
+                        
+                        <!-- T_24: Mostrar observaciones médicas -->
+                        <h4 class="panel-section-title">Observaciones médicas</h4>
+                        <div class="info-grid">
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-value text-muted">${detalle.observaciones_medicas || 'Sin observaciones.'}</span>
+                            </div>
+                        </div>
                     `;
                 }
             }, 300); 
