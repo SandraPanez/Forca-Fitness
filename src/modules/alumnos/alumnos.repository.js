@@ -1,4 +1,4 @@
-const db = require('../../shared/config/database');
+const db = require('../../config/db');
 
 class AlumnosRepository {
   async findAllAlumnos() {
