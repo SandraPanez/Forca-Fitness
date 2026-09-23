@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         errorDiv.style.display = 'none';
         
-        // TODO (T_08): Aquí llamaremos a la API (POST /api/matriculas) en el siguiente commit
+        // TODO (T_08): Aquí llamaremos a la API (POST /api/matriculas)
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         data.disciplinas = Array.from(disciplinas).map(cb => cb.value);
@@ -46,6 +46,17 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.textContent = 'Enviando...';
         btnSubmit.disabled = true;
 
+        // MOCK TEMPORAL PARA EL TESTER (Simular respuesta exitosa sin DB real)
+        setTimeout(() => {
+            alert('¡Matrícula registrada exitosamente!');
+            form.reset();
+            document.getElementById('disciplinas-count').style.display = 'none';
+            btnSubmit.textContent = originalText;
+            btnSubmit.disabled = false;
+        }, 1000);
+
+        /* 
+        // Lógica real comentada hasta que la DB esté levantada
         fetch('/api/matriculas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -69,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSubmit.textContent = originalText;
             btnSubmit.disabled = false;
         });
+        */
     });
 
     // 3. Lógica del botón cancelar (T_07 - Implementar botón Cancelar con confirmación de abandono)
@@ -88,7 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnYesCancel.addEventListener('click', () => {
         // Descartar datos ingresados y redirigir a la pantalla principal (Criterio de Aceptación 2)
         form.reset();
-        window.location.href = '/'; 
+        modal.style.display = 'none';
+        alert('Simulación: Redirigiendo al Menú Principal...');
+        // En producción sería: window.location.href = '/ruta-del-menu';
     });
 
     // 4. Contador de caracteres para Observaciones Médicas (T_03)
