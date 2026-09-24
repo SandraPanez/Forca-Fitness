@@ -1,11 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const alumnosController = require('./alumnos.controller');
+const alumnosController = require("./alumnos.controller");
 
-// GET /api/alumnos - Listar alumnos
-router.get('/', alumnosController.listarAlumnos);
-
-// GET /api/alumnos/:id - Detalle de un alumno
-router.get('/:id', alumnosController.obtenerDetalleAlumno);
+router.get("/", alumnosController.listarAlumnos);
+router.get("/:id", alumnosController.obtenerDetalleAlumno);
 
 module.exports = router;

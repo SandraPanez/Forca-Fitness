@@ -86,10 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Renderizar tabla
-    const renderTable = (alumnos) => {
+        const renderTable = (alumnos, filtroEstado = 'Todos') => {
         tbody.innerHTML = '';
         if (alumnos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay alumnos registrados.</td></tr>';
+            const mensaje = filtroEstado !== 'Todos'
+                ? `No se encontraron alumnos con el estado seleccionado.`
+                : 'No existen alumnos registrados.';
+            
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-muted" style="padding: 3rem;">
+                        ${mensaje}
+                    </td>
+                </tr>`;
             return;
         }
 
@@ -128,99 +137,125 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // Referencias DOM adicionales
+    const searchInput = document.getElementById('search-input');
+    const filterSelect = document.getElementById('filter-select');
+
+    // Búsqueda por nombre (T-16)
+        searchInput.addEventListener('input', (e) => {
+            const busqueda = e.target.value.toLowerCase();
+            const filtroEstado = filterSelect.value;
+            
+            const filtrados = alumnosCache.filter(al => {
+                const nombre = `${al.nombres} ${al.apellido_paterno} ${al.apellido_materno}`.toLowerCase();
+                const coincideNombre = nombre.includes(busqueda);
+                const coincideEstado = filtroEstado === 'Todos' || al.estado_matricula === filtroEstado;
+                return coincideNombre && coincideEstado;
+            });
+            
+            renderTable(filtrados, filtroEstado);
+        });
+
+    // Filtro por estado (T-15)
+        filterSelect.addEventListener('change', (e) => {
+            const filtroEstado = e.target.value;
+            const busqueda = searchInput.value.toLowerCase();
+
+            const filtrados = alumnosCache.filter(al => {
+                const nombre = `${al.nombres} ${al.apellido_paterno} ${al.apellido_materno}`.toLowerCase();
+                const coincideNombre = nombre.includes(busqueda);
+                const coincideEstado = filtroEstado === 'Todos' || al.estado_matricula === filtroEstado;
+                return coincideNombre && coincideEstado;
+            });
+            
+            renderTable(filtrados, filtroEstado);
+        });
+
     // Cargar alumnos (Mockeado temporalmente)
-    const loadAlumnos = async () => {
-        try {
-            alumnosCache = mockAlumnos;
-            renderTable(alumnosCache);
-        } catch (error) {
-            console.error('Error cargando alumnos', error);
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error de conexión.</td></tr>';
-        }
-    };
+        const loadAlumnos = async () => {
+            try {
+                const response = await fetch('/api/alumnos');
+                const json = await response.json();
+                alumnosCache = json.data;
+                renderTable(alumnosCache);
+            } catch (error) {
+                console.error('Error cargando alumnos', error);
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error de conexión.</td></tr>';
+            }
+        };
 
     // Cargar detalles de un alumno (T_20 a T_23)
-    const loadStudentDetails = async (id) => {
+        const loadStudentDetails = async (id) => {
         openPanel();
         sidePanelContent.innerHTML = '<div class="text-center text-muted mt-4">Cargando información...</div>';
         
         try {
-            setTimeout(() => {
-                const detalle = mockDetalle[id];
-                if (detalle) {
-                    let badgeClass = detalle.estado === 'Activa' ? 'badge-activa' : 'badge-vencida';
-                    
-                    sidePanelContent.innerHTML = `
-                        <div class="side-panel-header-info">
-                            <div class="avatar-large">${detalle.nombre_completo.substring(0,2).toUpperCase()}</div>
-                            <div>
-                                <h2 class="student-name-large">${detalle.nombre_completo}</h2>
-                                <span class="badge-status ${badgeClass}">${detalle.estado}</span>
-                            </div>
-                        </div>
-
-                        <hr class="panel-divider">
-
-                        <!-- T_21: Mostrar datos personales -->
-                        <h4 class="panel-section-title">Información personal</h4>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">DNI</span>
-                                <span class="info-value">${detalle.dni}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Correo</span>
-                                <span class="info-value">${detalle.correo}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Celular</span>
-                                <span class="info-value">${detalle.celular}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Fecha de nacimiento</span>
-                                <span class="info-value">${detalle.fecha_nacimiento}</span>
-                            </div>
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-label">Dirección</span>
-                                <span class="info-value">${detalle.direccion}</span>
-                            </div>
-                        </div>
-
-                        <hr class="panel-divider">
-                        
-                        <!-- T_22 y T_23: Información de matrícula, fechas y disciplinas -->
-                        <h4 class="panel-section-title">Información de matrícula</h4>
-                        <div class="info-grid">
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-label">Disciplina(s)</span>
-                                <span class="info-value">${detalle.disciplinas}</span>
-                            </div>
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-label">Fecha de inscripción</span>
-                                <span class="info-value">${detalle.fecha_inscripcion}</span>
-                            </div>
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-label">Estado de matrícula</span>
-                                <span class="info-value font-medium">${detalle.dias_restantes_texto}</span>
-                            </div>
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-label">Estado del alumno</span>
-                                <span class="info-value">${detalle.estado_alumno}</span>
-                            </div>
-                        </div>
-
-                        <hr class="panel-divider">
-                        
-                        <!-- T_24: Mostrar observaciones médicas -->
-                        <h4 class="panel-section-title">Observaciones médicas</h4>
-                        <div class="info-grid">
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-value text-muted">${detalle.observaciones_medicas || 'Sin observaciones.'}</span>
-                            </div>
-                        </div>
-                    `;
-                }
-            }, 300); 
+            const response = await fetch(`/api/alumnos/${id}`);
+            const json = await response.json();
+            const detalle = json.data;
+            
+            let badgeClass = detalle.estado === 'Activa' ? 'badge-activa' : 'badge-vencida';
+            
+            sidePanelContent.innerHTML = `
+                <div class="side-panel-header-info">
+                    <div class="avatar-large">${detalle.nombre_completo.substring(0,2).toUpperCase()}</div>
+                    <div>
+                        <h2 class="student-name-large">${detalle.nombre_completo}</h2>
+                        <span class="badge-status ${badgeClass}">${detalle.estado}</span>
+                    </div>
+                </div>
+                <hr class="panel-divider">
+                <h4 class="panel-section-title">Información personal</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">DNI</span>
+                        <span class="info-value">${detalle.dni}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Correo</span>
+                        <span class="info-value">${detalle.correo}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Celular</span>
+                        <span class="info-value">${detalle.celular}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Fecha de nacimiento</span>
+                        <span class="info-value">${detalle.fecha_nacimiento}</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Dirección</span>
+                        <span class="info-value">${detalle.direccion || 'No registrada'}</span>
+                    </div>
+                </div>
+                <hr class="panel-divider">
+                <h4 class="panel-section-title">Información de matrícula</h4>
+                <div class="info-grid">
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Disciplina(s)</span>
+                        <span class="info-value">${detalle.disciplinas}</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Fecha de inscripción</span>
+                        <span class="info-value">${detalle.fecha_inscripcion}</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Estado de matrícula</span>
+                        <span class="info-value font-medium">${detalle.dias_restantes_texto}</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">Estado del alumno</span>
+                        <span class="info-value">${detalle.estado_alumno}</span>
+                    </div>
+                </div>
+                <hr class="panel-divider">
+                <h4 class="panel-section-title">Observaciones médicas</h4>
+                <div class="info-grid">
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-value text-muted">${detalle.observaciones_medicas || 'Sin observaciones.'}</span>
+                    </div>
+                </div>
+            `;
         } catch (error) {
             console.error(error);
             sidePanelContent.innerHTML = '<div class="text-danger mt-4 text-center">Error al cargar datos del alumno.</div>';

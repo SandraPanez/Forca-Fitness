@@ -41,18 +41,13 @@
             <p class="description">Consulta los alumnos que forman parte de Forca & Fitness.</p>
         </div>
 
-        <!-- Toolbar / Search -->
-        <div class="alumnos-toolbar">
-            <input type="text" class="search-input" placeholder="🔍 Buscar por nombre">
-            <div class="filter-group">
-                <label>Estado</label>
-                <select class="filter-select">
-                    <option>Todos</option>
-                    <option>Activo</option>
-                    <option>Inactivo</option>
-                </select>
-            </div>
-        </div>
+    <input type="text" id="search-input" class="search-input" placeholder="🔍 Buscar por nombre">
+    <select id="filter-select" class="filter-select">
+        <option value="Todos">Todos</option>
+        <option value="Activa">Activa</option>
+        <option value="Vencida">Vencida</option>
+        <option value="Inhabilitada">Inhabilitada</option>
+    </select>
 
         <!-- Tabla principal -->
         <div class="table-container">
