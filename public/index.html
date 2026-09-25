@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva matrícula | Forca & Fitness</title>
+    <!-- Mejora de tipografía: Fuente Outfit de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img">
+            <h1>Portal Forca&Fitness</h1>
+        </div>
+        
+        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
+            <!-- Menú superior -->
+            <nav class="top-nav">
+                <a href="/alumnos.html">Alumnos</a>
+                <a href="/index.html" class="active">Matrículas</a>
+                <a href="#">Pagos</a>
+            </nav>
+
+            <div class="user-info">
+                <div class="user-details">
+                    <span class="user-name">Paul Bryan Rafael Yepez</span>
+                    <span class="user-role">Tesorero</span>
+                </div>
+                <a href="#" class="logout-btn">Cerrar sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+        
+        <!-- Header Section -->
+        <section class="page-header">
+            <p class="subtitle">¡Únete a la familia Forca & Fitness! Tu próximo nivel empieza aquí.</p>
+            <h2 class="title">Nueva matrícula</h2>
+            <p class="description">Completa tu información para iniciar tu matrícula en Forca & Fitness.</p>
+        </section>
+
+        <!-- Stepper -->
+        <div class="stepper">
+            <div class="step active">
+                <div class="step-circle">1</div>
+                <span class="step-label">Registro</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-circle">2</div>
+                <span class="step-label">Confirmación</span>
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="form-card">
+            <div class="form-header">
+                <div>
+                    <span class="step-indicator">PASO 1 DE 2</span>
+                    <h3 class="form-title">Registro</h3>
+                    <p class="form-description">Completa tus datos personales y elige tus disciplinas.</p>
+                </div>
+                <div class="required-note">
+                    <span class="asterisk">*</span> Campos obligatorios
+                </div>
+            </div>
+
+            <form id="matriculaForm">
+                
+                <!-- Datos Personales -->
+                <div class="section">
+                    <h4 class="section-title">Datos personales</h4>
+                    <hr class="divider">
+                    
+                    <div class="grid-2-cols">
+                        <div class="form-group">
+                            <label for="tipo_documento">Tipo de documento <span class="asterisk">*</span></label>
+                            <select id="tipo_documento" name="tipo_documento" required>
+                                <option value="DNI">DNI</option>
+                                <option value="CE">Carnet de Extranjería</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_documento">Número de documento <span class="asterisk">*</span></label>
+                            <input type="text" id="numero_documento" name="numero_documento" placeholder="Ej: 74628153" pattern="[0-9]{8,12}" title="Debe contener entre 8 y 12 dígitos numéricos" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nombres">Nombres <span class="asterisk">*</span></label>
+                            <input type="text" id="nombres" name="nombres" placeholder="Ej: Juan" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" title="Solo se permiten letras y espacios" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="apellido_paterno">Apellido paterno <span class="asterisk">*</span></label>
+                            <input type="text" id="apellido_paterno" name="apellido_paterno" placeholder="Ej: Rondón" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" title="Solo se permiten letras y espacios" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="apellido_materno">Apellido materno <span class="asterisk">*</span></label>
+                            <input type="text" id="apellido_materno" name="apellido_materno" placeholder="Ej: Pujay" pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" title="Solo se permiten letras y espacios" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha_nacimiento">Fecha de nacimiento <span class="asterisk">*</span></label>
+                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" min="1930-01-01" max="2012-12-31" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="correo_electronico">Correo electrónico <span class="asterisk">*</span></label>
+                            <input type="email" id="correo_electronico" name="correo_electronico" placeholder="Ej: juan.rondon.pujay@gmail.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_celular">Número de celular <span class="asterisk">*</span></label>
+                            <input type="tel" id="numero_celular" name="numero_celular" placeholder="Ej: 987654321" pattern="^[0-9]{9}$" title="Ingrese un número de celular válido de 9 dígitos" maxlength="9" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="genero">Género <span class="asterisk">*</span></label>
+                            <select id="genero" name="genero" required>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="direccion">Dirección <span class="asterisk">*</span></label>
+                            <input type="text" id="direccion" name="direccion" placeholder="Ej: Los Olivos, Lima, Perú" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disciplinas -->
+                <div class="section mt-4">
+                    <div class="disciplinas-header">
+                        <div>
+                            <span class="section-subtitle">DISCIPLINAS</span>
+                            <h4 class="section-title">Elige tus disciplinas <span class="badge" id="disciplinas-count" style="display: none;">0 seleccionadas</span></h4>
+                            <p class="section-description">Selecciona una o más disciplinas en las que deseas matricularte.</p>
+                        </div>
+                        <div class="fecha-inscripcion">
+                            <span class="fecha-label">Fecha de inscripción</span>
+                            <span class="fecha-value" id="currentDate">07/09/2026</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="divider">
+
+                    <label class="mb-1">Disciplinas <span class="asterisk">*</span></label>
+                    <p class="field-hint">Puedes seleccionar una o más disciplinas.</p>
+
+                    <div class="grid-2-cols" id="disciplinas-container">
+                        <!-- T_04: Disciplinas cargadas dinámicamente desde la BD -->
+                        <div class="text-muted" style="font-size:0.9rem">Cargando disciplinas...</div>
+                    </div>
+                    <div id="disciplinas-error" class="error-message" style="display: none;">Debe seleccionar al menos una disciplina.</div>
+                </div>
+
+                <!-- Observaciones Medicas (T_03) -->
+                <div class="section mt-4">
+                    <h4 class="section-title">Observaciones médicas/físicas</h4>
+                    <hr class="divider">
+                    <div class="form-group">
+                        <label for="observaciones_medicas">¿Tiene alguna observación médica o física que debamos conocer?</label>
+                        <textarea id="observaciones_medicas" name="observaciones_medicas" rows="3" maxlength="250" placeholder="Alergias, lesiones pasadas, asma, etc. (Opcional)"></textarea>
+                        <div class="char-counter" id="obs_counter">0 / 250 caracteres</div>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-submit">Continuar</button>
+                </div>
+                
+            </form>
+        </div>
+    </main>
+
+    <!-- Modal Cancelar -->
+    <div class="modal-overlay" id="cancelModal">
+        <div class="modal">
+            <h3>¿Estás seguro?</h3>
+            <p>Se perderán todos los datos ingresados en el formulario.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="btn-no-cancel">No, continuar editando</button>
+                <button class="btn-submit btn-danger" id="btn-yes-cancel">Sí, abandonar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
