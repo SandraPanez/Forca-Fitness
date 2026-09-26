@@ -36,7 +36,39 @@ document.addEventListener('DOMContentLoaded', () => {
         errorDiv.style.display = 'none';
         
         // TODO (T_08): Aquí llamaremos a la API (POST /api/matriculas) en el siguiente commit
-        alert('Formulario validado correctamente. En el próximo commit esto se enviará a la base de datos.');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.disciplinas = Array.from(disciplinas).map(cb => cb.value);
+
+        // Deshabilitar botón para evitar doble envío
+        const btnSubmit = form.querySelector('.btn-submit');
+        const originalText = btnSubmit.textContent;
+        btnSubmit.textContent = 'Enviando...';
+        btnSubmit.disabled = true;
+
+        fetch('/api/matriculas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('¡Matrícula registrada exitosamente!');
+                form.reset();
+                document.getElementById('disciplinas-count').style.display = 'none';
+            } else {
+                alert('Error: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error enviando datos:', error);
+            alert('Error de conexión al guardar la matrícula.');
+        })
+        .finally(() => {
+            btnSubmit.textContent = originalText;
+            btnSubmit.disabled = false;
+        });
     });
 
     // 3. Lógica del botón cancelar (T_07 - Implementar botón Cancelar con confirmación de abandono)
