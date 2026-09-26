@@ -147,47 +147,8 @@
                     <p class="field-hint">Puedes seleccionar una o más disciplinas.</p>
 
                     <div class="grid-2-cols" id="disciplinas-container">
-                        <!-- Las disciplinas se cargarán dinámicamente o se simularán aquí para T_01 -->
-                        <!-- Ejemplo hardcodeado temporalmente para el diseño estático -->
-                        <label class="disciplina-card">
-                            <div class="disciplina-info">
-                                <span class="disciplina-name">Boxeo</span>
-                                <span class="disciplina-desc">Técnica y condición física</span>
-                            </div>
-                            <input type="checkbox" name="disciplinas" value="1">
-                        </label>
-                        
-                        <label class="disciplina-card">
-                            <div class="disciplina-info">
-                                <span class="disciplina-name">Capoeira</span>
-                                <span class="disciplina-desc">Arte marcial afrobrasileña</span>
-                            </div>
-                            <input type="checkbox" name="disciplinas" value="4">
-                        </label>
-                        
-                        <label class="disciplina-card">
-                            <div class="disciplina-info">
-                                <span class="disciplina-name">Jiu Jitsu</span>
-                                <span class="disciplina-desc">Control y técnica de suelo</span>
-                            </div>
-                            <input type="checkbox" name="disciplinas" value="2">
-                        </label>
-
-                        <label class="disciplina-card">
-                            <div class="disciplina-info">
-                                <span class="disciplina-name">Cross Training</span>
-                                <span class="disciplina-desc">Preparación física integral</span>
-                            </div>
-                            <input type="checkbox" name="disciplinas" value="5">
-                        </label>
-
-                        <label class="disciplina-card">
-                            <div class="disciplina-info">
-                                <span class="disciplina-name">MMA</span>
-                                <span class="disciplina-desc">Artes marciales mixtas</span>
-                            </div>
-                            <input type="checkbox" name="disciplinas" value="3">
-                        </label>
+                        <!-- T_04: Disciplinas cargadas dinámicamente desde la BD -->
+                        <div class="text-muted" style="font-size:0.9rem">Cargando disciplinas...</div>
                     </div>
                     <div id="disciplinas-error" class="error-message" style="display: none;">Debe seleccionar al menos una disciplina.</div>
                 </div>
