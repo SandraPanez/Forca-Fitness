@@ -456,6 +456,17 @@ body {
     margin-top: 0.25rem;
 }
 
+.badge {
+    background-color: var(--primary-color);
+    color: var(--white);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
 /* Validaciones Visuales (T_02) */
 .was-validated input:invalid,
 .was-validated select:invalid,
