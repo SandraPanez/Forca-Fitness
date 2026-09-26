@@ -178,7 +178,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
 
-                        <!-- TODO (T_22): Mostrar disciplinas -->
+                        <hr class="panel-divider">
+                        <h4 class="panel-section-title">Información de matrícula</h4>
+                        <div class="info-grid">
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-label">Disciplina(s)</span>
+                                <span class="info-value">${detalle.disciplinas}</span>
+                            </div>
+                        </div>
+
                         <!-- TODO (T_23): Mostrar estado de matrícula -->
                         <!-- TODO (T_24): Mostrar observaciones médicas -->
                     `;
