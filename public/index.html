@@ -108,7 +108,7 @@
                         </div>
                         <div class="form-group">
                             <label for="numero_celular">Número de celular <span class="asterisk">*</span></label>
-                            <input type="tel" id="numero_celular" name="numero_celular" placeholder="Ej: +51 987 654 321" pattern="^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{3,6}$" title="Ingrese un número telefónico válido" required>
+                            <input type="tel" id="numero_celular" name="numero_celular" placeholder="Ej: +51 987 654 321" pattern="^[\+]?[0-9\s]{9,15}$" title="Ingrese un número telefónico válido (9 a 15 caracteres)" maxlength="15" oninput="this.value = this.value.replace(/[^0-9+\s]/g, '')" required>
                         </div>
                         
                         <div class="form-group">
