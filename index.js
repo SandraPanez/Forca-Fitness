@@ -10,7 +10,10 @@ app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estÃ
 
 // Registrar mÃ³dulos (Rutas)
 const matriculasRoutes = require('./src/modules/matriculas/matriculas.routes');
+const alumnosRoutes = require('./src/modules/alumnos/alumnos.routes');
+
 app.use('/api/matriculas', matriculasRoutes);
+app.use('/api/alumnos', alumnosRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
