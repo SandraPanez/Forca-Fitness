@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // T_25 se implementará en su propio commit
     const closePanel = () => {
-        // Lógica de cierre pendiente para T_25
         overlay.classList.remove('active');
         sidePanel.classList.remove('active');
     };
@@ -133,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Cargar detalles de un alumno (Solo T_20 por ahora)
+    // Cargar detalles de un alumno (T_20 a T_23)
     const loadStudentDetails = async (id) => {
         openPanel();
         sidePanelContent.innerHTML = '<div class="text-center text-muted mt-4">Cargando información...</div>';
@@ -144,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (detalle) {
                     let badgeClass = detalle.estado === 'Activa' ? 'badge-activa' : 'badge-vencida';
                     
-                    // T_20: Solo estructura base del panel. Las demás tareas (T_21 a T_24) añadirán su respectiva información aquí.
                     sidePanelContent.innerHTML = `
                         <div class="side-panel-header-info">
                             <div class="avatar-large">${detalle.nombre_completo.substring(0,2).toUpperCase()}</div>
@@ -153,7 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="badge-status ${badgeClass}">${detalle.estado}</span>
                             </div>
                         </div>
+
                         <hr class="panel-divider">
+
+                        <!-- T_21: Mostrar datos personales -->
                         <h4 class="panel-section-title">Información personal</h4>
                         <div class="info-grid">
                             <div class="info-item">
@@ -179,15 +180,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
 
                         <hr class="panel-divider">
+                        
+                        <!-- T_22 y T_23: Información de matrícula, fechas y disciplinas -->
                         <h4 class="panel-section-title">Información de matrícula</h4>
                         <div class="info-grid">
                             <div class="info-item" style="grid-column: span 2;">
                                 <span class="info-label">Disciplina(s)</span>
                                 <span class="info-value">${detalle.disciplinas}</span>
                             </div>
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-label">Fecha de inscripción</span>
+                                <span class="info-value">${detalle.fecha_inscripcion}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-label">Estado de matrícula</span>
+                                <span class="info-value font-medium">${detalle.dias_restantes_texto}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-label">Estado del alumno</span>
+                                <span class="info-value">${detalle.estado_alumno}</span>
+                            </div>
                         </div>
 
-                        <!-- TODO (T_23): Mostrar estado de matrícula -->
                         <!-- TODO (T_24): Mostrar observaciones médicas -->
                     `;
                 }
