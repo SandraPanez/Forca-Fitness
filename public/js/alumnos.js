@@ -154,7 +154,30 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                         <hr class="panel-divider">
-                        <!-- TODO (T_21): Mostrar datos personales -->
+                        <h4 class="panel-section-title">Información personal</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">DNI</span>
+                                <span class="info-value">${detalle.dni}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Correo</span>
+                                <span class="info-value">${detalle.correo}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Celular</span>
+                                <span class="info-value">${detalle.celular}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Fecha de nacimiento</span>
+                                <span class="info-value">${detalle.fecha_nacimiento}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-label">Dirección</span>
+                                <span class="info-value">${detalle.direccion}</span>
+                            </div>
+                        </div>
+
                         <!-- TODO (T_22): Mostrar disciplinas -->
                         <!-- TODO (T_23): Mostrar estado de matrícula -->
                         <!-- TODO (T_24): Mostrar observaciones médicas -->
