@@ -15,15 +15,22 @@ document.addEventListener('DOMContentLoaded', () => {
         sidePanel.classList.add('active');
     };
 
-    // T_25 se implementará en su propio commit
+    // T_25: Implementar botón de cierre "[X]" y clics externos
     const closePanel = () => {
         overlay.classList.remove('active');
         sidePanel.classList.remove('active');
     };
 
-    // Se comentarán los event listeners del cierre temporalmente para T_25
-    // btnClosePanel.addEventListener('click', closePanel);
-    // overlay.addEventListener('click', closePanel);
+    // Cerrar con el botón [X] y haciendo clic en el fondo oscuro
+    btnClosePanel.addEventListener('click', closePanel);
+    overlay.addEventListener('click', closePanel);
+    
+    // Cerrar con la tecla Escape (UX Adicional)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidePanel.classList.contains('active')) {
+            closePanel();
+        }
+    });
     
     // MOCK DATA TEMPORAL (Para que el Tester pueda validar la interfaz sin DB real)
     const mockAlumnos = [
