@@ -26,11 +26,14 @@ GET /api/health
 
 Resultado esperado:
 
-El servidor debe responder indicando que la aplicación se encuentra operativa.
+El servidor debe responder indicando que la aplicación y PostgreSQL se
+encuentran operativos. Si PostgreSQL no está disponible, debe responder HTTP
+503 con `database: "disconnected"`.
 
 Resultado:
 
-OK
+Requiere una base PostgreSQL accesible y el esquema ejecutado. En un entorno
+sin credenciales válidas, el endpoint informa correctamente la desconexión.
 
 ## 4. Verificación de la aplicación
 
