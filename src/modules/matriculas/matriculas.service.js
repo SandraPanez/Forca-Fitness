@@ -6,6 +6,13 @@ class MatriculasService {
     return await matriculasRepository.getDisciplinas();
   }
 
+  async getHorariosPorDisciplina(id_disciplina) {
+    if (!id_disciplina) {
+      throw new Error('El ID de la disciplina es obligatorio.');
+    }
+    return await matriculasRepository.getHorariosPorDisciplina(id_disciplina);
+  }
+
   async registrarMatricula(datosMatricula) {
     const { disciplinas, observaciones_medicas, ...datosEstudiante } = datosMatricula;
 

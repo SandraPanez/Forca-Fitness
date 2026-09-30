@@ -6,6 +6,24 @@ class MatriculasRepository {
     return result.rows;
   }
 
+  async getHorariosPorDisciplina(id_disciplina) {
+    const query = `
+      SELECT 
+        dh.id_disc_horario, 
+        h.dias, 
+        h.hora_inicio, 
+        h.hora_fin, 
+        h.turno,
+        dh.capacidad_max
+      FROM academia_forca_fitness.disciplina_horario dh
+      JOIN academia_forca_fitness.horarios h ON dh.id_horario = h.id_horario
+      WHERE dh.id_disciplina = $1
+      ORDER BY h.hora_inicio ASC
+    `;
+    const result = await db.query(query, [id_disciplina]);
+    return result.rows;
+  }
+
   async findEstudianteByDocumento(tipo_documento, numero_documento) {
     const query = `
       SELECT id FROM estudiantes 

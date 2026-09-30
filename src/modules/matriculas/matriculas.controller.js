@@ -17,6 +17,23 @@ class MatriculasController {
     }
   }
 
+  async getHorariosPorDisciplina(req, res) {
+    try {
+      const { id } = req.params;
+      const horarios = await matriculasService.getHorariosPorDisciplina(id);
+      return res.status(200).json({
+        success: true,
+        data: horarios
+      });
+    } catch (error) {
+      console.error('Error en getHorariosPorDisciplina:', error);
+      return res.status(error.message.includes('obligatorio') ? 400 : 500).json({
+        success: false,
+        message: error.message || 'Error al obtener los horarios'
+      });
+    }
+  }
+
   async registrarMatricula(req, res) {
     try {
       const datosMatricula = req.body;
