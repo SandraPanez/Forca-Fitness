@@ -2,7 +2,7 @@ const db = require('../../shared/config/database');
 
 class MatriculasRepository {
   async getDisciplinas() {
-    const result = await db.query('SELECT id, nombre, descripcion FROM disciplinas ORDER BY id ASC');
+    const result = await db.query("SELECT id_disciplina AS id, nombre_disciplina AS nombre, descripcion FROM academia_forca_fitness.disciplina WHERE estado = 'HABILITADO' ORDER BY nombre_disciplina ASC");
     return result.rows;
   }
 
