@@ -73,6 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (horario.cupos_disponibles <= 0) { 
                 badgeClass = 'badge-agotado';
                 badgeText = 'Agotado';
+                // T_09: Deshabilitar tarjeta visualmente
+                card.classList.add('agotado');
             } else if (horario.cupos_disponibles <= 5) {
                 badgeClass = 'badge-ultimos';
                 badgeText = 'Últimos cupos';
