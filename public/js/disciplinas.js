@@ -65,7 +65,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Formatear horas (ej. 17:00:00 -> 17:00)
             const formatHora = (horaFull) => horaFull ? horaFull.substring(0,5) : '';
 
-            // Renderizado base sin lógica de estados (T_07)
+            // Lógica de indicadores visuales (T_08)
+            let badgeClass = 'badge-disponible';
+            let badgeText = 'Disponible';
+            let cuposStyle = '';
+
+            if (horario.cupos_disponibles <= 0) { 
+                badgeClass = 'badge-agotado';
+                badgeText = 'Agotado';
+            } else if (horario.cupos_disponibles <= 5) {
+                badgeClass = 'badge-ultimos';
+                badgeText = 'Últimos cupos';
+                cuposStyle = 'color: var(--danger-color)';
+            }
+
+            // Renderizado base con lógica de estados (T_08)
             card.innerHTML = `
                 <div class="horario-info">
                     <span class="horario-dias">${horario.dias}</span>
@@ -73,12 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div class="horario-capacidad">
-                    <span class="cupos-text">${horario.cupos_disponibles} cupos disponibles</span>
+                    <span class="cupos-text" style="${cuposStyle}">${horario.cupos_disponibles} cupos disponibles</span>
                     <span class="capacidad-text">Capacidad total: ${horario.capacidad_max}</span>
                 </div>
                 
                 <div class="horario-estado">
-                    <!-- Los indicadores visuales (T_08) y deshabilitación (T_09) irán aquí después -->
+                    <span class="${badgeClass}">${badgeText}</span>
                 </div>
             `;
 
