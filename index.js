@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const db = require('./src/shared/config/database');
+const redis = require('./src/shared/config/redis');
 
 const path = require('path');
 const app = express();
@@ -20,21 +21,30 @@ app.use('/api/alumnos', alumnosRoutes);
 
 // Ruta de prueba
 app.get('/api/health', async (req, res) => {
+  const services = { database: 'disconnected', redis: 'disconnected' };
+
   try {
     await db.checkConnection();
-    return res.status(200).json({
-      status: 'ok',
-      database: 'connected',
-      message: 'Servidor Forca-Fitness corriendo correctamente'
-    });
+    services.database = 'connected';
   } catch (error) {
     console.error('Health check de PostgreSQL fallido:', error);
-    return res.status(503).json({
-      status: 'error',
-      database: 'disconnected',
-      message: 'El servidor está activo, pero no puede conectarse a PostgreSQL'
-    });
   }
+
+  try {
+    await redis.checkConnection();
+    services.redis = 'connected';
+  } catch (error) {
+    console.error('Health check de Redis fallido:', error);
+  }
+
+  const isHealthy = services.database === 'connected' && services.redis === 'connected';
+  return res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ok' : 'error',
+    ...services,
+    message: isHealthy
+      ? 'Servidor Forca-Fitness corriendo correctamente'
+      : 'El servidor está activo, pero uno o más servicios no están disponibles'
+  });
 });
 
 // Iniciar el servidor
