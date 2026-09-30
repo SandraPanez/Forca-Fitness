@@ -10,7 +10,19 @@ class MatriculasService {
     if (!id_disciplina) {
       throw new Error('El ID de la disciplina es obligatorio.');
     }
-    return await matriculasRepository.getHorariosPorDisciplina(id_disciplina);
+    const horarios = await matriculasRepository.getHorariosPorDisciplina(id_disciplina);
+    
+    // T_04: Cálculo de cupos disponibles en el servicio
+    for (let horario of horarios) {
+      const inscritos = await matriculasRepository.countInscritosPorHorario(horario.id_disc_horario);
+      horario.cupos_disponibles = horario.capacidad_max - inscritos;
+      
+      if (horario.cupos_disponibles < 0) {
+        horario.cupos_disponibles = 0;
+      }
+    }
+    
+    return horarios;
   }
 
   async registrarMatricula(datosMatricula) {

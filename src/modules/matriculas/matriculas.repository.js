@@ -24,6 +24,17 @@ class MatriculasRepository {
     return result.rows;
   }
 
+  async countInscritosPorHorario(id_disc_horario) {
+    const query = `
+      SELECT COUNT(*) as total 
+      FROM academia_forca_fitness.detalles_matricula 
+      WHERE id_disc_horario = $1 
+      AND fecha_fin >= CURRENT_DATE
+    `;
+    const result = await db.query(query, [id_disc_horario]);
+    return parseInt(result.rows[0].total, 10);
+  }
+
   async findEstudianteByDocumento(tipo_documento, numero_documento) {
     const query = `
       SELECT id FROM estudiantes 
