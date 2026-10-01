@@ -2,10 +2,19 @@ const express = require('express');
 const router = express.Router();
 const matriculasController = require('./matriculas.controller');
 
-// GET /api/matriculas/disciplinas - Obtener lista de disciplinas (T_04)
+const { autenticar } = require('../../shared/middleware/auth.middleware');
+const { autorizar } = require('../../shared/middleware/permisos.middleware');
+const { PERMISOS } = require('../../shared/constants/permisos');
+
+// GET /api/matriculas/disciplinas
 router.get('/disciplinas', matriculasController.getDisciplinas);
 
-// POST /api/matriculas - Guardar los datos de matrícula en la BD (T_08)
-router.post('/', matriculasController.registrarMatricula);
+// POST /api/matriculas - Registrar matrícula
+router.post(
+  '/',
+  autenticar,
+  autorizar(PERMISOS.REGISTRAR_MATRICULA),
+  matriculasController.registrarMatricula
+);
 
 module.exports = router;
