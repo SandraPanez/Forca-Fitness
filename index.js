@@ -12,11 +12,13 @@ app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estÃ
 // Registrar mÃ³dulos (Rutas)
 const {
   matriculasRoutes,
-  alumnosRoutes
+  alumnosRoutes,
+  authRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
 app.use('/api/alumnos', alumnosRoutes);
+app.use('/api/auth', authRoutes);
 
 // Ruta de prueba
 app.get('/api/health', async (req, res) => {
