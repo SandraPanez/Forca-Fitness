@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión | Forca & Fitness</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <main class="container" style="max-width: 450px; padding-top: 80px;">
+        <section class="page-header">
+            <h2 class="title">Iniciar sesión</h2>
+            <p class="description">Ingresa tus credenciales para acceder al sistema.</p>
+        </section>
+
+        <form id="loginForm">
+            <div style="margin-bottom: 1rem;">
+                <label for="correo">Correo</label>
+                <input
+                    type="email"
+                    id="correo"
+                    required
+                    style="width: 100%; padding: 10px;"
+                >
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="password">Contraseña</label>
+                <input
+                    type="password"
+                    id="password"
+                    required
+                    style="width: 100%; padding: 10px;"
+                >
+            </div>
+
+            <p id="login-error" style="display:none;"></p>
+
+            <button type="submit" class="btn-submit">
+                Iniciar sesión
+            </button>
+        </form>
+    </main>
+
+    <script src="/js/login.js"></script>
+</body>
+</html>

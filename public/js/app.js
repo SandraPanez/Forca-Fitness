@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.textContent = 'Enviando...';
         btnSubmit.disabled = true;
 
-        fetch('/api/matriculas', {
+        authFetch('/api/matriculas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
