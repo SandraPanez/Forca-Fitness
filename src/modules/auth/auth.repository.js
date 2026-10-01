@@ -3,12 +3,16 @@ const db = require('../../shared/config/database');
 async function buscarPorCorreo(correo) {
   const query = `
     SELECT
-      "Id_Usuario",
-      "Correo",
-      "Password_Hash",
-      "Estado_Usuario"
-    FROM "Academia Forca&Fitness"."Usuario"
-    WHERE LOWER("Correo") = LOWER($1)
+      u."Id_Usuario",
+      u."Correo",
+      u."Password_Hash",
+      u."Estado_Usuario",
+      u."Id_Rol",
+      r."Rol_Cargo" AS "Rol"
+    FROM "Academia Forca&Fitness"."Usuario" u
+    INNER JOIN "Academia Forca&Fitness"."Rol" r
+      ON r."Id_Rol" = u."Id_Rol"
+    WHERE LOWER(u."Correo") = LOWER($1)
     LIMIT 1
   `;
 
