@@ -35,6 +35,17 @@ CREATE TABLE IF NOT EXISTS matricula_disciplinas (
     PRIMARY KEY (matricula_id, disciplina_id)
 );
 
+CREATE TABLE IF NOT EXISTS pagos (
+    id SERIAL PRIMARY KEY,
+    matricula_id INTEGER NOT NULL REFERENCES matriculas(id) ON DELETE CASCADE,
+    monto DECIMAL(10,2) NOT NULL,
+    metodo_pago VARCHAR(50) NOT NULL DEFAULT 'MERCADO_PAGO',
+    estado VARCHAR(50) NOT NULL DEFAULT 'PENDIENTE',
+    referencia_externa VARCHAR(255),
+    preference_id VARCHAR(255),
+    fecha_pago TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO disciplinas (nombre, descripcion) VALUES
     ('Boxeo', 'Técnica y condición física'),
     ('Jiu Jitsu', 'Control y técnica de suelo'),
@@ -48,3 +59,6 @@ CREATE INDEX IF NOT EXISTS idx_matriculas_estudiante_id
 
 CREATE INDEX IF NOT EXISTS idx_matricula_disciplinas_disciplina_id
     ON matricula_disciplinas (disciplina_id);
+
+CREATE INDEX IF NOT EXISTS idx_pagos_matricula_id
+    ON pagos (matricula_id);
