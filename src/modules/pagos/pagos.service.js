@@ -20,12 +20,11 @@ class PagosService {
                 email: datosMatricula.correo
             },
             back_urls: {
-                success: `${process.env.APP_URL}/api/pagos/success`,
-                failure: `${process.env.APP_URL}/api/pagos/failure`,
-                pending: `${process.env.APP_URL}/api/pagos/pending`
+                success: 'http://localhost:3000/api/pagos/success',
+                failure: 'http://localhost:3000/api/pagos/failure',
+                pending: 'http://localhost:3000/api/pagos/pending'
             },
-            auto_return: 'approved',
-            notification_url: `${process.env.APP_URL}/api/pagos/webhook`
+            notification_url: 'http://localhost:3000/api/pagos/webhook'
         };
 
         const resultado = await preference.create({ body });
