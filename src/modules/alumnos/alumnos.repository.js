@@ -3,13 +3,19 @@ const db = require('../../shared/config/database');
 class AlumnosRepository {
   async findAllAlumnos() {
     const query = `
-      SELECT 
-        e.id, e.nombres, e.apellido_paterno, e.apellido_materno,
-        m.fecha_matricula, m.estado
-      FROM estudiantes e
-      JOIN matriculas m ON e.id = m.estudiante_id
-      ORDER BY e.nombres ASC
+      SELECT
+        a."Id_alumno" AS id,
+        a."Nombre" AS nombres,
+        a."Apellido_Paterno" AS apellido_paterno,
+        a."Apellido_Materno" AS apellido_materno,
+        m."Fecha_Inscripcion" AS fecha_matricula,
+        m."Estado_Matricula" AS estado
+      FROM "Academia Forca&Fitness"."Alumno" a
+      LEFT JOIN "Academia Forca&Fitness"."Matricula" m
+        ON a."Id_alumno" = m."Id_alumno"
+      ORDER BY a."Nombre" ASC
     `;
+
     const result = await db.query(query);
     return result.rows;
   }
