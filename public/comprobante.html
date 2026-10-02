@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Pago - Forca & Fitness</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        .recibo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--text-main);
+        }
+
+        .recibo-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .recibo-titulo h2 {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 0.2rem;
+            font-weight: 700;
+        }
+
+        .recibo-titulo p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .total-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--secondary-color);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .total-monto {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .total-monto span {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .total-monto strong {
+            font-size: 1.75rem;
+            color: var(--text-main);
+        }
+
+        .total-letras {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .firma-container {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .firma-imagen {
+            width: 140px;
+            height: auto;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        @media print {
+            body { background-color: white; padding: 0; }
+            .container { padding: 0; max-width: 100%; margin: 0; }
+            .page-header { display: none !important; }
+            .form-card { box-shadow: none; border: none; padding: 0; }
+            .total-box { border-left-color: black !important; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <h1 class="title">Comprobante de pago</h1>
+                <p class="description">Generado automáticamente después de aprobar el pago.</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button id="btn-descargar" class="btn-submit">Descargar PDF</button>
+                <button id="btn-volver" class="btn-cancel" style="border: 1px solid var(--border-color); border-radius: 4px;">Volver a pagos</button>
+            </div>
+        </div>
+
+
+        <div class="form-card" id="area-impresion">
+            
+            <div class="recibo-header">
+                <div class="recibo-logo-container">
+                    <img src="images/logo.png" alt="Logo Forca & Fitness" class="logo-img" style="height: 70px;">
+                    <div class="recibo-titulo">
+                        <h2>ACADEMIA FORCA & FITNESS</h2>
+                        <p>COMPROBANTE DE PAGO</p>
+                    </div>
+                </div>
+                
+                <div class="text-right">
+                    <div class="info-item mb-1">
+                        <span class="info-label">Número de comprobante</span>
+                        <span class="info-value font-medium">CP-2026-00001</span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <div class="info-item">
+                            <span class="info-label">Fecha</span>
+                            <span class="info-value" id="fecha-comprobante"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Hora</span>
+                            <span class="info-value" id="hora-comprobante"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Datos del alumno</h3>
+                <hr class="divider">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Nombre</span>
+                        <span class="info-value font-medium" id="nombre-alumno">Juan Rondón Pujay</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">DNI</span>
+                        <span class="info-value font-medium" id="doc-alumno">74628153</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Disciplina</span>
+                        <span class="info-value font-medium" id="disciplina-alumno">Capoeira</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section mt-4">
+                <h3 class="section-title">Detalle del pago</h3>
+                <hr class="divider">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Concepto</span>
+                        <span class="info-value font-medium" id="concepto-pago">Mensualidad setiembre de 2026</span>
+                    </div>
+                    <div class="info-item">
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Plan</span>
+                        <span class="info-value font-medium" id="plan-pago">Mensual</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Método de pago</span>
+                        <span class="info-value font-medium" id="metodo-pago">Pago electrónico mediante pasarela</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Referencia de operación</span>
+                        <span class="info-value font-medium" id="ref-pago">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Estado</span>
+                        <div>
+                            <span class="badge-status badge-activa">Pagado</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="total-box">
+                <div class="total-monto">
+                    <span>TOTAL PAGADO</span>
+                    <strong id="total-numero">S/ 150.00</strong>
+                </div>
+                <div class="total-letras" id="total-letras">
+                    CIENTO CINCUENTA CON 00/100 SOLES
+                </div>
+            </div>
+
+            <div class="firma-container">
+                <img src="images/firma_tesorero.png" alt="Firma del Tesorero" class="firma-imagen">
+                <span>Firma del Tesorero: <strong style="color: var(--text-main);">Paul Bryan Rafael Yepez</strong> - Tesorero</span>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/comprobante.js"></script>
+</body>
+</html>
