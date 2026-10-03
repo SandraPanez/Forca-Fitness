@@ -19,40 +19,136 @@
     @media(max-width:760px){.topbar{height:auto;min-height:50px;padding:8px 16px}.topbar-inner{flex-wrap:wrap;gap:8px 16px}.topnav{order:3;width:100%;height:34px;gap:18px;margin:0}.account{margin-left:auto;padding-left:10px}.signout{padding-left:8px}.content{padding:30px 5%}.roster-head{padding:18px 14px}.controls{grid-template-columns:minmax(0,1fr) 180px}th,td{padding-inline:14px}}
     @media(max-width:480px){.brand{font-size:11px}.account{max-width:145px;white-space:normal}.signout{font-size:9px}.topnav{justify-content:space-between}.heading h1{font-size:22px}.controls{grid-template-columns:1fr;gap:22px}.roster-head{padding-bottom:18px}th:first-child{width:53%}th:nth-child(2){width:47%}td{height:53px}.badge{font-size:8px}}
     td:nth-child(2){display:table-cell;text-align:right}.expiry{display:block;margin-top:4px;color:#738092;font-size:9px;font-weight:400;text-transform:none}.badge{display:inline-flex}
+    .topbar-inner{justify-content:space-between;gap:20px}.brand{pointer-events:none}.brand-mark{display:block;width:34px;height:34px;background:#fff;object-fit:contain;border-radius:50%}.account{font-size:12px}.account span{font-size:11px}.content{padding-top:38px}.heading{display:block}.heading h1{display:flex;align-items:center;flex-wrap:wrap;gap:9px;font-size:27px}.title-discipline select{min-width:180px;height:40px;font-size:17px;font-weight:700}.eyebrow{font-size:12px}.description{font-size:14px}.roster{margin-top:28px}.roster-head>div:first-child{display:block}.roster-head h2{font-size:18px}.count{font-size:12px}.student{font-size:14px}.expiry{font-size:11px}.badge{min-height:25px;font-size:11px}.empty{font-size:13px}.controls select,.search input{font-size:12px}
+    @media(max-width:540px){.heading h1{font-size:23px}.title-discipline{width:100%}.title-discipline select{width:100%}.roster-head>div:first-child{display:block}.student{font-size:13px}.badge{font-size:10px}}
+    .topbar-actions{display:flex;align-items:center;gap:20px;height:100%}.topbar-actions .topnav{margin-left:0}.cancel-button{height:32px;padding:0 12px;border:1px solid #d5dbe2;border-radius:4px;background:#fff;color:#253346;font-size:11px;cursor:pointer}.cancel-button:hover{background:#f5f7f9}.page-view[hidden]{display:none}.teacher-heading{margin-bottom:30px}.teacher-heading h1{margin:0 0 8px;font-size:32px}.discipline-groups{display:grid;gap:18px}.discipline-card{overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#fff}.discipline-card h2{padding:17px 20px;border-bottom:1px solid var(--line);font-size:17px}.discipline-list{margin:0;padding:0;list-style:none}.discipline-student{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:10px 20px;border-bottom:1px solid #edf0ec}.discipline-student:last-child{border-bottom:0}.discipline-student-name{font-size:14px;font-weight:600}.discipline-empty{padding:20px;color:var(--muted);font-size:13px}
+    @media(max-width:760px){.topbar{height:auto;min-height:50px}.topbar-inner{height:auto;min-height:50px;flex-wrap:wrap;padding-block:8px}.topbar-actions{height:auto;flex-wrap:wrap;justify-content:flex-end;gap:10px;width:100%}.topbar-actions .topnav{order:0;width:auto;margin:0}.topbar-actions .account{margin-left:auto}.teacher-heading h1{font-size:27px}}
+    @media(max-width:480px){.topbar-actions{justify-content:space-between}.topbar-actions .topnav{gap:14px}.topbar-actions .topnav a{font-size:10px}.cancel-button{height:30px;padding-inline:9px}.teacher-heading h1{font-size:23px}.discipline-card h2{padding:14px}.discipline-student{padding-inline:14px}.discipline-student-name{font-size:13px}}
+    .discipline-list-item:not(:last-child){border-bottom:1px solid #edf0ec}
+    .discipline-student{width:100%;border:0;background:#fff;text-align:left;color:inherit;font-family:inherit;cursor:pointer}.discipline-student:hover{background:#f6f8f9}.discipline-student:focus-visible{position:relative;outline:2px solid #6ba27d;outline-offset:-2px}.drawer-overlay{position:fixed;inset:0;z-index:20;background:rgba(23,37,54,.34)}.drawer-overlay[hidden]{display:none}.student-drawer{position:fixed;top:0;right:0;z-index:21;width:min(430px,100vw);height:100vh;height:100dvh;overflow-y:auto;padding:20px 28px 30px;background:#fff;box-shadow:-10px 0 30px rgba(23,37,54,.12);transform:translateX(100%);visibility:hidden;transition:transform .22s ease,visibility .22s}.student-drawer.is-open{transform:translateX(0);visibility:visible}.drawer-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:24px}.drawer-title{margin:0;color:#526b83;font-size:11px;font-weight:700;letter-spacing:.7px}.drawer-close{display:grid;place-items:center;width:34px;height:34px;border:1px solid #dce2e8;border-radius:5px;background:#fff;color:#314156;font-size:20px;line-height:1;cursor:pointer}.drawer-profile{display:flex;align-items:center;gap:13px;padding:2px 0 23px;border-bottom:1px solid var(--line)}.drawer-avatar{display:grid;place-items:center;width:48px;height:48px;flex:none;border-radius:50%;background:#e8f0f8;color:#315f91;font-size:14px;font-weight:700}.drawer-profile-info{min-width:0}.drawer-name{margin:0 0 7px;color:#172536;font-size:19px;line-height:1.2}.drawer-status{font-size:10px}.drawer-section{padding:23px 0 21px;border-bottom:1px solid var(--line)}.drawer-section h3{margin:0 0 17px;color:#354457;font-size:13px}.detail-list{display:grid;gap:15px;margin:0}.detail-item dt{margin-bottom:4px;color:#7a8795;font-size:10px}.detail-item dd{margin:0;color:#2c3b4e;font-size:12px;font-weight:600;overflow-wrap:anywhere}.drawer-status-text{font-weight:600}
+    @media(max-width:480px){.student-drawer{padding:18px 20px 24px}.drawer-name{font-size:17px}.drawer-section{padding-block:20px}}
   </style>
 </head>
 <body>
   <main id="alumnos">
-    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#inicio"><span class="brand-mark">F</span><span>Força &amp; Fitness<small>Gestión académica</small></span></a><nav class="topnav" aria-label="Navegación principal"><a href="#mis-alumnos">Mis alumnos</a><a href="#control-acceso" aria-current="page">Control de acceso</a></nav><div class="account"><strong>Faridh Gustavo Cruz Suarez</strong><span>Profesor de Capoeira</span></div><a class="signout" href="#cerrar-sesion">Cerrar sesión</a></div></header>
+    <header class="topbar"><div class="topbar-inner"><div class="brand"><img class="brand-mark" src="/images/logo.png" alt="Logo Força &amp; Fitness"><span>Força &amp; Fitness<small>Gestión académica</small></span></div><div class="topbar-actions"><nav class="topnav" aria-label="Navegación del profesor"><a href="#vista-alumnos" data-view="students">Alumnos</a><a href="#vista-control" data-view="access" aria-current="page">Control de acceso</a></nav><div class="account"><strong>Faridh Gustavo Cruz Suarez</strong><span>Profesor</span></div><button class="cancel-button" type="button">Cancelar</button></div></div></header>
     <div class="content">
-      <section class="heading" aria-labelledby="title"><p class="eyebrow">CAPOEIRA</p><h1 id="title">Control de acceso: Capoeira</h1><p class="description">Verifica la vigencia de matrícula de los alumnos de tu disciplina.</p></section>
-      <div class="reminder" id="reminder" role="status" hidden><span class="warning">!</span><div><strong id="reminder-title"></strong><span id="reminder-copy"></span></div></div>
-      <section class="roster" aria-label="Alumnos de Capoeira"><div class="roster-head"><div><h2>Alumnos</h2><span class="count" id="count"></span></div><div class="controls"><label class="search"><span class="sr-only">Buscar alumno por nombre o apellido</span><input id="search" type="search" placeholder="Buscar alumno por nombre o apellido..."></label><label><span class="sr-only">Estado de acceso</span><select id="status"><option value="all">Todos</option><option value="active">Activo</option><option value="soon">Próximo a vencer</option><option value="inactive">Inactivo</option><option value="disabled">Inhabilitado</option></select></label></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Estado de acceso</th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty" hidden><strong>No encontramos alumnos</strong>Prueba con otro nombre o cambia el estado.</div></div>
+      <section class="page-view" id="view-access" aria-labelledby="access-title"><section class="heading" id="control-acceso" aria-labelledby="access-title"><p class="eyebrow">PROFESOR</p><h1 id="access-title">Control de acceso: <label class="title-discipline"><span class="sr-only">Disciplina</span><select id="discipline"><option>Capoeira</option><option>Capoeira Kids</option><option>Boxeo</option><option>Jiu-jitsu</option></select></label></h1><p class="description">Verifica la vigencia de matrícula de los alumnos de tu disciplina.</p></section>
+        <section class="roster" aria-label="Alumnos de la disciplina seleccionada"><div class="roster-head"><div><h2>Alumnos</h2><span class="count" id="count"></span></div><div class="controls"><label class="search"><span class="sr-only">Buscar alumno por nombre o apellido</span><input id="search" type="search" placeholder="Buscar alumno por nombre o apellido..."></label><label><span class="sr-only">Estado de acceso</span><select id="status"><option value="all">Todos</option><option value="active">Activo</option><option value="soon">Próximo a vencer</option><option value="inactive">Inactivo</option><option value="disabled">Inhabilitado</option></select></label></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Estado de acceso</th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty" hidden><strong>No encontramos alumnos</strong>Prueba con otro nombre o cambia el estado.</div></div>
+        </section>
       </section>
+      <section class="page-view" id="view-students" aria-labelledby="students-title" hidden><header class="teacher-heading"><p class="eyebrow">ALUMNOS</p><h1 id="students-title">Faridh Gustavo Cruz Suarez</h1><p class="description">Alumnos de las disciplinas a tu cargo.</p></header><div class="discipline-groups" id="discipline-groups"></div></section>
     </div>
+    <div class="drawer-overlay" id="drawer-overlay" hidden></div>
+    <aside class="student-drawer" id="student-drawer" aria-labelledby="drawer-title" aria-hidden="true">
+      <header class="drawer-header"><h2 class="drawer-title" id="drawer-title">DETALLE DEL ALUMNO</h2><button class="drawer-close" id="drawer-close" type="button" aria-label="Cerrar detalle">×</button></header>
+      <div class="drawer-profile"><div class="drawer-avatar" id="drawer-avatar"></div><div class="drawer-profile-info"><h3 class="drawer-name" id="drawer-name"></h3><span class="badge active drawer-status" id="drawer-status"></span></div></div>
+      <section class="drawer-section" aria-labelledby="personal-info-title"><h3 id="personal-info-title">Información personal</h3><dl class="detail-list"><div class="detail-item"><dt>DNI</dt><dd id="detail-dni"></dd></div><div class="detail-item"><dt>Correo</dt><dd id="detail-email"></dd></div><div class="detail-item"><dt>Celular</dt><dd id="detail-phone"></dd></div><div class="detail-item"><dt>Fecha de nacimiento</dt><dd id="detail-birth-date"></dd></div><div class="detail-item"><dt>Dirección</dt><dd id="detail-address"></dd></div></dl></section>
+      <section class="drawer-section" aria-labelledby="enrollment-info-title"><h3 id="enrollment-info-title">Información de matrícula</h3><dl class="detail-list"><div class="detail-item"><dt>Disciplina(s)</dt><dd id="detail-disciplines"></dd></div><div class="detail-item"><dt>Fecha de inscripción</dt><dd id="detail-enrollment-date"></dd></div><div class="detail-item"><dt>Estado de matrícula</dt><dd id="detail-enrollment-status" class="drawer-status-text"></dd></div><div class="detail-item"><dt>Estado del alumno</dt><dd id="detail-student-status"></dd></div></dl></section>
+    </aside>
   </main>
   <script>
     const students=[
-      {name:'Fernando Alonso Lezama',days:26,status:'active'},
-      {name:'Juan Rondón Pujay',days:12,status:'active'},
-      {name:'Ricardo Jimenez Carmen',days:2,status:'soon'},
-      {name:'Jheremies Edwin Jeri Condori',days:-8,status:'inactive'},
-      {name:'Florencia Vega',days:-40,status:'disabled'}
+      {id:'fernando',name:'Fernando Alonso Lezama',days:26,status:'active',disciplines:['Capoeira','Capoeira Kids']},
+      {id:'juan',name:'Juan Rondón Pujay',days:12,status:'active',disciplines:['Capoeira Kids']},
+      {id:'ricardo',name:'Ricardo Jimenez Carmen',days:2,status:'soon',disciplines:['Boxeo']},
+      {id:'jheremies',name:'Jheremies Edwin Jeri Condori',days:-8,status:'inactive',disciplines:['Jiu-jitsu']},
+      {id:'florencia',name:'Florencia Vega',days:-40,status:'disabled',disciplines:['Capoeira','Boxeo']}
     ];
+    const studentDetails={
+      fernando:{dni:'70218456',email:'fernando.lezama@example.test',phone:'+51 987 111 222',birthDate:'12/06/2001',address:'Lima, Perú',enrollmentDate:'07/09/2026',enrollmentStatus:'Activa - 26 días restantes',studentStatus:'Habilitado'},
+      juan:{dni:'74628153',email:'juan.rondon.pujay@gmail.com',phone:'+51 987 654 321',birthDate:'14/03/2003',address:'Los Olivos, Lima, Perú',enrollmentDate:'07/09/2026',enrollmentStatus:'Activa - 25 días restantes',studentStatus:'Habilitado'},
+      ricardo:{dni:'71526384',email:'ricardo.jimenez@example.test',phone:'+51 987 222 333',birthDate:'08/11/2000',address:'Lima, Perú',enrollmentDate:'01/09/2026',enrollmentStatus:'Próxima a vencer - 2 días restantes',studentStatus:'Habilitado'},
+      jheremies:{dni:'73841526',email:'jheremies.jeri@example.test',phone:'+51 987 333 444',birthDate:'19/02/2002',address:'Lima, Perú',enrollmentDate:'26/08/2026',enrollmentStatus:'Vencida hace 8 días',studentStatus:'Inhabilitado'},
+      florencia:{dni:'72938415',email:'florencia.vega@example.test',phone:'+51 987 444 555',birthDate:'23/05/2004',address:'Lima, Perú',enrollmentDate:'25/07/2026',enrollmentStatus:'Inhabilitada',studentStatus:'Inhabilitado'}
+    };
     const statusInfo={active:['Activo','active',0],soon:['Próximo a vencer','soon',1],inactive:['Inactivo','inactive',2],disabled:['Inhabilitado','disabled',3]};
-    const filter=document.querySelector('#status'),search=document.querySelector('#search');
+    const filter=document.querySelector('#status'),search=document.querySelector('#search'),discipline=document.querySelector('#discipline');
+    const teacherDisciplines=['Capoeira Kids','Capoeira'];
+    const navigationLinks=document.querySelectorAll('[data-view]');
+    const views={students:document.querySelector('#view-students'),access:document.querySelector('#view-access')};
+    const studentsById=new Map(students.map((student)=>[student.id,student]));
+    const drawer=document.querySelector('#student-drawer'),drawerOverlay=document.querySelector('#drawer-overlay'),drawerClose=document.querySelector('#drawer-close');
+    let drawerTrigger=null;
     function dateFromToday(offset){const d=new Date();d.setDate(d.getDate()+offset);return new Intl.DateTimeFormat('es-CL',{day:'numeric',month:'short',year:'numeric'}).format(d)}
     function initials(name){return name.split(' ').slice(0,2).map(part=>part[0]).join('')}
+    function renderDisciplineGroups(){
+      const studentsByDiscipline=students.reduce((groupedStudents,student)=>{
+        student.disciplines.forEach((disciplineName)=>{
+          if(!groupedStudents.has(disciplineName))groupedStudents.set(disciplineName,[]);
+          groupedStudents.get(disciplineName).push(student);
+        });
+        return groupedStudents;
+      },new Map());
+      const container=document.querySelector('#discipline-groups');
+      container.replaceChildren();
+      teacherDisciplines.forEach((disciplineName)=>{
+        const section=document.createElement('section'),heading=document.createElement('h2'),list=document.createElement('ul');
+        section.className='discipline-card';heading.textContent=disciplineName;list.className='discipline-list';section.append(heading,list);
+        const disciplineStudents=studentsByDiscipline.get(disciplineName)||[];
+        if(!disciplineStudents.length){const empty=document.createElement('li');empty.className='discipline-empty';empty.textContent='No hay alumnos inscritos en esta disciplina.';list.append(empty)}
+        disciplineStudents.forEach((student)=>{
+          const item=document.createElement('li'),row=document.createElement('button');
+          item.className='discipline-list-item';row.className='discipline-student';row.type='button';row.dataset.studentId=student.id;row.textContent=student.name;item.append(row);list.append(item);
+        });
+        container.append(section);
+      });
+    }
+    function openStudentDrawer(studentId,trigger){
+      const student=studentsById.get(studentId),details=studentDetails[studentId];
+      if(!student||!details)return;
+      const statusLabels={active:'Activa',soon:'Próxima a vencer',inactive:'Inactiva',disabled:'Inhabilitada'};
+      const statusBadge=document.querySelector('#drawer-status');
+      document.querySelector('#drawer-avatar').textContent=initials(student.name);
+      document.querySelector('#drawer-name').textContent=student.name;
+      statusBadge.textContent=statusLabels[student.status];
+      statusBadge.className=`badge drawer-status ${statusInfo[student.status][1]}`;
+      document.querySelector('#detail-dni').textContent=details.dni;
+      document.querySelector('#detail-email').textContent=details.email;
+      document.querySelector('#detail-phone').textContent=details.phone;
+      document.querySelector('#detail-birth-date').textContent=details.birthDate;
+      document.querySelector('#detail-address').textContent=details.address;
+      document.querySelector('#detail-disciplines').textContent=student.disciplines.join(', ');
+      document.querySelector('#detail-enrollment-date').textContent=details.enrollmentDate;
+      document.querySelector('#detail-enrollment-status').textContent=details.enrollmentStatus;
+      document.querySelector('#detail-student-status').textContent=details.studentStatus;
+      drawerTrigger=trigger;
+      drawerOverlay.hidden=false;
+      drawer.classList.add('is-open');
+      drawer.setAttribute('aria-hidden','false');
+      drawerClose.focus();
+    }
+    function closeStudentDrawer(){
+      drawer.classList.remove('is-open');
+      drawer.setAttribute('aria-hidden','true');
+      drawerOverlay.hidden=true;
+      if(drawerTrigger)drawerTrigger.focus();
+    }
+    navigationLinks.forEach((link)=>link.addEventListener('click',(event)=>{
+      event.preventDefault();
+      const selectedView=link.dataset.view;
+      Object.entries(views).forEach(([viewName,view])=>{view.hidden=viewName!==selectedView});
+      navigationLinks.forEach((navigationLink)=>{
+        if(navigationLink===link)navigationLink.setAttribute('aria-current','page');
+        else navigationLink.removeAttribute('aria-current');
+      });
+    }));
+    document.querySelector('#discipline-groups').addEventListener('click',(event)=>{
+      const trigger=event.target.closest('[data-student-id]');
+      if(trigger)openStudentDrawer(trigger.dataset.studentId,trigger);
+    });
+    drawerClose.addEventListener('click',closeStudentDrawer);
+    drawerOverlay.addEventListener('click',closeStudentDrawer);
+    document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&drawer.classList.contains('is-open'))closeStudentDrawer()});
     function render(){
       const query=search.value.trim().toLocaleLowerCase('es');
-      const visible=students.filter(s=>(filter.value==='all'||s.status===filter.value)&&s.name.toLocaleLowerCase('es').includes(query)).sort((a,b)=>statusInfo[a.status][2]-statusInfo[b.status][2]||a.name.localeCompare(b.name,'es'));
+      const visible=students.filter(s=>s.disciplines.includes(discipline.value)&&(filter.value==='all'?s.status!=='disabled':s.status===filter.value)&&s.name.toLocaleLowerCase('es').includes(query)).sort((a,b)=>statusInfo[a.status][2]-statusInfo[b.status][2]||a.name.localeCompare(b.name,'es'));
       const tbody=document.querySelector('#rows');tbody.replaceChildren();
       visible.forEach(student=>{const tr=document.createElement('tr'),nameCell=document.createElement('td'),identity=document.createElement('div'),name=document.createElement('span'),statusCell=document.createElement('td'),badge=document.createElement('span'),expiry=document.createElement('span');identity.className='student';name.textContent=student.name;identity.append(name);nameCell.append(identity);badge.className='badge '+statusInfo[student.status][1];badge.textContent=statusInfo[student.status][0];expiry.className='expiry';expiry.textContent=(student.days<0?'Venció el ':'Vigente hasta el ')+dateFromToday(student.days);statusCell.append(badge,expiry);tr.append(nameCell,statusCell);tbody.append(tr)});
-      const expiring=students.filter(s=>s.status==='soon');document.querySelector('#count').textContent=`${visible.length} ${visible.length===1?'alumno':'alumnos'}`;document.querySelector('#empty').hidden=visible.length>0;document.querySelector('table').hidden=visible.length===0;
-      const notice=document.querySelector('#reminder');notice.hidden=expiring.length===0;if(expiring.length){const nearest=Math.min(...expiring.map(s=>s.days));document.querySelector('#reminder-title').textContent=`${expiring.length} ${expiring.length===1?'matrícula vence':'matrículas vencen'} en 3 días o menos`;document.querySelector('#reminder-copy').textContent=`La próxima vence ${nearest===0?'hoy':`en ${nearest} ${nearest===1?'día':'días'}`}.`}
+      document.querySelector('#count').textContent=`${visible.length} ${visible.length===1?'alumno':'alumnos'}`;document.querySelector('#empty').hidden=visible.length>0;document.querySelector('table').hidden=visible.length===0;
     }
-    filter.addEventListener('change',render);search.addEventListener('input',render);render();
+    filter.addEventListener('change',render);search.addEventListener('input',render);discipline.addEventListener('change',render);render();renderDisciplineGroups();
   </script>
 </body>
 </html>
