@@ -6,8 +6,27 @@ class MatriculasService {
     return await matriculasRepository.getDisciplinas();
   }
 
+  async getHorariosPorDisciplina(id_disciplina) {
+    if (!id_disciplina) {
+      throw new Error('El ID de la disciplina es obligatorio.');
+    }
+    const horarios = await matriculasRepository.getHorariosPorDisciplina(id_disciplina);
+    
+    // T_04: Cálculo de cupos disponibles en el servicio
+    for (let horario of horarios) {
+      const inscritos = await matriculasRepository.countInscritosPorHorario(horario.id_disc_horario);
+      horario.cupos_disponibles = horario.capacidad_max - inscritos;
+      
+      if (horario.cupos_disponibles < 0) {
+        horario.cupos_disponibles = 0;
+      }
+    }
+    
+    return horarios;
+  }
+
   async registrarMatricula(datosMatricula) {
-    const { disciplinas, observaciones_medicas, ...datosEstudiante } = datosMatricula;
+    const { disciplinas, observaciones_medicas, password, confirm_password, ...datosEstudiante } = datosMatricula;
 
     // Validación básica de campos requeridos (T_06)
     if (!datosEstudiante.tipo_documento || !datosEstudiante.numero_documento || !datosEstudiante.nombres) {
@@ -17,6 +36,13 @@ class MatriculasService {
     if (!disciplinas || !Array.isArray(disciplinas) || disciplinas.length === 0) {
       throw new Error('Debe seleccionar al menos una disciplina.');
     }
+
+    if (!password || password !== confirm_password) {
+      throw new Error('La contraseña es inválida o no coinciden.');
+    }
+
+    const bcrypt = require('bcryptjs');
+    datosEstudiante.password_hash = await bcrypt.hash(password, 10);
 
     // Iniciar transacción de base de datos
     const client = await db.pool.connect();

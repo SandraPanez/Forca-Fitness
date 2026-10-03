@@ -1,13 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const db = require('./src/shared/config/database');
-
 const path = require('path');
 const app = express();
 
 // Middlewares globales
-app.use(express.json()); // Para parsear el body en formato JSON
-app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estáticos del frontend
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'modules', 'alumnos', 'index.html'));
@@ -16,11 +15,13 @@ app.get('/control-acceso', (req, res) => {
 // Registrar módulos (Rutas)
 const {
   matriculasRoutes,
-  alumnosRoutes
+  alumnosRoutes,
+  pagosRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
 app.use('/api/alumnos', alumnosRoutes);
+app.use('/api/pagos', pagosRoutes);
 
 // Ruta de prueba
 app.get('/api/health', async (req, res) => {

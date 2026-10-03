@@ -543,6 +543,40 @@ body {
     }
 }
 
+
+/* Password wrapper and toggle */
+.position-relative {
+    position: relative;
+}
+.password-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+.password-wrapper input {
+    width: 100%;
+    padding-right: 40px; /* Make room for the button */
+}
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.toggle-password:hover {
+    opacity: 1;
+}
+
 /* ========================================================
    ESTILOS PARA HU-2: LISTA DE ALUMNOS Y SIDE PANEL
    ======================================================== */
@@ -856,5 +890,157 @@ body {
     }
     .side-panel {
         width: 100%;
+    }
+
+}
+
+/* ========================================================
+   ESTILOS PARA HU-07: CONSULTA DE HORARIOS
+   ======================================================== */
+.horarios-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.horario-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--white);
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+}
+
+.horario-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.horario-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.horario-dias {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.horario-horas {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.horario-capacidad {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    align-items: flex-end;
+    gap: 0.25rem;
+    padding-right: 2rem;
+    border-right: 1px solid var(--border-color);
+    margin-right: 2rem;
+}
+
+.cupos-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.capacidad-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.horario-estado {
+    width: 120px;
+    text-align: right;
+}
+
+.badge-disponible {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-ultimos {
+    background-color: #fff3e0;
+    color: #e65100;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-agotado {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.horario-card.agotado {
+    opacity: 0.6;
+    border-left-color: #c62828;
+    background-color: var(--secondary-color);
+}
+
+.filtros-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filtros-texto h3 {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.filtros-texto p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.disciplina-selector {
+    min-width: 280px;
+}
+
+@media (max-width: 768px) {
+    .horario-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .horario-capacidad {
+        border-right: none;
+        padding-right: 0;
+        margin-right: 0;
+        text-align: left;
+        align-items: flex-start;
+        width: 100%;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+    }
+    
+    .horario-estado {
+        text-align: left;
     }
 }
