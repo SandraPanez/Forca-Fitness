@@ -36,8 +36,13 @@ class PagosService {
     async procesarWebhook(tipo, id) {
         if (tipo !== 'payment') return null;
 
+        console.log('Webhook recibido - tipo:', tipo, 'id:', id);
+
         const payment = new Payment(client);
         const pago = await payment.get({ id });
+
+        console.log('Estado del pago:', pago.status);
+        console.log('ID matrícula:', pago.external_reference);
 
         const estadoMP = pago.status;
         const idMatricula = pago.external_reference;
