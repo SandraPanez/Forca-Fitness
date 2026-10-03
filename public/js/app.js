@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         errorDiv.style.display = 'none';
         
-        // TODO (T_08): Aquí llamaremos a la API (POST /api/matriculas)
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         data.disciplinas = Array.from(disciplinas).map(cb => cb.value);
@@ -46,41 +45,35 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.textContent = 'Enviando...';
         btnSubmit.disabled = true;
 
-        // MOCK TEMPORAL PARA EL TESTER (Simular respuesta exitosa sin DB real)
-        setTimeout(() => {
-            alert('¡Matrícula registrada exitosamente!');
-            form.reset();
-            document.getElementById('disciplinas-count').style.display = 'none';
-            btnSubmit.textContent = originalText;
-            btnSubmit.disabled = false;
-        }, 1000);
-
-        /* 
-        // Lógica real comentada hasta que la DB esté levantada
         fetch('/api/matriculas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
+        .then(async response => {
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.message || 'No se pudo registrar la matrícula.');
+            }
+            return result;
+        })
         .then(result => {
             if (result.success) {
                 alert('¡Matrícula registrada exitosamente!');
                 form.reset();
                 document.getElementById('disciplinas-count').style.display = 'none';
             } else {
-                alert('Error: ' + result.message);
+                throw new Error(result.message || 'No se pudo registrar la matrícula.');
             }
         })
         .catch(error => {
             console.error('Error enviando datos:', error);
-            alert('Error de conexión al guardar la matrícula.');
+            alert(error.message || 'Error de conexión al guardar la matrícula.');
         })
         .finally(() => {
             btnSubmit.textContent = originalText;
             btnSubmit.disabled = false;
         });
-        */
     });
 
     // 3. Lógica del botón cancelar (T_07 - Implementar botón Cancelar con confirmación de abandono)
@@ -132,21 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function cargarDisciplinas() {
         const container = document.getElementById('disciplinas-container');
         try {
-            // MOCK TEMPORAL: Para poder probar el formulario sin base de datos conectada
-            const result = {
-                success: true,
-                data: [
-                    { id: 1, nombre: 'Boxeo', descripcion: 'Técnica y condición física' },
-                    { id: 2, nombre: 'Jiu Jitsu', descripcion: 'Control y técnica de suelo' },
-                    { id: 3, nombre: 'MMA', descripcion: 'Artes marciales mixtas' },
-                    { id: 4, nombre: 'Capoeira', descripcion: 'Arte marcial afrobrasileña' },
-                    { id: 5, nombre: 'Cross Training', descripcion: 'Preparación física integral' }
-                ]
-            };
-            
-            // Lógica original comentada para usar con BD real:
-            // const response = await fetch('/api/matriculas/disciplinas');
-            // const result = await response.json();
+            const response = await fetch('/api/matriculas/disciplinas');
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.message || 'No se pudieron cargar las disciplinas.');
+            }
             
             if (result.success && result.data.length > 0) {
                 container.innerHTML = ''; // Limpiar mensaje de carga
