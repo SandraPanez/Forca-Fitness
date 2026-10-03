@@ -1,4 +1,5 @@
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const pagosRepository = require('./pagos.repository');
 
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN
@@ -24,6 +25,7 @@ class PagosService {
                 failure: 'http://localhost:3000/api/pagos/failure',
                 pending: 'http://localhost:3000/api/pagos/pending'
             },
+            external_reference: datosMatricula.id_matricula,
             notification_url: 'http://localhost:3000/api/pagos/webhook'
         };
 
@@ -32,12 +34,26 @@ class PagosService {
     }
 
     async procesarWebhook(tipo, id) {
-        if (tipo === 'payment') {
-            const payment = new Payment(client);
-            const pago = await payment.get({ id });
-            return pago;
-        }
-        return null;
+        if (tipo !== 'payment') return null;
+
+        const payment = new Payment(client);
+        const pago = await payment.get({ id });
+
+        const estadoMP = pago.status;
+        const idMatricula = pago.external_reference;
+
+        const estadoPago = estadoMP === 'approved' ? 'APROBADO'
+            : estadoMP === 'rejected' ? 'RECHAZADO'
+            : 'PENDIENTE';
+
+        const estadoMatricula = estadoMP === 'approved' ? 'Activa'
+            : estadoMP === 'rejected' ? 'Inactiva'
+            : 'Pendiente';
+
+        await pagosRepository.actualizarEstadoPago(idMatricula, estadoPago);
+        await pagosRepository.actualizarEstadoMatricula(idMatricula, estadoMatricula);
+
+        return { estadoPago, estadoMatricula };
     }
 }
 

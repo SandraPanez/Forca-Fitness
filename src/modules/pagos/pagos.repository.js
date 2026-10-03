@@ -3,10 +3,10 @@ const db = require('../../shared/config/database');
 class PagosRepository {
     async registrarPago(datosPago) {
         const query = `
-            INSERT INTO academia_forca_fitness.pago 
-            (id_pago, monto, estado_pago, id_matricula, id_mpago)
+            INSERT INTO "Academia Forca&Fitness"."Pago" 
+            ("Id_Pago", "Monto", "Estado_Pago", "Id_Matricula", "Id_MPago")
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id_pago
+            RETURNING "Id_Pago"
         `;
         const values = [
             datosPago.id_pago,
@@ -21,10 +21,10 @@ class PagosRepository {
 
     async registrarTransaccionMP(datosMP) {
         const query = `
-            INSERT INTO academia_forca_fitness.mercado_pago
-            (id_mp_transaccion, preference_id, mp_payment_id, referencia_ext, id_pago)
+            INSERT INTO "Academia Forca&Fitness"."Mercado_Pago"
+            ("Id_Mp_Transaccion", "Preference_Id", "Mp_Payment_Id", "Referencia_Ext", "Id_Pago")
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id_mp_transaccion
+            RETURNING "Id_Mp_Transaccion"
         `;
         const values = [
             datosMP.id_mp_transaccion,
@@ -37,25 +37,36 @@ class PagosRepository {
         return result.rows[0];
     }
 
-    async actualizarEstadoPago(id_pago, estado_pago) {
+    async actualizarEstadoPago(id_matricula, estado_pago) {
         const query = `
-            UPDATE academia_forca_fitness.pago
-            SET estado_pago = $1
-            WHERE id_pago = $2
-            RETURNING id_pago, estado_pago
+            UPDATE "Academia Forca&Fitness"."Pago"
+            SET "Estado_Pago" = $1
+            WHERE "Id_Matricula" = $2
+            RETURNING "Id_Pago", "Estado_Pago"
         `;
-        const result = await db.query(query, [estado_pago, id_pago]);
+        const result = await db.query(query, [estado_pago, id_matricula]);
         return result.rows[0];
     }
 
     async obtenerMetodosPago() {
         const query = `
-            SELECT id_mpago, nombre_metodo, descripcion, rpasarela
-            FROM academia_forca_fitness.metodo_pago
-            WHERE activo = TRUE
+            SELECT "Id_MPago", "Nombre_Metodo", "Descripcion", "RPasarela"
+            FROM "Academia Forca&Fitness"."Metodo_Pago"
+            WHERE "Activo" = TRUE
         `;
         const result = await db.query(query);
         return result.rows;
+    }
+
+    async actualizarEstadoMatricula(id_matricula, estado_matricula) {
+        const query = `
+            UPDATE "Academia Forca&Fitness"."Matricula"
+            SET "Estado_Matricula" = $1
+            WHERE "Id_Matricula" = $2
+            RETURNING "Id_Matricula", "Estado_Matricula"
+        `;
+        const result = await db.query(query, [estado_matricula, id_matricula]);
+        return result.rows[0];
     }
 }
 
