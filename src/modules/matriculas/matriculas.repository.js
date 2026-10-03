@@ -1,139 +1,585 @@
 const db = require('../../shared/config/database');
 
+const SCHEMA = '"Academia Forca&Fitness"';
+
 class MatriculasRepository {
+
+  // =========================================================
+  // DISCIPLINAS
+  // =========================================================
+
   async getDisciplinas() {
     const query = `
-      SELECT 
-        "Id_Disciplinas" AS id, 
-        "Nombre_Disciplina" AS nombre, 
-        "Descripcion" AS descripcion 
-      FROM "Academia Forca&Fitness"."Disciplina" 
+      SELECT
+        "Id_Disciplinas" AS id,
+        "Nombre_Disciplina" AS nombre,
+        "Descripcion" AS descripcion
+      FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
+
     const result = await db.query(query);
     return result.rows;
   }
 
   async getHorariosPorDisciplina(id_disciplina) {
     const query = `
-      SELECT 
-        dh."Id_DiscHorario" AS id_disc_horario, 
-        h."Dias" AS dias, 
-        h."Hora_Inicio" AS hora_inicio, 
-        h."Hora_Fin" AS hora_fin, 
+      SELECT
+        dh."Id_DiscHorario" AS id_disc_horario,
+        h."Dias" AS dias,
+        h."Hora_Inicio" AS hora_inicio,
+        h."Hora_Fin" AS hora_fin,
         h."Turno" AS turno,
         dh."Capacidad_Max" AS capacidad_max
-      FROM "Academia Forca&Fitness"."Disciplina_Horario" dh
-      JOIN "Academia Forca&Fitness"."Horarios" h ON dh."Id_Horario" = h."Id_Horario"
+      FROM ${SCHEMA}."Disciplina_Horario" dh
+      JOIN ${SCHEMA}."Horarios" h
+        ON dh."Id_Horario" = h."Id_Horario"
       WHERE dh."Id_Disciplina" = $1
       ORDER BY h."Hora_Inicio" ASC
     `;
+
     const result = await db.query(query, [id_disciplina]);
     return result.rows;
   }
 
   async countInscritosPorHorario(id_disc_horario) {
     const query = `
-      SELECT COUNT(*) as total 
-      FROM "Academia Forca&Fitness"."Detalles_Matricula" 
-      WHERE "Id_DiscHorario" = $1 
-      AND "Fecha_Fin" >= CURRENT_DATE
+      SELECT COUNT(*) AS total
+      FROM ${SCHEMA}."Detalles_Matricula"
+      WHERE "Id_DiscHorario" = $1
+        AND "Fecha_Fin" >= CURRENT_DATE
     `;
+
     const result = await db.query(query, [id_disc_horario]);
+
     return parseInt(result.rows[0].total, 10);
   }
 
-  async findEstudianteByDocumento(tipo_documento, numero_documento) {
-    const docQuery = `SELECT "Id_Documento" FROM "Academia Forca&Fitness"."Documento_Identificacion" WHERE "Tipo_Documento" = $1 LIMIT 1`;
-    const docResult = await db.query(docQuery, [tipo_documento]);
-    const id_doc = docResult.rows.length > 0 ? docResult.rows[0].Id_Documento : 'DOC01'; 
+
+  // =========================================================
+  // GENERACIÓN DE IDs
+  // ALU01, USU01, MAT01, DET01, CON01...
+  // =========================================================
+
+  async generateId(client, tabla, columna, prefijo) {
+
+    // Evita que dos registros generen el mismo correlativo
+    // dentro de transacciones simultáneas.
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtext($1))',
+      [`${tabla}_${columna}_${prefijo}`]
+    );
+
+    const posicionInicio = prefijo.length + 1;
 
     const query = `
-      SELECT "Id_alumno" as id FROM "Academia Forca&Fitness"."Alumno" 
-      WHERE "Id_Documento" = $1 AND "Numero_Documento" = $2
+      SELECT COALESCE(
+        MAX(
+          CAST(
+            SUBSTRING("${columna}" FROM ${posicionInicio})
+            AS INTEGER
+          )
+        ),
+        0
+      ) + 1 AS siguiente
+      FROM ${SCHEMA}."${tabla}"
+      WHERE "${columna}" LIKE $1
     `;
-    const result = await db.query(query, [id_doc, numero_documento]);
+
+    const result = await client.query(
+      query,
+      [`${prefijo}%`]
+    );
+
+    const numero = Number(result.rows[0].siguiente);
+
+    return `${prefijo}${String(numero).padStart(2, '0')}`;
+  }
+
+
+  // =========================================================
+  // ALUMNO
+  // =========================================================
+
+  async findEstudianteByDocumento(
+    tipo_documento,
+    numero_documento
+  ) {
+
+    const docQuery = `
+      SELECT "Id_Documento"
+      FROM ${SCHEMA}."Documento_Identificacion"
+      WHERE UPPER("Tipo_Documento") = UPPER($1)
+      LIMIT 1
+    `;
+
+    const docResult = await db.query(
+      docQuery,
+      [tipo_documento]
+    );
+
+    if (docResult.rows.length === 0) {
+      return null;
+    }
+
+    const idDocumento = docResult.rows[0].Id_Documento;
+
+    const query = `
+      SELECT
+        "Id_alumno" AS id
+      FROM ${SCHEMA}."Alumno"
+      WHERE "Id_Documento" = $1
+        AND "Numero_Documento" = $2
+      LIMIT 1
+    `;
+
+    const result = await db.query(
+      query,
+      [
+        idDocumento,
+        numero_documento
+      ]
+    );
+
     return result.rows[0] || null;
   }
 
-  generateId(prefix) {
-    return prefix + Math.floor(100000 + Math.random() * 900000).toString();
-  }
 
   async createEstudiante(data, client = db) {
-    const docQuery = `SELECT "Id_Documento" FROM "Academia Forca&Fitness"."Documento_Identificacion" WHERE "Tipo_Documento" = $1 LIMIT 1`;
-    const docResult = await client.query(docQuery, [data.tipo_documento]);
-    const id_doc = docResult.rows.length > 0 ? docResult.rows[0].Id_Documento : 'DOC01'; 
 
-    const id_alumno = this.generateId('ALU');
-    const id_usuario = this.generateId('USR');
-
-    const query = `
-      INSERT INTO "Academia Forca&Fitness"."Alumno" (
-        "Id_alumno", "Nombre", "Apellido_Paterno", "Apellido_Materno",
-        "Fecha_Nacimiento", "Genero", "Direccion", "Estado_Alumno", 
-        "Id_Documento", "Numero_Documento"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVO', $8, $9)
+    // Buscar tipo de documento real
+    const docQuery = `
+      SELECT "Id_Documento"
+      FROM ${SCHEMA}."Documento_Identificacion"
+      WHERE UPPER("Tipo_Documento") = UPPER($1)
+      LIMIT 1
     `;
-    const values = [
-      id_alumno, data.nombres, data.apellido_paterno, data.apellido_materno,
-      data.fecha_nacimiento, data.genero || 'OTRO', data.direccion || 'Sin direccion',
-      id_doc, data.numero_documento
-    ];
-    await client.query(query, values);
 
+    const docResult = await client.query(
+      docQuery,
+      [data.tipo_documento]
+    );
+
+    if (docResult.rows.length === 0) {
+      throw new Error(
+        `El tipo de documento ${data.tipo_documento} no está registrado en la base de datos.`
+      );
+    }
+
+    const idDocumento =
+      docResult.rows[0].Id_Documento;
+
+
+    // Generar ALUxx
+    const idAlumno = await this.generateId(
+      client,
+      'Alumno',
+      'Id_alumno',
+      'ALU'
+    );
+
+
+    // Separar primer y segundo nombre
+    const nombresArray =
+      data.nombres.trim().split(/\s+/);
+
+    const primerNombre =
+      nombresArray.shift();
+
+    const segundoNombre =
+      nombresArray.length > 0
+        ? nombresArray.join(' ')
+        : null;
+
+
+    // Crear Alumno
+    const query = `
+      INSERT INTO ${SCHEMA}."Alumno" (
+        "Id_alumno",
+        "Nombre",
+        "Segundo_Nombre",
+        "Apellido_Paterno",
+        "Apellido_Materno",
+        "Fecha_Nacimiento",
+        "Genero",
+        "Direccion",
+        "Estado_Alumno",
+        "Id_Documento",
+        "Numero_Documento"
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        'ACTIVO',
+        $9,
+        $10
+      )
+    `;
+
+    await client.query(
+      query,
+      [
+        idAlumno,
+        primerNombre,
+        segundoNombre,
+        data.apellido_paterno,
+        data.apellido_materno,
+        data.fecha_nacimiento,
+        data.genero || 'OTRO',
+        data.direccion || 'Sin direccion',
+        idDocumento,
+        data.numero_documento
+      ]
+    );
+
+
+    // Guardar correo como método de contacto
     if (data.correo_electronico) {
-      await client.query(`INSERT INTO "Academia Forca&Fitness"."Metodo_Contacto" ("Id_contacto", "Tipo_Contacto", "Contacto", "Id_alumno") VALUES ($1, 'CORREO', $2, $3)`, [this.generateId('CON'), data.correo_electronico, id_alumno]);
+
+      const idContactoCorreo =
+        await this.generateId(
+          client,
+          'Metodo_Contacto',
+          'Id_contacto',
+          'CON'
+        );
+
+      await client.query(
+        `
+          INSERT INTO ${SCHEMA}."Metodo_Contacto" (
+            "Id_contacto",
+            "Tipo_Contacto",
+            "Contacto",
+            "Id_alumno"
+          )
+          VALUES ($1, 'CORREO', $2, $3)
+        `,
+        [
+          idContactoCorreo,
+          data.correo_electronico,
+          idAlumno
+        ]
+      );
     }
+
+
+    // Guardar celular
     if (data.numero_celular) {
-      await client.query(`INSERT INTO "Academia Forca&Fitness"."Metodo_Contacto" ("Id_contacto", "Tipo_Contacto", "Contacto", "Id_alumno") VALUES ($1, 'CELULAR', $2, $3)`, [this.generateId('CON'), data.numero_celular, id_alumno]);
+
+      const idContactoCelular =
+        await this.generateId(
+          client,
+          'Metodo_Contacto',
+          'Id_contacto',
+          'CON'
+        );
+
+      await client.query(
+        `
+          INSERT INTO ${SCHEMA}."Metodo_Contacto" (
+            "Id_contacto",
+            "Tipo_Contacto",
+            "Contacto",
+            "Id_alumno"
+          )
+          VALUES ($1, 'CELULAR', $2, $3)
+        `,
+        [
+          idContactoCelular,
+          data.numero_celular,
+          idAlumno
+        ]
+      );
     }
 
+
+    // Generar USUxx
+    const idUsuario = await this.generateId(
+      client,
+      'Usuario',
+      'Id_Usuario',
+      'USU'
+    );
+
+
+    // Crear Usuario vinculado al Alumno
     const userQuery = `
-      INSERT INTO "Academia Forca&Fitness"."Usuario" (
-        "Id_Usuario", "Correo", "Password_Hash", "Estado_Usuario", "Id_Rol", "Id_alumno"
-      ) VALUES ($1, $2, $3, 'ACTIVO', 'ROL04', $4)
+      INSERT INTO ${SCHEMA}."Usuario" (
+        "Id_Usuario",
+        "Correo",
+        "Password_Hash",
+        "Estado_Usuario",
+        "Id_Rol",
+        "Id_Profesor",
+        "Id_alumno"
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        'PENDIENTE',
+        'ROL04',
+        NULL,
+        $4
+      )
     `;
-    await client.query(userQuery, [id_usuario, data.correo_electronico, data.password_hash, id_alumno]);
 
-    return id_alumno;
+    await client.query(
+      userQuery,
+      [
+        idUsuario,
+        data.correo_electronico,
+        data.password_hash,
+        idAlumno
+      ]
+    );
+
+
+    return idAlumno;
   }
 
-  async updateEstudiante(id, data, client = db) {
+
+  // =========================================================
+  // ACTUALIZAR ALUMNO EXISTENTE
+  // =========================================================
+
+  async updateEstudiante(
+    id,
+    data,
+    client = db
+  ) {
+
+    const nombresArray =
+      data.nombres.trim().split(/\s+/);
+
+    const primerNombre =
+      nombresArray.shift();
+
+    const segundoNombre =
+      nombresArray.length > 0
+        ? nombresArray.join(' ')
+        : null;
+
+
     const query = `
-      UPDATE "Academia Forca&Fitness"."Alumno"
-      SET "Nombre" = $1, "Apellido_Paterno" = $2, "Apellido_Materno" = $3,
-          "Fecha_Nacimiento" = $4, "Genero" = $5, "Direccion" = $6
-      WHERE "Id_alumno" = $7
+      UPDATE ${SCHEMA}."Alumno"
+      SET
+        "Nombre" = $1,
+        "Segundo_Nombre" = $2,
+        "Apellido_Paterno" = $3,
+        "Apellido_Materno" = $4,
+        "Fecha_Nacimiento" = $5,
+        "Genero" = $6,
+        "Direccion" = $7
+      WHERE "Id_alumno" = $8
     `;
-    await client.query(query, [data.nombres, data.apellido_paterno, data.apellido_materno, data.fecha_nacimiento, data.genero, data.direccion, id]);
-    
-    // Update Usuario
-    await client.query(`UPDATE "Academia Forca&Fitness"."Usuario" SET "Correo" = $1, "Password_Hash" = $2 WHERE "Id_alumno" = $3`, [data.correo_electronico, data.password_hash, id]);
+
+    await client.query(
+      query,
+      [
+        primerNombre,
+        segundoNombre,
+        data.apellido_paterno,
+        data.apellido_materno,
+        data.fecha_nacimiento,
+        data.genero,
+        data.direccion,
+        id
+      ]
+    );
+
+
+    // Verificar si el alumno ya tiene Usuario
+    const usuarioExistente =
+      await client.query(
+        `
+          SELECT "Id_Usuario"
+          FROM ${SCHEMA}."Usuario"
+          WHERE "Id_alumno" = $1
+          LIMIT 1
+        `,
+        [id]
+      );
+
+
+    if (usuarioExistente.rows.length > 0) {
+
+      // Si ya tiene usuario, actualizar credenciales
+      await client.query(
+        `
+          UPDATE ${SCHEMA}."Usuario"
+          SET
+            "Correo" = $1,
+            "Password_Hash" = $2
+          WHERE "Id_alumno" = $3
+        `,
+        [
+          data.correo_electronico,
+          data.password_hash,
+          id
+        ]
+      );
+
+    } else {
+
+      // Alumno presencial sin cuenta:
+      // crearle Usuario al registrarse en el portal.
+      const idUsuario =
+        await this.generateId(
+          client,
+          'Usuario',
+          'Id_Usuario',
+          'USU'
+        );
+
+      await client.query(
+        `
+          INSERT INTO ${SCHEMA}."Usuario" (
+            "Id_Usuario",
+            "Correo",
+            "Password_Hash",
+            "Estado_Usuario",
+            "Id_Rol",
+            "Id_Profesor",
+            "Id_alumno"
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            'PENDIENTE',
+            'ROL04',
+            NULL,
+            $4
+          )
+        `,
+        [
+          idUsuario,
+          data.correo_electronico,
+          data.password_hash,
+          id
+        ]
+      );
+    }
   }
 
-  async createMatricula(estudiante_id, observaciones_medicas, client = db) {
-    const id_matricula = this.generateId('MAT');
+
+  // =========================================================
+  // MATRÍCULA
+  // =========================================================
+
+  async createMatricula(
+    estudiante_id,
+    observaciones_medicas,
+    client = db
+  ) {
+
+    const idMatricula =
+      await this.generateId(
+        client,
+        'Matricula',
+        'Id_Matricula',
+        'MAT'
+      );
+
     const query = `
-      INSERT INTO "Academia Forca&Fitness"."Matricula" ("Id_Matricula", "Fecha_Inscripcion", "Estado_Matricula", "Id_alumno")
-      VALUES ($1, CURRENT_DATE, 'PENDIENTE', $2)
+      INSERT INTO ${SCHEMA}."Matricula" (
+        "Id_Matricula",
+        "Fecha_Inscripcion",
+        "Estado_Matricula",
+        "Id_alumno"
+      )
+      VALUES (
+        $1,
+        CURRENT_DATE,
+        'PENDIENTE',
+        $2
+      )
     `;
-    await client.query(query, [id_matricula, estudiante_id]);
-    return id_matricula;
+
+    await client.query(
+      query,
+      [
+        idMatricula,
+        estudiante_id
+      ]
+    );
+
+    return idMatricula;
   }
 
-  async addDisciplinasAMatricula(matricula_id, disciplinasIds, client = db) {
+
+  // =========================================================
+  // DETALLES DE MATRÍCULA
+  // =========================================================
+
+  async addDisciplinasAMatricula(
+    matricula_id,
+    disciplinasIds,
+    client = db
+  ) {
+
     for (const disciplina_id of disciplinasIds) {
-      const id_det_matricula = this.generateId('DET');
-      
-      const hor = await client.query(`SELECT "Id_DiscHorario" FROM "Academia Forca&Fitness"."Disciplina_Horario" WHERE "Id_Disciplina" = $1 LIMIT 1`, [disciplina_id]);
-      
-      if (hor.rows.length > 0) {
-         await client.query(`
-          INSERT INTO "Academia Forca&Fitness"."Detalles_Matricula" ("Id_DetMatricula", "Id_Matricula", "Fecha_Inicio", "Fecha_Fin", "Id_DiscHorario")
-          VALUES ($1, $2, CURRENT_DATE, CURRENT_DATE + interval '30 days', $3)
-         `, [id_det_matricula, matricula_id, hor.rows[0].Id_DiscHorario]);
+
+      // Buscar un horario asociado a la disciplina
+      const horarioResult =
+        await client.query(
+          `
+            SELECT "Id_DiscHorario"
+            FROM ${SCHEMA}."Disciplina_Horario"
+            WHERE "Id_Disciplina" = $1
+            ORDER BY "Id_DiscHorario"
+            LIMIT 1
+          `,
+          [disciplina_id]
+        );
+
+
+      if (horarioResult.rows.length === 0) {
+        throw new Error(
+          `La disciplina ${disciplina_id} no tiene un horario configurado.`
+        );
       }
+
+
+      const idDetalle =
+        await this.generateId(
+          client,
+          'Detalles_Matricula',
+          'Id_DetMatricula',
+          'DET'
+        );
+
+
+      await client.query(
+        `
+          INSERT INTO ${SCHEMA}."Detalles_Matricula" (
+            "Id_DetMatricula",
+            "Id_Matricula",
+            "Fecha_Inicio",
+            "Fecha_Fin",
+            "Id_DiscHorario"
+          )
+          VALUES (
+            $1,
+            $2,
+            CURRENT_DATE,
+            (CURRENT_DATE + INTERVAL '30 days')::date,
+            $3
+          )
+        `,
+        [
+          idDetalle,
+          matricula_id,
+          horarioResult.rows[0].Id_DiscHorario
+        ]
+      );
     }
   }
 }

@@ -19,6 +19,16 @@ async function login(correo, password) {
     throw new Error('CREDENCIALES_INVALIDAS');
   }
 
+  // El usuario solo puede ingresar cuando su cuenta esté habilitada.
+  // Al registrarse queda PENDIENTE hasta que se confirme el pago.
+  const estadoUsuario = String(
+    usuario.Estado_Usuario || ''
+  ).toUpperCase();
+
+  if (estadoUsuario !== 'ACTIVO') {
+    throw new Error('USUARIO_NO_HABILITADO');
+  }
+
   const rolesValidos = Object.values(ROLES);
 
   if (!rolesValidos.includes(usuario.Rol)) {

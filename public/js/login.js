@@ -47,3 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+togglePassword.addEventListener('click', () => {
+    const mostrar = passwordInput.type === 'password';
+
+    passwordInput.type = mostrar ? 'text' : 'password';
+
+    togglePassword.setAttribute(
+        'aria-label',
+        mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña'
+    );
+});

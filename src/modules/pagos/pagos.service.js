@@ -6,6 +6,7 @@ const client = new MercadoPagoConfig({
 });
 
 class PagosService {
+
     async crearPreferencia(datosMatricula) {
         const preference = new Preference(client);
 
@@ -30,35 +31,96 @@ class PagosService {
         };
 
         const resultado = await preference.create({ body });
+
         return resultado;
     }
 
-    async procesarWebhook(tipo, id) {
-        if (tipo !== 'payment') return null;
 
-        console.log('Webhook recibido - tipo:', tipo, 'id:', id);
+    async procesarWebhook(tipo, id) {
+
+        if (tipo !== 'payment') {
+            return null;
+        }
+
+        console.log(
+            'Webhook recibido - tipo:',
+            tipo,
+            'id:',
+            id
+        );
 
         const payment = new Payment(client);
+
         const pago = await payment.get({ id });
 
-        console.log('Estado del pago:', pago.status);
-        console.log('ID matrícula:', pago.external_reference);
+        console.log(
+            'Estado del pago:',
+            pago.status
+        );
+
+        console.log(
+            'ID matrícula:',
+            pago.external_reference
+        );
+
 
         const estadoMP = pago.status;
         const idMatricula = pago.external_reference;
 
-        const estadoPago = estadoMP === 'approved' ? 'APROBADO'
-            : estadoMP === 'rejected' ? 'RECHAZADO'
-            : 'PENDIENTE';
 
-        const estadoMatricula = estadoMP === 'approved' ? 'Activa'
-            : estadoMP === 'rejected' ? 'Inactiva'
-            : 'Pendiente';
+        const estadoPago =
+            estadoMP === 'approved'
+                ? 'APROBADO'
+                : estadoMP === 'rejected'
+                    ? 'RECHAZADO'
+                    : 'PENDIENTE';
 
-        await pagosRepository.actualizarEstadoPago(idMatricula, estadoPago);
-        await pagosRepository.actualizarEstadoMatricula(idMatricula, estadoMatricula);
 
-        return { estadoPago, estadoMatricula };
+        const estadoMatricula =
+            estadoMP === 'approved'
+                ? 'Activa'
+                : estadoMP === 'rejected'
+                    ? 'Inactiva'
+                    : 'Pendiente';
+
+
+        // Actualizar pago
+        await pagosRepository.actualizarEstadoPago(
+            idMatricula,
+            estadoPago
+        );
+
+
+        // Actualizar matrícula
+        await pagosRepository.actualizarEstadoMatricula(
+            idMatricula,
+            estadoMatricula
+        );
+
+
+        // SOLO si el pago fue aprobado,
+        // habilitamos la cuenta del alumno.
+        let usuarioActivado = null;
+
+        if (estadoMP === 'approved') {
+
+            usuarioActivado =
+                await pagosRepository.activarUsuarioPorMatricula(
+                    idMatricula
+                );
+
+            console.log(
+                'Usuario habilitado:',
+                usuarioActivado
+            );
+        }
+
+
+        return {
+            estadoPago,
+            estadoMatricula,
+            usuarioActivado
+        };
     }
 }
 
