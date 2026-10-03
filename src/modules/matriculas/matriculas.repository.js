@@ -27,13 +27,13 @@ class MatriculasRepository {
     const query = `
       INSERT INTO estudiantes (
         tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno,
-        fecha_nacimiento, correo_electronico, numero_celular, genero, direccion
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        fecha_nacimiento, correo_electronico, password_hash, numero_celular, genero, direccion
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id
     `;
     const values = [
       data.tipo_documento, data.numero_documento, data.nombres, data.apellido_paterno, data.apellido_materno,
-      data.fecha_nacimiento, data.correo_electronico, data.numero_celular, data.genero, data.direccion
+      data.fecha_nacimiento, data.correo_electronico, data.password_hash, data.numero_celular, data.genero, data.direccion
     ];
     const result = await client.query(query, values);
     return result.rows[0].id;
@@ -43,14 +43,14 @@ class MatriculasRepository {
     const query = `
       UPDATE estudiantes
       SET nombres = $1, apellido_paterno = $2, apellido_materno = $3,
-          fecha_nacimiento = $4, correo_electronico = $5, numero_celular = $6,
-          genero = $7, direccion = $8
-      WHERE id = $9
+          fecha_nacimiento = $4, correo_electronico = $5, password_hash = $6,
+          numero_celular = $7, genero = $8, direccion = $9
+      WHERE id = $10
     `;
     const values = [
       data.nombres, data.apellido_paterno, data.apellido_materno,
-      data.fecha_nacimiento, data.correo_electronico, data.numero_celular,
-      data.genero, data.direccion, id
+      data.fecha_nacimiento, data.correo_electronico, data.password_hash,
+      data.numero_celular, data.genero, data.direccion, id
     ];
     await client.query(query, values);
   }
