@@ -3,7 +3,7 @@ const db = require("../../shared/config/database");
 class AlumnosRepository {
   async findAllAlumnos() {
     const query = `
-      SELECT 
+      SELECT DISTINCT ON (a."Id_alumno")
         a."Id_alumno" AS id,
         a."Nombre" AS nombres,
         a."Apellido_Paterno" AS apellido_paterno,
@@ -12,7 +12,7 @@ class AlumnosRepository {
         m."Estado_Matricula" AS estado
       FROM "Academia Forca&Fitness"."Alumno" a
       JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
-      ORDER BY a."Nombre" ASC
+      ORDER BY a."Id_alumno", a."Nombre" ASC
     `;
     const result = await db.query(query);
     return result.rows;
