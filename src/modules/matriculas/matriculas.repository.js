@@ -40,6 +40,7 @@ class MatriculasRepository {
     const id_usuario = this.generateId('USR');
 
     const query = `
+<<<<<<< HEAD
       INSERT INTO "Academia Forca&Fitness"."Alumno" (
         "Id_alumno", "Nombre", "Apellido_Paterno", "Apellido_Materno",
         "Fecha_Nacimiento", "Genero", "Direccion", "Estado_Alumno", 
@@ -50,6 +51,17 @@ class MatriculasRepository {
       id_alumno, data.nombres, data.apellido_paterno, data.apellido_materno,
       data.fecha_nacimiento, data.genero || 'OTRO', data.direccion || 'Sin direccion',
       id_doc, data.numero_documento
+=======
+      INSERT INTO estudiantes (
+        tipo_documento, numero_documento, nombres, apellido_paterno, apellido_materno,
+        fecha_nacimiento, correo_electronico, password_hash, numero_celular, genero, direccion
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id
+    `;
+    const values = [
+      data.tipo_documento, data.numero_documento, data.nombres, data.apellido_paterno, data.apellido_materno,
+      data.fecha_nacimiento, data.correo_electronico, data.password_hash, data.numero_celular, data.genero, data.direccion
+>>>>>>> 3fba9fe59bdbc7449b746d17a0a0338710607d1f
     ];
     await client.query(query, values);
 
@@ -72,6 +84,7 @@ class MatriculasRepository {
 
   async updateEstudiante(id, data, client = db) {
     const query = `
+<<<<<<< HEAD
       UPDATE "Academia Forca&Fitness"."Alumno"
       SET "Nombre" = $1, "Apellido_Paterno" = $2, "Apellido_Materno" = $3,
           "Fecha_Nacimiento" = $4, "Genero" = $5, "Direccion" = $6
@@ -81,6 +94,20 @@ class MatriculasRepository {
     
     // Update Usuario
     await client.query(`UPDATE "Academia Forca&Fitness"."Usuario" SET "Correo" = $1, "Password_Hash" = $2 WHERE "Id_alumno" = $3`, [data.correo_electronico, data.password_hash, id]);
+=======
+      UPDATE estudiantes
+      SET nombres = $1, apellido_paterno = $2, apellido_materno = $3,
+          fecha_nacimiento = $4, correo_electronico = $5, password_hash = $6,
+          numero_celular = $7, genero = $8, direccion = $9
+      WHERE id = $10
+    `;
+    const values = [
+      data.nombres, data.apellido_paterno, data.apellido_materno,
+      data.fecha_nacimiento, data.correo_electronico, data.password_hash,
+      data.numero_celular, data.genero, data.direccion, id
+    ];
+    await client.query(query, values);
+>>>>>>> 3fba9fe59bdbc7449b746d17a0a0338710607d1f
   }
 
   async createMatricula(estudiante_id, observaciones_medicas, client = db) {
