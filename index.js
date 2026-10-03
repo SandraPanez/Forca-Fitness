@@ -8,6 +8,10 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/control-acceso', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'modules', 'alumnos', 'index.html'));
+});
+
 // Registrar módulos (Rutas)
 const {
   matriculasRoutes,
