@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Renderizar las tarjetas en el HTML
     function renderHorarios(horarios) {
         if (horarios.length === 0) {
-            horariosGrid.innerHTML = '<div class="text-muted" style="text-align: center; padding: 2rem;">No hay horarios programados para esta disciplina en este momento.</div>';
+            horariosGrid.innerHTML = '<div class="text-muted" style="text-align: center; padding: 2rem;">No se encontraron horarios disponibles para la disciplina seleccionada</div>';
             return;
         }
 
@@ -72,9 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (horario.cupos_disponibles <= 0) { 
                 badgeClass = 'badge-agotado';
-                badgeText = 'Agotado';
+                badgeText = 'Sin cupos disponibles para este horario';
                 // T_09: Deshabilitar tarjeta visualmente
                 card.classList.add('agotado');
+                card.style.opacity = '0.6';
+                card.style.pointerEvents = 'none';
             } else if (horario.cupos_disponibles <= 5) {
                 badgeClass = 'badge-ultimos';
                 badgeText = 'Últimos cupos';
@@ -86,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="horario-info">
                     <span class="horario-dias">${horario.dias}</span>
                     <span class="horario-horas">${formatHora(horario.hora_inicio)} - ${formatHora(horario.hora_fin)}</span>
+                    <span class="horario-profesor" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Prof. ${horario.profesor_nombre || 'No asignado'}</span>
                 </div>
                 
                 <div class="horario-capacidad">

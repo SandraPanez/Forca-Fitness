@@ -22,9 +22,11 @@ class MatriculasRepository {
         h."Hora_Inicio" AS hora_inicio, 
         h."Hora_Fin" AS hora_fin, 
         h."Turno" AS turno,
-        dh."Capacidad_Max" AS capacidad_max
+        dh."Capacidad_Max" AS capacidad_max,
+        p."Nombre" || ' ' || p."Apellido_Paterno" AS profesor_nombre
       FROM "Academia Forca&Fitness"."Disciplina_Horario" dh
       JOIN "Academia Forca&Fitness"."Horarios" h ON dh."Id_Horario" = h."Id_Horario"
+      LEFT JOIN "Academia Forca&Fitness"."Profesor" p ON dh."Id_Profesor" = p."Id_Profesor"
       WHERE dh."Id_Disciplina" = $1
       ORDER BY h."Hora_Inicio" ASC
     `;
