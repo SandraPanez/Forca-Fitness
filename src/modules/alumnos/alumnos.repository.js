@@ -33,20 +33,20 @@ class AlumnosRepository {
         (
           SELECT string_agg(d."Nombre_Disciplina", ', ')
           FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
-          JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_disc_horario" = dh."Id_disc_horario"
-          JOIN "Academia Forca&Fitness"."Disciplina" d ON dh."Id_disciplina" = d."Id_disciplina"
+          JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
+          JOIN "Academia Forca&Fitness"."Disciplina" d ON dh."Id_Disciplina" = d."Id_Disciplinas"
           WHERE dm."Id_Matricula" = m."Id_Matricula"
         ) AS disciplinas,
         (
           SELECT mc."Contacto" 
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
-          WHERE mc."Id_alumno" = a."Id_alumno" AND mc."Tipo_Contacto" = 'correo'
+          WHERE mc."Id_alumno" = a."Id_alumno" AND mc."Tipo_Contacto" = 'CORREO'
           LIMIT 1
         ) AS correo_electronico,
         (
           SELECT mc."Contacto" 
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
-          WHERE mc."Id_alumno" = a."Id_alumno" AND mc."Tipo_Contacto" = 'celular'
+          WHERE mc."Id_alumno" = a."Id_alumno" AND mc."Tipo_Contacto" = 'CELULAR'
           LIMIT 1
         ) AS numero_celular
       FROM "Academia Forca&Fitness"."Alumno" a
