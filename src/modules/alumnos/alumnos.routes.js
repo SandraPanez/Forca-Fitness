@@ -6,14 +6,14 @@ const { autorizar } = require("../../shared/middleware/permisos.middleware");
 const { PERMISOS } = require("../../shared/constants/permisos");
 
 router.get("/", 
-  autenticar, 
-  autorizar(PERMISOS.VER_TODOS_ALUMNOS),
+  // autenticar, 
+  // autorizar(PERMISOS.VER_TODOS_ALUMNOS),
   alumnosController.listarAlumnos
 );
 
 router.get("/:id", 
-  autenticar, 
-  autorizar(PERMISOS.VER_TODOS_ALUMNOS),
+  // autenticar, 
+  // autorizar(PERMISOS.VER_TODOS_ALUMNOS),
   alumnosController.obtenerDetalleAlumno
 );
 

@@ -6,6 +6,25 @@ class MatriculasService {
     return await matriculasRepository.getDisciplinas();
   }
 
+  async getHorariosPorDisciplina(id_disciplina) {
+    if (!id_disciplina) {
+      throw new Error('El ID de la disciplina es obligatorio.');
+    }
+    const horarios = await matriculasRepository.getHorariosPorDisciplina(id_disciplina);
+    
+    // T_04: Cálculo de cupos disponibles en el servicio
+    for (let horario of horarios) {
+      const inscritos = await matriculasRepository.countInscritosPorHorario(horario.id_disc_horario);
+      horario.cupos_disponibles = horario.capacidad_max - inscritos;
+      
+      if (horario.cupos_disponibles < 0) {
+        horario.cupos_disponibles = 0;
+      }
+    }
+    
+    return horarios;
+  }
+
   async registrarMatricula(datosMatricula) {
     const { disciplinas, observaciones_medicas, password, confirm_password, ...datosEstudiante } = datosMatricula;
 
