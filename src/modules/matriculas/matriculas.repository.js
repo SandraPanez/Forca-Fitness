@@ -14,6 +14,35 @@ class MatriculasRepository {
     return result.rows;
   }
 
+  async getHorariosPorDisciplina(id_disciplina) {
+    const query = `
+      SELECT 
+        dh."Id_DiscHorario" AS id_disc_horario, 
+        h."Dias" AS dias, 
+        h."Hora_Inicio" AS hora_inicio, 
+        h."Hora_Fin" AS hora_fin, 
+        h."Turno" AS turno,
+        dh."Capacidad_Max" AS capacidad_max
+      FROM "Academia Forca&Fitness"."Disciplina_Horario" dh
+      JOIN "Academia Forca&Fitness"."Horarios" h ON dh."Id_Horario" = h."Id_Horario"
+      WHERE dh."Id_Disciplina" = $1
+      ORDER BY h."Hora_Inicio" ASC
+    `;
+    const result = await db.query(query, [id_disciplina]);
+    return result.rows;
+  }
+
+  async countInscritosPorHorario(id_disc_horario) {
+    const query = `
+      SELECT COUNT(*) as total 
+      FROM "Academia Forca&Fitness"."Detalles_Matricula" 
+      WHERE "Id_DiscHorario" = $1 
+      AND "Fecha_Fin" >= CURRENT_DATE
+    `;
+    const result = await db.query(query, [id_disc_horario]);
+    return parseInt(result.rows[0].total, 10);
+  }
+
   async findEstudianteByDocumento(tipo_documento, numero_documento) {
     const docQuery = `SELECT "Id_Documento" FROM "Academia Forca&Fitness"."Documento_Identificacion" WHERE "Tipo_Documento" = $1 LIMIT 1`;
     const docResult = await db.query(docQuery, [tipo_documento]);
