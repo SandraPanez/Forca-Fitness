@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS estudiantes (
     apellido_materno VARCHAR(100) NOT NULL,
     fecha_nacimiento DATE NOT NULL,
     correo_electronico VARCHAR(150) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     numero_celular VARCHAR(20),
     genero VARCHAR(20),
     direccion TEXT,

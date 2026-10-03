@@ -7,7 +7,7 @@ class MatriculasService {
   }
 
   async registrarMatricula(datosMatricula) {
-    const { disciplinas, observaciones_medicas, ...datosEstudiante } = datosMatricula;
+    const { disciplinas, observaciones_medicas, password, confirm_password, ...datosEstudiante } = datosMatricula;
 
     // Validación básica de campos requeridos (T_06)
     if (!datosEstudiante.tipo_documento || !datosEstudiante.numero_documento || !datosEstudiante.nombres) {
@@ -17,6 +17,13 @@ class MatriculasService {
     if (!disciplinas || !Array.isArray(disciplinas) || disciplinas.length === 0) {
       throw new Error('Debe seleccionar al menos una disciplina.');
     }
+
+    if (!password || password !== confirm_password) {
+      throw new Error('La contraseña es inválida o no coinciden.');
+    }
+
+    const bcrypt = require('bcryptjs');
+    datosEstudiante.password_hash = await bcrypt.hash(password, 10);
 
     // Iniciar transacción de base de datos
     const client = await db.pool.connect();
