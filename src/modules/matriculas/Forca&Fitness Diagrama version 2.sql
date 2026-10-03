@@ -262,16 +262,6 @@ CREATE INDEX IF NOT EXISTS idx_detalles_matricula_id_disc_horario
 CREATE INDEX IF NOT EXISTS idx_metodo_contacto_id_alumno
     ON academia_forca_fitness.metodo_contacto (id_alumno);
 
-<<<<<<< HEAD
-CREATE INDEX IF NOT EXISTS idx_disciplina_nombre
-    ON academia_forca_fitness.disciplina (nombre_disciplina);
-
-CREATE INDEX IF NOT EXISTS idx_horarios_turno
-    ON academia_forca_fitness.horarios (turno);
-
-CREATE INDEX IF NOT EXISTS idx_horarios_dias
-    ON academia_forca_fitness.horarios (dias);
-=======
 CREATE INDEX IF NOT EXISTS idx_usuario_id_rol
     ON academia_forca_fitness.usuario (id_rol);
 
@@ -289,4 +279,12 @@ CREATE INDEX IF NOT EXISTS idx_pago_id_mpago
 
 CREATE INDEX IF NOT EXISTS idx_mercado_pago_id_pago
     ON academia_forca_fitness.mercado_pago (id_pago);
->>>>>>> 3fba9fe59bdbc7449b746d17a0a0338710607d1f
+
+CREATE INDEX IF NOT EXISTS idx_disciplina_nombre
+    ON academia_forca_fitness.disciplina (nombre_disciplina);
+
+CREATE INDEX IF NOT EXISTS idx_horarios_turno
+    ON academia_forca_fitness.horarios (turno);
+
+CREATE INDEX IF NOT EXISTS idx_horarios_dias
+    ON academia_forca_fitness.horarios (dias);
