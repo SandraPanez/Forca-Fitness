@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS academia_forca_fitness.disciplina (
     id_disciplina VARCHAR(10) NOT NULL,
     nombre_disciplina VARCHAR(20) NOT NULL,
     descripcion VARCHAR(200) NOT NULL,
+    estado VARCHAR(20) DEFAULT 'HABILITADO',
     CONSTRAINT pk_disciplina PRIMARY KEY (id_disciplina)
 );
 
@@ -278,3 +279,12 @@ CREATE INDEX IF NOT EXISTS idx_pago_id_mpago
 
 CREATE INDEX IF NOT EXISTS idx_mercado_pago_id_pago
     ON academia_forca_fitness.mercado_pago (id_pago);
+
+CREATE INDEX IF NOT EXISTS idx_disciplina_nombre
+    ON academia_forca_fitness.disciplina (nombre_disciplina);
+
+CREATE INDEX IF NOT EXISTS idx_horarios_turno
+    ON academia_forca_fitness.horarios (turno);
+
+CREATE INDEX IF NOT EXISTS idx_horarios_dias
+    ON academia_forca_fitness.horarios (dias);
