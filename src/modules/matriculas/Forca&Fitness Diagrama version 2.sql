@@ -1,10 +1,6 @@
 -- ============================================================
--- Esquema PostgreSQL del modelo Forca&Fitness
+-- Esquema
 -- ============================================================
--- Este archivo es una conversión del modelo original de SQL Server.
--- Se utiliza un nombre de esquema válido para PostgreSQL y nombres en
--- snake_case para evitar identificadores con espacios o caracteres especiales.
-
 CREATE SCHEMA IF NOT EXISTS academia_forca_fitness;
 
 -- ============================================================
@@ -26,6 +22,12 @@ CREATE TABLE IF NOT EXISTS academia_forca_fitness.documento_identificacion (
     tipo_documento VARCHAR(20) NOT NULL,
     CONSTRAINT pk_documento_identificacion PRIMARY KEY (id_documento)
 );
+
+INSERT INTO academia_forca_fitness.documento_identificacion (id_documento, tipo_documento) VALUES
+    ('DOC001', 'DNI'),
+    ('DOC002', 'Carné de extranjería'),
+    ('DOC003', 'Pasaporte')
+ON CONFLICT (id_documento) DO NOTHING;
 
 -- ============================================================
 -- Profesor
@@ -64,8 +66,8 @@ CREATE TABLE IF NOT EXISTS academia_forca_fitness.alumno (
     fecha_nacimiento DATE NOT NULL,
     genero VARCHAR(6) NOT NULL,
     direccion VARCHAR(50) NOT NULL,
-    estado_alumno VARCHAR(15) NOT NULL,
-    id_documento VARCHAR(10),
+    estado_alumno VARCHAR(15) NOT NULL DEFAULT 'ACTIVO',
+    id_documento VARCHAR(10) NOT NULL,
     numero_documento VARCHAR(10) NOT NULL,
     CONSTRAINT pk_alumno PRIMARY KEY (id_alumno),
     CONSTRAINT documento_alumno
@@ -78,9 +80,9 @@ CREATE TABLE IF NOT EXISTS academia_forca_fitness.alumno (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS academia_forca_fitness.matricula (
     id_matricula VARCHAR(10) NOT NULL,
-    fecha_inscripcion DATE NOT NULL,
-    estado_matricula VARCHAR(9) NOT NULL,
-    id_alumno VARCHAR(10),
+    fecha_inscripcion DATE NOT NULL DEFAULT CURRENT_DATE,
+    estado_matricula VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    id_alumno VARCHAR(10) NOT NULL,
     CONSTRAINT pk_matricula PRIMARY KEY (id_matricula),
     CONSTRAINT alumno_matricula
         FOREIGN KEY (id_alumno)
@@ -95,7 +97,7 @@ CREATE TABLE IF NOT EXISTS academia_forca_fitness.disciplina_horario (
     capacidad_max INTEGER NOT NULL,
     id_horario VARCHAR(10) NOT NULL,
     id_disciplina VARCHAR(10) NOT NULL,
-    id_profesor VARCHAR(10),
+    id_profesor VARCHAR(10) NOT NULL,
     CONSTRAINT disciplina_horario_pk PRIMARY KEY (id_disc_horario),
     CONSTRAINT horarios_cupos
         FOREIGN KEY (id_horario)
@@ -135,14 +137,107 @@ CREATE TABLE IF NOT EXISTS academia_forca_fitness.metodo_contacto (
     id_contacto VARCHAR(10) NOT NULL,
     tipo_contacto VARCHAR(8) NOT NULL,
     contacto VARCHAR(50) NOT NULL,
-    id_alumno VARCHAR(10),
+    id_alumno VARCHAR(10) NOT NULL,
     CONSTRAINT pk_metodo_contacto PRIMARY KEY (id_contacto),
     CONSTRAINT alumno_contacto
         FOREIGN KEY (id_alumno)
         REFERENCES academia_forca_fitness.alumno (id_alumno)
 );
 
--- Índices para las claves foráneas consultadas con frecuencia.
+-- ============================================================
+-- Rol
+-- ============================================================
+CREATE TABLE IF NOT EXISTS academia_forca_fitness.rol (
+    id_rol VARCHAR(10) NOT NULL,
+    rol_cargo VARCHAR(20) NOT NULL,
+    CONSTRAINT pk_rol PRIMARY KEY (id_rol)
+);
+
+INSERT INTO academia_forca_fitness.rol (id_rol, rol_cargo) VALUES
+    ('ROL001', 'ADMIN'),
+    ('ROL002', 'PROFESOR'),
+    ('ROL003', 'ALUMNO')
+ON CONFLICT (id_rol) DO NOTHING;
+
+-- ============================================================
+-- Usuario (id_profesor e id_alumno opcionales: es uno u otro)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS academia_forca_fitness.usuario (
+    id_usuario VARCHAR(10) NOT NULL,
+    correo VARCHAR(60) NOT NULL,
+    password_hash VARCHAR(60) NOT NULL,
+    estado_usuario VARCHAR(15) NOT NULL DEFAULT 'ACTIVO',
+    id_rol VARCHAR(10) NOT NULL,
+    id_profesor VARCHAR(10),
+    id_alumno VARCHAR(10),
+    CONSTRAINT pk_usuario PRIMARY KEY (id_usuario),
+    CONSTRAINT uq_usuario_correo UNIQUE (correo),
+    CONSTRAINT rol_usuario
+        FOREIGN KEY (id_rol)
+        REFERENCES academia_forca_fitness.rol (id_rol),
+    CONSTRAINT profesor_usuario
+        FOREIGN KEY (id_profesor)
+        REFERENCES academia_forca_fitness.profesor (id_profesor),
+    CONSTRAINT alumno_usuario
+        FOREIGN KEY (id_alumno)
+        REFERENCES academia_forca_fitness.alumno (id_alumno)
+);
+
+-- ============================================================
+-- Método de pago
+-- ============================================================
+CREATE TABLE IF NOT EXISTS academia_forca_fitness.metodo_pago (
+    id_mpago VARCHAR(10) NOT NULL,
+    nombre_metodo VARCHAR(15) NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    rpasarela BOOLEAN NOT NULL DEFAULT FALSE,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT pk_metodo_pago PRIMARY KEY (id_mpago)
+);
+
+INSERT INTO academia_forca_fitness.metodo_pago (id_mpago, nombre_metodo, descripcion, rpasarela, activo) VALUES
+    ('MP001', 'Mercado Pago', 'Pago en línea con pasarela Mercado Pago', TRUE,  TRUE),
+    ('MP002', 'Efectivo',     'Pago en efectivo en la academia',          FALSE, TRUE)
+ON CONFLICT (id_mpago) DO NOTHING;
+
+-- ============================================================
+-- Pago
+-- ============================================================
+CREATE TABLE IF NOT EXISTS academia_forca_fitness.pago (
+    id_pago VARCHAR(10) NOT NULL,
+    monto DECIMAL(10,2) NOT NULL,
+    estado_pago VARCHAR(15) NOT NULL DEFAULT 'PENDIENTE',
+    fecha_pago TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id_matricula VARCHAR(10) NOT NULL,
+    id_mpago VARCHAR(10) NOT NULL,
+    CONSTRAINT pk_pago PRIMARY KEY (id_pago),
+    CONSTRAINT matricula_pago
+        FOREIGN KEY (id_matricula)
+        REFERENCES academia_forca_fitness.matricula (id_matricula),
+    CONSTRAINT metodo_pago_fk
+        FOREIGN KEY (id_mpago)
+        REFERENCES academia_forca_fitness.metodo_pago (id_mpago)
+);
+
+-- ============================================================
+-- Mercado Pago (detalle de la transacción)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS academia_forca_fitness.mercado_pago (
+    id_mp_transaccion VARCHAR(10) NOT NULL,
+    preference_id VARCHAR(255) NOT NULL,
+    mp_payment_id VARCHAR(100),
+    referencia_ext VARCHAR(255) NOT NULL,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id_pago VARCHAR(10) NOT NULL,
+    CONSTRAINT pk_mercado_pago PRIMARY KEY (id_mp_transaccion),
+    CONSTRAINT pago_mercado_pago
+        FOREIGN KEY (id_pago)
+        REFERENCES academia_forca_fitness.pago (id_pago)
+);
+
+-- ============================================================
+-- Índices para las claves foráneas
+-- ============================================================
 CREATE INDEX IF NOT EXISTS idx_alumno_id_documento
     ON academia_forca_fitness.alumno (id_documento);
 
