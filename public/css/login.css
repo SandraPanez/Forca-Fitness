@@ -219,6 +219,19 @@ body {
     font-size: 14px;
 }
 
+.login-success {
+    display: none;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid #b7dfc4;
+    border-radius: 6px;
+    background: #edf9f1;
+    color: #216e39;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+
 @media (max-width: 900px) {
     .login-page {
         grid-template-columns: 1fr;

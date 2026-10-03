@@ -20,13 +20,32 @@ class PagosController {
     }
 
     async pagoExitoso(req, res) {
-        const { payment_id, status } = req.query;
-        return res.status(200).json({
-            success: true,
-            message: 'Pago realizado correctamente',
-            payment_id,
-            status
-        });
+        try {
+            const { payment_id, status } = req.query;
+
+            if (status === 'approved' && payment_id) {
+
+                // Confirmar el pago también desde la URL de retorno.
+                // Esto actualiza Pago, Matrícula y activa el Usuario.
+                await pagosService.procesarWebhook(
+                    'payment',
+                    payment_id
+                );
+
+                // Al terminar, enviar al usuario al login.
+                return res.redirect('/?pago=exitoso');
+            }
+
+            return res.redirect('/?pago=no_aprobado');
+
+        } catch (error) {
+            console.error(
+                'Error al procesar retorno de pago:',
+                error
+            );
+
+            return res.redirect('/?pago=error');
+        }
     }
 
     async pagoFallido(req, res) {

@@ -1,6 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('loginForm');
     const errorElement = document.getElementById('login-error');
+    const successElement = document.getElementById('login-success');
+
+    const params = new URLSearchParams(window.location.search);
+    const estadoPago = params.get('pago');
+
+    if (estadoPago === 'exitoso') {
+        successElement.textContent =
+            'Pago confirmado. Tu cuenta ya fue habilitada. Ya puedes iniciar sesión.';
+        successElement.style.display = 'block';
+
+        // Limpiar ?pago=exitoso de la URL sin recargar la página
+        window.history.replaceState({}, document.title, '/');
+    }
 
     form.addEventListener('submit', async event => {
         event.preventDefault();
