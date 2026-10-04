@@ -2,6 +2,41 @@ const db = require('../../shared/config/database');
 
 class PagosRepository {
 
+    async obtenerResumenMatricula(idMatricula) {
+        const query = `
+            SELECT
+                COALESCE(SUM(d.tarifa), 0)::NUMERIC AS monto,
+                COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+            JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh
+              ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+            JOIN "Academia Forca&Fitness"."Disciplina" d
+              ON d."Id_Disciplinas" = dh."Id_Disciplina"
+            WHERE dm."Id_Matricula" = $1
+        `;
+        const result = await db.query(query, [idMatricula]);
+        return result.rows[0];
+    }
+
+    async registrarRegistroCobro(datosCobro) {
+        const query = `
+            INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
+            ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
+             "Resultado", "Id_Pago", "Referencia_Operacion")
+            VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5, $6)
+            RETURNING "Id_Registro"
+        `;
+        const result = await db.query(query, [
+            datosCobro.id_registro,
+            datosCobro.monto,
+            datosCobro.medio_pago,
+            datosCobro.resultado,
+            datosCobro.id_pago,
+            datosCobro.referencia_operacion || null
+        ]);
+        return result.rows[0];
+    }
+
     async registrarPagoMercado(datosPago) {
         const query = `
             INSERT INTO "Academia Forca&Fitness"."Pago"
@@ -19,6 +54,12 @@ class PagosRepository {
         if (!result.rows[0]) {
             throw new Error('El método de pago Mercado Pago no está configurado.');
         }
+        await this.registrarTransaccionMP({
+            id_mp_transaccion: `MP${Date.now().toString().slice(-8)}`,
+            preference_id: datosPago.preference_id,
+            referencia_ext: datosPago.id_matricula,
+            id_pago: datosPago.id_pago
+        });
         return result.rows[0];
     }
 
@@ -38,7 +79,87 @@ class PagosRepository {
         if (!result.rows[0]) {
             throw new Error('El método de pago en efectivo no está configurado.');
         }
+        await this.registrarRegistroCobro({
+            id_registro: `REG${Date.now().toString().slice(-14)}`,
+            monto: datosPago.monto,
+            medio_pago: 'EFECTIVO',
+            resultado: 'PENDIENTE',
+            id_pago: result.rows[0].Id_Pago
+        });
         return result.rows[0];
+    }
+
+    async confirmarPagoEfectivo(idMatricula, referenciaOperacion) {
+        const client = await db.pool.connect();
+        try {
+            await client.query('BEGIN');
+            const pago = await client.query(`
+                UPDATE "Academia Forca&Fitness"."Pago"
+                SET "Estado_Pago" = 'APROBADO',
+                    "Referencia_Operacion" = $2
+                WHERE "Id_Matricula" = $1
+                  AND "Id_MPago" = 'MP02'
+                  AND "Estado_Pago" = 'PENDIENTE'
+                  AND ("Fecha_Vencimiento" IS NULL OR "Fecha_Vencimiento" >= CURRENT_TIMESTAMP)
+                RETURNING "Id_Pago", "Monto"
+            `, [idMatricula, referenciaOperacion || null]);
+            if (!pago.rows[0]) {
+                throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
+            }
+            await client.query(`
+                UPDATE "Academia Forca&Fitness"."Matricula"
+                SET "Estado_Matricula" = 'Activa'
+                WHERE "Id_Matricula" = $1
+            `, [idMatricula]);
+            await client.query(`
+                UPDATE "Academia Forca&Fitness"."Usuario" u
+                SET "Estado_Usuario" = 'ACTIVO'
+                FROM "Academia Forca&Fitness"."Matricula" m
+                WHERE m."Id_Matricula" = $1 AND u."Id_alumno" = m."Id_alumno"
+            `, [idMatricula]);
+            await client.query(`
+                INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
+                ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
+                 "Resultado", "Id_Pago", "Referencia_Operacion")
+                VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
+            `, [`REG${Date.now().toString().slice(-14)}`, pago.rows[0].Monto, pago.rows[0].Id_Pago, referenciaOperacion || null]);
+            await client.query('COMMIT');
+            return pago.rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    async anularSolicitudesEfectivoVencidas() {
+        const result = await db.query(`
+            WITH vencidos AS (
+                UPDATE "Academia Forca&Fitness"."Pago"
+                SET "Estado_Pago" = 'ANULADO'
+                WHERE "Id_MPago" = 'MP02'
+                  AND "Estado_Pago" = 'PENDIENTE'
+                  AND "Fecha_Vencimiento" < CURRENT_TIMESTAMP
+                RETURNING "Id_Pago", "Id_Matricula", "Monto"
+            )
+            SELECT * FROM vencidos
+        `);
+        for (const pago of result.rows) {
+            await db.query(`
+                UPDATE "Academia Forca&Fitness"."Matricula"
+                SET "Estado_Matricula" = 'Anulada'
+                WHERE "Id_Matricula" = $1
+            `, [pago.Id_Matricula]);
+            await this.registrarRegistroCobro({
+                id_registro: `REG${Date.now().toString().slice(-14)}`,
+                monto: pago.Monto,
+                medio_pago: 'EFECTIVO',
+                resultado: 'ANULADO',
+                id_pago: pago.Id_Pago
+            });
+        }
+        return result.rows.length;
     }
 
     async registrarPago(datosPago) {
@@ -96,6 +217,26 @@ class PagosRepository {
         return result.rows[0];
     }
 
+    async obtenerTransaccionPorPaymentId(paymentId) {
+        const result = await db.query(`
+            SELECT "Id_Mp_Transaccion", "Id_Pago"
+            FROM "Academia Forca&Fitness"."Mercado_Pago"
+            WHERE "Mp_Payment_Id" = $1
+        `, [String(paymentId)]);
+        return result.rows[0] || null;
+    }
+
+    async asociarPaymentId(datosMP) {
+        const result = await db.query(`
+            UPDATE "Academia Forca&Fitness"."Mercado_Pago"
+            SET "Mp_Payment_Id" = $1
+            WHERE "Id_Pago" = $2
+              AND "Mp_Payment_Id" IS NULL
+            RETURNING "Id_Pago"
+        `, [String(datosMP.mp_payment_id), datosMP.id_pago]);
+        return result.rows[0] || null;
+    }
+
 
     async actualizarEstadoPago(
         id_matricula,
@@ -107,7 +248,8 @@ class PagosRepository {
             WHERE "Id_Matricula" = $2
             RETURNING
                 "Id_Pago",
-                "Estado_Pago"
+                "Estado_Pago",
+                "Monto"
         `;
 
         const result = await db.query(

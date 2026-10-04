@@ -3,6 +3,9 @@
 -- ============================================================
 CREATE SCHEMA IF NOT EXISTS "Academia Forca&Fitness";
 
+ALTER TABLE IF EXISTS "Academia Forca&Fitness"."Disciplina"
+    ADD COLUMN IF NOT EXISTS tarifa INTEGER NOT NULL DEFAULT 150;
+
 ALTER TABLE IF EXISTS "Academia Forca&Fitness"."Documento_Identificacion"
     ALTER COLUMN "Tipo_Documento" TYPE VARCHAR(30);
 
@@ -13,6 +16,7 @@ CREATE TABLE IF NOT EXISTS "Academia Forca&Fitness"."Disciplina" (
     "Id_Disciplinas" VARCHAR(10) NOT NULL,
     "Nombre_Disciplina" VARCHAR(20) NOT NULL,
     "Descripcion" VARCHAR(200) NOT NULL,
+    tarifa INTEGER NOT NULL DEFAULT 150 CHECK (tarifa > 0),
     "Estado" VARCHAR(20) DEFAULT 'HABILITADO',
     CONSTRAINT pk_disciplina PRIMARY KEY ("Id_Disciplinas")
 );
@@ -280,6 +284,14 @@ CREATE INDEX IF NOT EXISTS idx_pago_id_matricula
 
 CREATE INDEX IF NOT EXISTS idx_pago_id_mpago
     ON "Academia Forca&Fitness"."Pago" ("Id_MPago");
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mercado_pago_payment_id
+    ON "Academia Forca&Fitness"."Mercado_Pago" ("Mp_Payment_Id")
+    WHERE "Mp_Payment_Id" IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pago_efectivo_pendiente_matricula
+    ON "Academia Forca&Fitness"."Pago" ("Id_Matricula")
+    WHERE "Id_MPago" = 'MP02' AND "Estado_Pago" = 'PENDIENTE';
 
 CREATE INDEX IF NOT EXISTS idx_mercado_pago_id_pago
     ON "Academia Forca&Fitness"."Mercado_Pago" ("Id_Pago");

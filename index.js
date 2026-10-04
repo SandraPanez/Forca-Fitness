@@ -56,6 +56,20 @@ app.get('/api/health', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
+const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
+const expirationCheck = setInterval(async () => {
+  try {
+    const expired = await require('./src/modules/pagos/pagos.service')
+      .anularSolicitudesEfectivoVencidas();
+    if (expired > 0) {
+      console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
+    }
+  } catch (error) {
+    console.error('Error al anular solicitudes de efectivo vencidas:', error);
+  }
+}, EXPIRATION_CHECK_INTERVAL);
+expirationCheck.unref();
+
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
 });

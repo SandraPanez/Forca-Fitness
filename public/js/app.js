@@ -77,12 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cursos = Array.from(disciplinas)
                     .map((checkbox) => checkbox.closest('label')?.querySelector('.disciplina-name')?.textContent?.trim())
                     .filter(Boolean);
-                const monto = cursos.length * 150;
+                const monto = Number(result.monto);
                 const params = new URLSearchParams({
                     matricula: result.data.matriculaId,
                     nombre,
                     correo,
-                    concepto: `Mensualidad - ${cursos.join(', ')}`,
+                    concepto: `Mensualidad - ${result.disciplinas || cursos.join(', ')}`,
                     monto: String(monto)
                 });
                 window.location.href = `/pagos.html?preview=1&${params.toString()}`;
@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="disciplina-info">
                             <span class="disciplina-name">${d.nombre}</span>
                             <span class="disciplina-desc">${d.descripcion}</span>
+                            <span class="disciplina-tarifa">Tarifa mensual: S/ ${Number(d.tarifa).toFixed(2)}</span>
                         </div>
                         <input type="checkbox" name="disciplinas" value="${d.id}">
                     `;

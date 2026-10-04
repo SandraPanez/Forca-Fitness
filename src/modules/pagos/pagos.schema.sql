@@ -2,6 +2,9 @@ BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS "Academia Forca&Fitness";
 
+ALTER TABLE IF EXISTS "Academia Forca&Fitness"."Disciplina"
+  ADD COLUMN IF NOT EXISTS tarifa INTEGER NOT NULL DEFAULT 150;
+
 ALTER TABLE IF EXISTS "Academia Forca&Fitness"."Pago"
   ADD COLUMN IF NOT EXISTS "Fecha_Vencimiento" TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS "Referencia_Operacion" VARCHAR(255);
@@ -95,5 +98,13 @@ CREATE INDEX IF NOT EXISTS idx_pago_matricula
 CREATE INDEX IF NOT EXISTS idx_pago_vencimiento
   ON "Academia Forca&Fitness"."Pago" ("Fecha_Vencimiento")
   WHERE "Estado_Pago" = 'PENDIENTE';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mercado_pago_payment_id
+  ON "Academia Forca&Fitness"."Mercado_Pago" ("Mp_Payment_Id")
+  WHERE "Mp_Payment_Id" IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pago_efectivo_pendiente_matricula
+  ON "Academia Forca&Fitness"."Pago" ("Id_Matricula")
+  WHERE "Id_MPago" = 'MP02' AND "Estado_Pago" = 'PENDIENTE';
 
 COMMIT;

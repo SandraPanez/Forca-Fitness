@@ -13,13 +13,30 @@ class MatriculasRepository {
       SELECT
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
-        "Descripcion" AS descripcion
+        "Descripcion" AS descripcion,
+        tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
 
     const result = await db.query(query);
     return result.rows;
+  }
+
+  async getResumenMatricula(id_matricula) {
+    const query = `
+      SELECT
+        COALESCE(SUM(d.tarifa), 0)::NUMERIC AS monto,
+        COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+      FROM ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Disciplina_Horario" dh
+        ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      JOIN ${SCHEMA}."Disciplina" d
+        ON d."Id_Disciplinas" = dh."Id_Disciplina"
+      WHERE dm."Id_Matricula" = $1
+    `;
+    const result = await db.query(query, [id_matricula]);
+    return result.rows[0];
   }
 
   async getHorariosPorDisciplina(id_disciplina) {

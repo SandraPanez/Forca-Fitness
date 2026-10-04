@@ -76,7 +76,14 @@ class MatriculasService {
       await matriculasRepository.addDisciplinasAMatricula(matriculaId, disciplinas, client);
 
       await client.query('COMMIT');
-      return { success: true, matriculaId, mensaje: 'Matrícula registrada exitosamente' };
+      const resumen = await matriculasRepository.getResumenMatricula(matriculaId);
+      return {
+        success: true,
+        matriculaId,
+        monto: resumen.monto,
+        disciplinas: resumen.disciplinas,
+        mensaje: 'Matrícula registrada exitosamente'
+      };
 
     } catch (error) {
       await client.query('ROLLBACK');

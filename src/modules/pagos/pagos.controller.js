@@ -38,6 +38,26 @@ class PagosController {
         }
     }
 
+    async confirmarEfectivo(req, res) {
+        try {
+            const pago = await pagosService.confirmarEfectivo(
+                req.body.id_matricula,
+                req.body.referencia_operacion
+            );
+            return res.status(200).json({
+                success: true,
+                data: pago,
+                message: 'Pago en efectivo confirmado'
+            });
+        } catch (error) {
+            console.error('Error al confirmar pago en efectivo:', error);
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
     async pagoExitoso(req, res) {
         try {
             const { payment_id, status } = req.query;
