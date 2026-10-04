@@ -10,7 +10,8 @@ alumnos.
 3. Ejecuta el esquema:
 
 ```bash
-psql -U postgres -d forca_fitness -f "src/modules/matriculas/matriculas.schema.sql"
+psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagrama version 2.sql"
+psql -U postgres -d forca_fitness -f "src/modules/pagos/pagos.schema.sql"
 ```
 
 4. Instala dependencias y ejecuta la aplicación:

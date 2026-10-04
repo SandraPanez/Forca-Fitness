@@ -2,6 +2,45 @@ const db = require('../../shared/config/database');
 
 class PagosRepository {
 
+    async registrarPagoMercado(datosPago) {
+        const query = `
+            INSERT INTO "Academia Forca&Fitness"."Pago"
+            ("Id_Pago", "Monto", "Estado_Pago", "Id_Matricula", "Id_MPago")
+            SELECT $1, $2, 'PENDIENTE', $3, "Id_MPago"
+            FROM "Academia Forca&Fitness"."Metodo_Pago"
+            WHERE UPPER("Nombre_Metodo") = 'MERCADO_PAGO'
+            RETURNING "Id_Pago"
+        `;
+        const result = await db.query(query, [
+            datosPago.id_pago,
+            datosPago.monto,
+            datosPago.id_matricula
+        ]);
+        if (!result.rows[0]) {
+            throw new Error('El método de pago Mercado Pago no está configurado.');
+        }
+        return result.rows[0];
+    }
+
+    async registrarPagoEfectivo(datosPago) {
+        const query = `
+            INSERT INTO "Academia Forca&Fitness"."Pago"
+            ("Id_Pago", "Monto", "Estado_Pago", "Fecha_Vencimiento",
+             "Id_Matricula", "Id_MPago")
+            SELECT $1, $2, 'PENDIENTE', CURRENT_TIMESTAMP + INTERVAL '48 hours',
+                   $3, "Id_MPago"
+            FROM "Academia Forca&Fitness"."Metodo_Pago"
+            WHERE UPPER("Nombre_Metodo") = 'EFECTIVO'
+            RETURNING "Id_Pago", "Monto", "Estado_Pago", "Fecha_Vencimiento",
+                      "Id_Matricula"
+        `;
+        const result = await db.query(query, [datosPago.id_pago, datosPago.monto, datosPago.id_matricula]);
+        if (!result.rows[0]) {
+            throw new Error('El método de pago en efectivo no está configurado.');
+        }
+        return result.rows[0];
+    }
+
     async registrarPago(datosPago) {
         const query = `
             INSERT INTO "Academia Forca&Fitness"."Pago"

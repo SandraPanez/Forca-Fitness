@@ -17,6 +17,25 @@ class PagosController {
                 message: 'Error al crear la preferencia de pago'
             });
         }
+
+    }
+
+    async registrarEfectivo(req, res) {
+        try {
+            const pago = await pagosService.registrarEfectivo(req.body);
+            return res.status(201).json({
+                success: true,
+                data: pago,
+                message: 'Solicitud de pago en efectivo registrada'
+            });
+        } catch (error) {
+            console.error('Error al registrar pago en efectivo:', error);
+            const status = error.message.startsWith('VALIDACION:') ? 400 : 500;
+            return res.status(status).json({
+                success: false,
+                message: error.message.replace(/^VALIDACION:\s*/, '')
+            });
+        }
     }
 
     async pagoExitoso(req, res) {
@@ -32,11 +51,10 @@ class PagosController {
                     payment_id
                 );
 
-                // Al terminar, enviar al usuario al login.
-                return res.redirect('/?pago=exitoso');
+                return res.redirect('/pagos.html?preview=1&resultado=exitoso');
             }
 
-            return res.redirect('/?pago=no_aprobado');
+            return res.redirect('/pagos.html?preview=1&resultado=pendiente');
 
         } catch (error) {
             console.error(
@@ -44,7 +62,7 @@ class PagosController {
                 error
             );
 
-            return res.redirect('/?pago=error');
+            return res.redirect('/pagos.html?preview=1&resultado=fallido');
         }
     }
 

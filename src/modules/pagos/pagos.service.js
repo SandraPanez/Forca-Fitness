@@ -4,17 +4,24 @@ const pagosRepository = require('./pagos.repository');
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN
 });
+const appUrl = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 class PagosService {
 
     async crearPreferencia(datosMatricula) {
+        const monto = Number(datosMatricula.monto);
+        if (!datosMatricula.id_matricula || !datosMatricula.correo ||
+            !Number.isFinite(monto) || monto <= 0) {
+            throw new Error('VALIDACION:La matrícula, el correo y un monto válido son obligatorios.');
+        }
+
         const preference = new Preference(client);
 
         const body = {
             items: [{
                 title: `Matrícula - ${datosMatricula.disciplinas}`,
                 quantity: 1,
-                unit_price: datosMatricula.monto,
+                unit_price: monto,
                 currency_id: 'PEN'
             }],
             payer: {
@@ -22,17 +29,37 @@ class PagosService {
                 email: datosMatricula.correo
             },
             back_urls: {
-                success: 'http://localhost:3000/api/pagos/success',
-                failure: 'http://localhost:3000/api/pagos/failure',
-                pending: 'http://localhost:3000/api/pagos/pending'
+                success: `${appUrl}/api/pagos/success`,
+                failure: `${appUrl}/api/pagos/failure`,
+                pending: `${appUrl}/api/pagos/pending`
             },
             external_reference: datosMatricula.id_matricula,
-            notification_url: 'http://localhost:3000/api/pagos/webhook'
+            notification_url: `${appUrl}/api/pagos/webhook`
         };
 
         const resultado = await preference.create({ body });
 
+        await pagosRepository.registrarPagoMercado({
+            id_pago: `PAG${Date.now()}`,
+            monto,
+            id_matricula: datosMatricula.id_matricula,
+            preference_id: resultado.id
+        });
+
         return resultado;
+    }
+
+    async registrarEfectivo(datosPago) {
+        const monto = Number(datosPago.monto);
+        if (!datosPago.id_matricula || !Number.isFinite(monto) || monto <= 0) {
+            throw new Error('VALIDACION:La matrícula y un monto válido son obligatorios.');
+        }
+
+        return pagosRepository.registrarPagoEfectivo({
+            id_pago: `PAG${Date.now()}`,
+            monto,
+            id_matricula: datosPago.id_matricula
+        });
     }
 
 

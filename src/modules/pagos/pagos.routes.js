@@ -4,6 +4,7 @@ const pagosController = require('./pagos.controller');
 
 // POST /api/pagos/crear-preferencia - Crear preferencia de pago
 router.post('/crear-preferencia', pagosController.crearPreferencia);
+router.post('/efectivo', pagosController.registrarEfectivo);
 
 // GET /api/pagos/success - URL de retorno exitoso
 router.get('/success', pagosController.pagoExitoso);

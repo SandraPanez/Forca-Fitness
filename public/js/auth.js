@@ -25,6 +25,14 @@ function verificarSesion() {
     const token = obtenerToken();
 
     if (!token) {
+        const previewEnabled =
+            document.body?.dataset.previewAuth === 'true' &&
+            new URLSearchParams(window.location.search).get('preview') === '1';
+
+        if (previewEnabled) {
+            return true;
+        }
+
         window.location.href = '/login.html';
         return false;
     }

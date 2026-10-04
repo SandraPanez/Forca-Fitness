@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {
-  res.sendFile(path.join(__dirname, 'src', 'modules', 'alumnos', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'control_acceso.html'));
 });
 
 // Registrar módulos (Rutas)
