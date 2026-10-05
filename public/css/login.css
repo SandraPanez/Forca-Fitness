@@ -219,6 +219,18 @@ body {
     font-size: 14px;
 }
 
+.pending-payment-link {
+    display: block;
+    margin-top: 1rem;
+    padding: .85rem 1rem;
+    border-radius: 6px;
+    background: #f59e0b;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+}
+
 .login-success {
     display: none;
     margin-bottom: 18px;

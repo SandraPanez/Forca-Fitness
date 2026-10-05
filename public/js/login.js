@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('password').value;
 
         errorElement.style.display = 'none';
+        document.getElementById('pending-payment-link')?.remove();
 
         try {
             const response = await fetch('/api/auth/login', {
@@ -38,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (!response.ok) {
+                if (result.pagoPendiente) {
+                    mostrarPagoPendiente(result.pagoPendiente);
+                }
                 throw new Error(result.message || 'No se pudo iniciar sesión');
             }
 
@@ -59,6 +63,27 @@ document.addEventListener('DOMContentLoaded', () => {
             errorElement.style.display = 'block';
         }
     });
+
+    function mostrarPagoPendiente(pago) {
+        const existente = document.getElementById('pending-payment-link');
+        if (existente) existente.remove();
+
+        const params = new URLSearchParams({
+            preview: '1',
+            resultado: 'pendiente',
+            matricula: pago.matricula,
+            nombre: pago.nombre,
+            correo: pago.correo,
+            concepto: `Mensualidad - ${pago.disciplinas || 'Disciplinas seleccionadas'}`,
+            monto: String(pago.monto)
+        });
+        const link = document.createElement('a');
+        link.id = 'pending-payment-link';
+        link.className = 'pending-payment-link';
+        link.href = `/pagos.html?${params.toString()}`;
+        link.textContent = 'Pagar matrícula con Mercado Pago';
+        errorElement.insertAdjacentElement('afterend', link);
+    }
 });
 
 const togglePassword = document.getElementById('togglePassword');

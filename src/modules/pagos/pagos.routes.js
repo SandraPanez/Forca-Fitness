@@ -8,6 +8,12 @@ const { PERMISOS } = require('../../shared/constants/permisos');
 // POST /api/pagos/crear-preferencia - Crear preferencia de pago
 router.post('/crear-preferencia', pagosController.crearPreferencia);
 router.post('/efectivo', pagosController.registrarEfectivo);
+router.get(
+  '/gestion',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  pagosController.listarCobros
+);
 router.post(
   '/efectivo/confirmar',
   autenticar,

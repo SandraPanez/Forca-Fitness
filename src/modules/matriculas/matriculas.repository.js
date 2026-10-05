@@ -39,6 +39,26 @@ class MatriculasRepository {
     return result.rows[0];
   }
 
+  async getMatriculaPendientePorAlumno(alumnoId, client = db) {
+    const result = await client.query(`
+      SELECT m."Id_Matricula" AS matricula
+      FROM ${SCHEMA}."Matricula" m
+      WHERE m."Id_alumno" = $1
+        AND m."Estado_Matricula" IN ('PENDIENTE', 'Pendiente de confirmación')
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ${SCHEMA}."Pago" p
+          WHERE p."Id_Matricula" = m."Id_Matricula"
+            AND p."Id_MPago" = 'MP02'
+            AND p."Estado_Pago" = 'PENDIENTE'
+            AND p."Fecha_Vencimiento" < CURRENT_TIMESTAMP
+        )
+      ORDER BY m."Fecha_Inscripcion" DESC
+      LIMIT 1
+    `, [alumnoId]);
+    return result.rows[0]?.matricula || null;
+  }
+
   async getHorariosPorDisciplina(id_disciplina) {
     const query = `
       SELECT

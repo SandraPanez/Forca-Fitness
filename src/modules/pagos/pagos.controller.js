@@ -1,6 +1,19 @@
 const pagosService = require('./pagos.service');
 
 class PagosController {
+    async listarCobros(req, res) {
+        try {
+            const data = await pagosService.listarCobros(req.query);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al listar cobros:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron cargar los cobros'
+            });
+        }
+    }
+
     async crearPreferencia(req, res) {
         try {
             const datosMatricula = req.body;

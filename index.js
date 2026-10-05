@@ -3,6 +3,9 @@
 const express = require('express');
 const db = require('./src/shared/config/database');
 const path = require('path');
+const { autenticar } = require('./src/shared/middleware/auth.middleware');
+const { autorizar } = require('./src/shared/middleware/permisos.middleware');
+const { PERMISOS } = require('./src/shared/constants/permisos');
 
 const app = express();
 
@@ -13,6 +16,13 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+
+app.get(
+  '/tesoreria.html',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
+);
 
 app.use(express.static(path.join(__dirname, 'public')));
 

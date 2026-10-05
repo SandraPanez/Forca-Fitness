@@ -7,6 +7,14 @@ const client = new MercadoPagoConfig({
 const appUrl = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 class PagosService {
+    async listarCobros(filtros) {
+        return pagosRepository.listarCobros({
+            estado: filtros.estado,
+            medio: filtros.medio,
+            busqueda: filtros.busqueda
+        });
+    }
+
 
     async crearPreferencia(datosMatricula) {
         if (!datosMatricula.id_matricula || !datosMatricula.correo) {

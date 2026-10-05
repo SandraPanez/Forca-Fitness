@@ -2,6 +2,53 @@ const db = require('../../shared/config/database');
 
 class PagosRepository {
 
+    async listarCobros({ estado, medio, busqueda }) {
+        const condiciones = [];
+        const valores = [];
+
+        if (estado) {
+            valores.push(estado.toUpperCase());
+            condiciones.push(`p."Estado_Pago" = $${valores.length}`);
+        }
+        if (medio) {
+            valores.push(medio.toUpperCase());
+            condiciones.push(`UPPER(mp."Nombre_Metodo") = $${valores.length}`);
+        }
+        if (busqueda) {
+            valores.push(`%${busqueda}%`);
+            condiciones.push(`(
+                p."Id_Matricula" ILIKE $${valores.length}
+                OR a."Nombre" || ' ' || a."Apellido_Paterno" || ' ' || a."Apellido_Materno" ILIKE $${valores.length}
+            )`);
+        }
+
+        const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+        const result = await db.query(`
+            SELECT
+                p."Id_Pago" AS id_pago,
+                p."Id_Matricula" AS id_matricula,
+                p."Monto" AS monto,
+                p."Estado_Pago" AS estado_pago,
+                p."Fecha_Pago" AS fecha_pago,
+                p."Fecha_Vencimiento" AS fecha_vencimiento,
+                p."Referencia_Operacion" AS referencia_operacion,
+                UPPER(mp."Nombre_Metodo") AS medio_pago,
+                TRIM(a."Nombre" || ' ' || a."Apellido_Paterno" || ' ' || a."Apellido_Materno") AS alumno,
+                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+            FROM "Academia Forca&Fitness"."Pago" p
+            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+            JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+            LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+            LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+            LEFT JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+            ${where}
+            GROUP BY p."Id_Pago", mp."Nombre_Metodo", a."Nombre", a."Apellido_Paterno", a."Apellido_Materno"
+            ORDER BY p."Fecha_Pago" DESC
+        `, valores);
+        return result.rows;
+    }
+
     async obtenerResumenMatricula(idMatricula) {
         const query = `
             SELECT
