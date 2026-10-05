@@ -3,6 +3,9 @@
 const express = require('express');
 const db = require('./src/shared/config/database');
 const path = require('path');
+const { autenticar } = require('./src/shared/middleware/auth.middleware');
+const { autorizar } = require('./src/shared/middleware/permisos.middleware');
+const { PERMISOS } = require('./src/shared/constants/permisos');
 
 const app = express();
 
@@ -14,10 +17,17 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+app.get(
+  '/tesoreria.html',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {
-  res.sendFile(path.join(__dirname, 'src', 'modules', 'alumnos', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'control_acceso.html'));
 });
 
 // Registrar módulos (Rutas)
@@ -55,6 +65,20 @@ app.get('/api/health', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
+
+const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
+const expirationCheck = setInterval(async () => {
+  try {
+    const expired = await require('./src/modules/pagos/pagos.service')
+      .anularSolicitudesEfectivoVencidas();
+    if (expired > 0) {
+      console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
+    }
+  } catch (error) {
+    console.error('Error al anular solicitudes de efectivo vencidas:', error);
+  }
+}, EXPIRATION_CHECK_INTERVAL);
+expirationCheck.unref();
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);

@@ -1,6 +1,19 @@
 const pagosService = require('./pagos.service');
 
 class PagosController {
+    async listarCobros(req, res) {
+        try {
+            const data = await pagosService.listarCobros(req.query);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al listar cobros:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron cargar los cobros'
+            });
+        }
+    }
+
     async crearPreferencia(req, res) {
         try {
             const datosMatricula = req.body;
@@ -15,6 +28,45 @@ class PagosController {
             return res.status(500).json({
                 success: false,
                 message: 'Error al crear la preferencia de pago'
+            });
+        }
+
+    }
+
+    async registrarEfectivo(req, res) {
+        try {
+            const pago = await pagosService.registrarEfectivo(req.body);
+            return res.status(201).json({
+                success: true,
+                data: pago,
+                message: 'Solicitud de pago en efectivo registrada'
+            });
+        } catch (error) {
+            console.error('Error al registrar pago en efectivo:', error);
+            const status = error.message.startsWith('VALIDACION:') ? 400 : 500;
+            return res.status(status).json({
+                success: false,
+                message: error.message.replace(/^VALIDACION:\s*/, '')
+            });
+        }
+    }
+
+    async confirmarEfectivo(req, res) {
+        try {
+            const pago = await pagosService.confirmarEfectivo(
+                req.body.id_matricula,
+                req.body.referencia_operacion
+            );
+            return res.status(200).json({
+                success: true,
+                data: pago,
+                message: 'Pago en efectivo confirmado'
+            });
+        } catch (error) {
+            console.error('Error al confirmar pago en efectivo:', error);
+            return res.status(400).json({
+                success: false,
+                message: error.message
             });
         }
     }
@@ -32,11 +84,10 @@ class PagosController {
                     payment_id
                 );
 
-                // Al terminar, enviar al usuario al login.
-                return res.redirect('/?pago=exitoso');
+                return res.redirect('/pagos.html?preview=1&resultado=exitoso');
             }
 
-            return res.redirect('/?pago=no_aprobado');
+            return res.redirect('/pagos.html?preview=1&resultado=pendiente');
 
         } catch (error) {
             console.error(
@@ -44,7 +95,7 @@ class PagosController {
                 error
             );
 
-            return res.redirect('/?pago=error');
+            return res.redirect('/pagos.html?preview=1&resultado=fallido');
         }
     }
 

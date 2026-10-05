@@ -13,13 +13,50 @@ class MatriculasRepository {
       SELECT
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
-        "Descripcion" AS descripcion
+        "Descripcion" AS descripcion,
+        tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
 
     const result = await db.query(query);
     return result.rows;
+  }
+
+  async getResumenMatricula(id_matricula) {
+    const query = `
+      SELECT
+        COALESCE(SUM(d.tarifa), 0)::NUMERIC AS monto,
+        COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+      FROM ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Disciplina_Horario" dh
+        ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      JOIN ${SCHEMA}."Disciplina" d
+        ON d."Id_Disciplinas" = dh."Id_Disciplina"
+      WHERE dm."Id_Matricula" = $1
+    `;
+    const result = await db.query(query, [id_matricula]);
+    return result.rows[0];
+  }
+
+  async getMatriculaPendientePorAlumno(alumnoId, client = db) {
+    const result = await client.query(`
+      SELECT m."Id_Matricula" AS matricula
+      FROM ${SCHEMA}."Matricula" m
+      WHERE m."Id_alumno" = $1
+        AND m."Estado_Matricula" IN ('PENDIENTE', 'Pendiente de confirmación')
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ${SCHEMA}."Pago" p
+          WHERE p."Id_Matricula" = m."Id_Matricula"
+            AND p."Id_MPago" = 'MP02'
+            AND p."Estado_Pago" = 'PENDIENTE'
+            AND p."Fecha_Vencimiento" < CURRENT_TIMESTAMP
+        )
+      ORDER BY m."Fecha_Inscripcion" DESC
+      LIMIT 1
+    `, [alumnoId]);
+    return result.rows[0]?.matricula || null;
   }
 
   async getHorariosPorDisciplina(id_disciplina) {

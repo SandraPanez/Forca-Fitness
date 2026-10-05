@@ -65,18 +65,32 @@ class MatriculasService {
         estudianteId = await matriculasRepository.createEstudiante(datosEstudiante, client);
       }
 
-      // 2. Crear la Matrícula
-      const matriculaId = await matriculasRepository.createMatricula(
+      const matriculaExistente = await matriculasRepository.getMatriculaPendientePorAlumno(
+        estudianteId,
+        client
+      );
+      const matriculaId = matriculaExistente || await matriculasRepository.createMatricula(
         estudianteId,
         observaciones_medicas,
         client
       );
 
-      // 3. Asociar las Disciplinas a la Matrícula
-      await matriculasRepository.addDisciplinasAMatricula(matriculaId, disciplinas, client);
+      if (!matriculaExistente) {
+        await matriculasRepository.addDisciplinasAMatricula(matriculaId, disciplinas, client);
+      }
 
       await client.query('COMMIT');
-      return { success: true, matriculaId, mensaje: 'Matrícula registrada exitosamente' };
+      const resumen = await matriculasRepository.getResumenMatricula(matriculaId);
+      return {
+        success: true,
+        matriculaId,
+        monto: resumen.monto,
+        disciplinas: resumen.disciplinas,
+        mensaje: matriculaExistente
+          ? 'Se recuperó tu matrícula pendiente'
+          : 'Matrícula registrada exitosamente',
+        reutilizada: Boolean(matriculaExistente)
+      };
 
     } catch (error) {
       await client.query('ROLLBACK');

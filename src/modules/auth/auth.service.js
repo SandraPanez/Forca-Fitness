@@ -26,7 +26,12 @@ async function login(correo, password) {
   ).toUpperCase();
 
   if (estadoUsuario !== 'ACTIVO') {
-    throw new Error('USUARIO_NO_HABILITADO');
+    const pagoPendiente = await authRepository.buscarMatriculaPendientePorCorreo(correo);
+    const error = new Error(
+      pagoPendiente ? 'USUARIO_PAGO_PENDIENTE' : 'USUARIO_NO_HABILITADO'
+    );
+    error.pagoPendiente = pagoPendiente;
+    throw error;
   }
 
   const rolesValidos = Object.values(ROLES);
