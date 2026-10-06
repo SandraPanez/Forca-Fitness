@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Se abre como /comprobante.html?pago=<código del pago>
     const idPago = new URLSearchParams(window.location.search).get('pago');
+    const setText = (id, value) => {
+        document.getElementById(id).textContent = value;
+    };
 
     try {
         const response = await authFetch(`/api/comprobantes/${encodeURIComponent(idPago)}`);
@@ -8,28 +11,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!response.ok || !result.success) {
             throw new Error(result.message || 'No se pudo cargar el comprobante');
         }
+
+        const comprobante = result.data;
+        setText('numero-comprobante', comprobante.numero);
+        setText('fecha-comprobante', comprobante.fecha);
+        setText('hora-comprobante', comprobante.hora);
     } catch (error) {
         // Sin pago aprobado no hay comprobante que mostrar
         document.getElementById('area-impresion').hidden = true;
         document.getElementById('btn-descargar').disabled = true;
-        document.getElementById('comprobante-message').textContent = error.message;
+        setText('comprobante-message', error.message);
     }
-    
-    const hoy = new Date();
-    
-    const fechaElemento = document.getElementById('fecha-comprobante');
-    fechaElemento.textContent = hoy.toLocaleDateString('sv-SE'); // Formato YYYY-MM-DD
-
-    const horaElemento = document.getElementById('hora-comprobante');
-    horaElemento.textContent = hoy.toLocaleTimeString('es-PE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    }).replace('a. m.', 'a. m.').replace('p. m.', 'p. m.');
 
     document.getElementById('btn-volver').addEventListener('click', () => {
-        window.location.href = 'index.html'; 
+        window.location.href = 'index.html';
     });
 
     document.getElementById('btn-descargar').addEventListener('click', () => {
