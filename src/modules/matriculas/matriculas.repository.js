@@ -14,7 +14,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        tarifa
+        "Tarifa" AS tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
@@ -26,7 +26,7 @@ class MatriculasRepository {
   async getResumenMatricula(id_matricula) {
     const query = `
       SELECT
-        COALESCE(SUM(d.tarifa), 0)::NUMERIC AS monto,
+        COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
         COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
       FROM ${SCHEMA}."Detalles_Matricula" dm
       JOIN ${SCHEMA}."Disciplina_Horario" dh
@@ -51,7 +51,7 @@ class MatriculasRepository {
           WHERE p."Id_Matricula" = m."Id_Matricula"
             AND p."Id_MPago" = 'MP02'
             AND p."Estado_Pago" = 'PENDIENTE'
-            AND p."Fecha_Vencimiento" < CURRENT_TIMESTAMP
+            AND p."Fecha_Pago" + INTERVAL '48 hours' < CURRENT_TIMESTAMP
         )
       ORDER BY m."Fecha_Inscripcion" DESC
       LIMIT 1
@@ -68,12 +68,14 @@ class MatriculasRepository {
         h."Hora_Fin" AS hora_fin,
         h."Turno" AS turno,
         dh."Capacidad_Max" AS capacidad_max,
-        p."Nombre" || ' ' || p."Apellido_Paterno" AS profesor_nombre
+        pp."Nombre" || ' ' || pp."Apellido_Paterno" AS profesor_nombre
       FROM ${SCHEMA}."Disciplina_Horario" dh
       JOIN ${SCHEMA}."Horarios" h
         ON dh."Id_Horario" = h."Id_Horario"
       LEFT JOIN ${SCHEMA}."Profesor" p
         ON dh."Id_Profesor" = p."Id_Profesor"
+      LEFT JOIN ${SCHEMA}."Persona" pp
+      ON p."Id_Persona" = pp."Id_Persona"
       WHERE dh."Id_Disciplina" = $1
       ORDER BY h."Hora_Inicio" ASC
     `;
@@ -166,10 +168,11 @@ class MatriculasRepository {
 
     const query = `
       SELECT
-        "Id_alumno" AS id
-      FROM ${SCHEMA}."Alumno"
-      WHERE "Id_Documento" = $1
-        AND "Numero_Documento" = $2
+        a."Id_alumno" AS id
+      FROM ${SCHEMA}."Alumno" a
+      JOIN ${SCHEMA}."Persona" p ON p."Id_Persona" = a."Id_Persona"
+      WHERE p."Id_Documento" = $1
+        AND p."Numero_Documento" = $2
       LIMIT 1
     `;
 
@@ -232,51 +235,26 @@ class MatriculasRepository {
         : null;
 
 
-    // Crear Alumno
+    const idPersona = await this.generateId(client, 'Persona', 'Id_Persona', 'PER');
+    await client.query(`
+      INSERT INTO ${SCHEMA}."Persona" (
+        "Id_Persona", "Nombre", "Segundo_Nombre", "Apellido_Paterno",
+        "Apellido_Materno", "Fecha_Nacimiento", "Genero", "Direccion",
+        "Numero_Documento", "Id_Documento"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `, [
+      idPersona, primerNombre, segundoNombre, data.apellido_paterno,
+      data.apellido_materno, data.fecha_nacimiento, data.genero || 'OTRO',
+      data.direccion || 'Sin direccion', data.numero_documento, idDocumento
+    ]);
+
     const query = `
       INSERT INTO ${SCHEMA}."Alumno" (
-        "Id_alumno",
-        "Nombre",
-        "Segundo_Nombre",
-        "Apellido_Paterno",
-        "Apellido_Materno",
-        "Fecha_Nacimiento",
-        "Genero",
-        "Direccion",
-        "Estado_Alumno",
-        "Id_Documento",
-        "Numero_Documento"
-      )
-      VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        $5,
-        $6,
-        $7,
-        $8,
-        'ACTIVO',
-        $9,
-        $10
-      )
+        "Id_alumno", "Estado_Alumno", "Condicion", "Id_Persona"
+      ) VALUES ($1, 'ACTIVO', 'Ninguna', $2)
     `;
 
-    await client.query(
-      query,
-      [
-        idAlumno,
-        primerNombre,
-        segundoNombre,
-        data.apellido_paterno,
-        data.apellido_materno,
-        data.fecha_nacimiento,
-        data.genero || 'OTRO',
-        data.direccion || 'Sin direccion',
-        idDocumento,
-        data.numero_documento
-      ]
-    );
+    await client.query(query, [idAlumno, idPersona]);
 
 
     // Guardar correo como método de contacto
@@ -296,14 +274,14 @@ class MatriculasRepository {
             "Id_contacto",
             "Tipo_Contacto",
             "Contacto",
-            "Id_alumno"
+            "Id_Persona"
           )
           VALUES ($1, 'CORREO', $2, $3)
         `,
         [
           idContactoCorreo,
           data.correo_electronico,
-          idAlumno
+          idPersona
         ]
       );
     }
@@ -326,14 +304,14 @@ class MatriculasRepository {
             "Id_contacto",
             "Tipo_Contacto",
             "Contacto",
-            "Id_alumno"
+            "Id_Persona"
           )
           VALUES ($1, 'CELULAR', $2, $3)
         `,
         [
           idContactoCelular,
           data.numero_celular,
-          idAlumno
+          idPersona
         ]
       );
     }
@@ -355,17 +333,13 @@ class MatriculasRepository {
         "Correo",
         "Password_Hash",
         "Estado_Usuario",
-        "Id_Rol",
-        "Id_Profesor",
-        "Id_alumno"
+        "Id_Persona"
       )
       VALUES (
         $1,
         $2,
         $3,
         'PENDIENTE',
-        'ROL04',
-        NULL,
         $4
       )
     `;
@@ -376,8 +350,12 @@ class MatriculasRepository {
         idUsuario,
         data.correo_electronico,
         data.password_hash,
-        idAlumno
+        idPersona
       ]
+    );
+    await client.query(
+      `INSERT INTO ${SCHEMA}."Usuario_Rol" ("Id_Usuario", "Id_Rol") VALUES ($1, 'ROL04')`,
+      [idUsuario]
     );
 
 
@@ -408,16 +386,13 @@ class MatriculasRepository {
 
 
     const query = `
-      UPDATE ${SCHEMA}."Alumno"
+      UPDATE ${SCHEMA}."Persona" p
       SET
-        "Nombre" = $1,
-        "Segundo_Nombre" = $2,
-        "Apellido_Paterno" = $3,
-        "Apellido_Materno" = $4,
-        "Fecha_Nacimiento" = $5,
-        "Genero" = $6,
+        "Nombre" = $1, "Segundo_Nombre" = $2, "Apellido_Paterno" = $3,
+        "Apellido_Materno" = $4, "Fecha_Nacimiento" = $5, "Genero" = $6,
         "Direccion" = $7
-      WHERE "Id_alumno" = $8
+      FROM ${SCHEMA}."Alumno" a
+      WHERE a."Id_alumno" = $8 AND p."Id_Persona" = a."Id_Persona"
     `;
 
     await client.query(
@@ -439,9 +414,10 @@ class MatriculasRepository {
     const usuarioExistente =
       await client.query(
         `
-          SELECT "Id_Usuario"
-          FROM ${SCHEMA}."Usuario"
-          WHERE "Id_alumno" = $1
+          SELECT u."Id_Usuario"
+          FROM ${SCHEMA}."Usuario" u
+          JOIN ${SCHEMA}."Alumno" a ON a."Id_Persona" = u."Id_Persona"
+          WHERE a."Id_alumno" = $1
           LIMIT 1
         `,
         [id]
@@ -453,11 +429,12 @@ class MatriculasRepository {
       // Si ya tiene usuario, actualizar credenciales
       await client.query(
         `
-          UPDATE ${SCHEMA}."Usuario"
+          UPDATE ${SCHEMA}."Usuario" u
           SET
             "Correo" = $1,
             "Password_Hash" = $2
-          WHERE "Id_alumno" = $3
+          FROM ${SCHEMA}."Alumno" a
+          WHERE a."Id_alumno" = $3 AND u."Id_Persona" = a."Id_Persona"
         `,
         [
           data.correo_electronico,
@@ -485,18 +462,14 @@ class MatriculasRepository {
             "Correo",
             "Password_Hash",
             "Estado_Usuario",
-            "Id_Rol",
-            "Id_Profesor",
-            "Id_alumno"
+            "Id_Persona"
           )
           VALUES (
             $1,
             $2,
             $3,
             'PENDIENTE',
-            'ROL04',
-            NULL,
-            $4
+            (SELECT "Id_Persona" FROM ${SCHEMA}."Alumno" WHERE "Id_alumno" = $4)
           )
         `,
         [
@@ -505,6 +478,10 @@ class MatriculasRepository {
           data.password_hash,
           id
         ]
+      );
+      await client.query(
+        `INSERT INTO ${SCHEMA}."Usuario_Rol" ("Id_Usuario", "Id_Rol") VALUES ($1, 'ROL04')`,
+        [idUsuario]
       );
     }
   }

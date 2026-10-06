@@ -55,7 +55,8 @@ class PagosController {
         try {
             const pago = await pagosService.confirmarEfectivo(
                 req.body.id_matricula,
-                req.body.referencia_operacion
+                req.body.referencia_operacion,
+                req.user.id
             );
             return res.status(200).json({
                 success: true,

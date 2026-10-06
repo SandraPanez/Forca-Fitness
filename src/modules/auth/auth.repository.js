@@ -7,11 +7,12 @@ async function buscarPorCorreo(correo) {
       u."Correo",
       u."Password_Hash",
       u."Estado_Usuario",
-      u."Id_Rol",
       r."Rol_Cargo" AS "Rol"
     FROM "Academia Forca&Fitness"."Usuario" u
+    INNER JOIN "Academia Forca&Fitness"."Usuario_Rol" ur
+      ON ur."Id_Usuario" = u."Id_Usuario"
     INNER JOIN "Academia Forca&Fitness"."Rol" r
-      ON r."Id_Rol" = u."Id_Rol"
+      ON r."Id_Rol" = ur."Id_Rol"
     WHERE LOWER(u."Correo") = LOWER($1)
     LIMIT 1
   `;
@@ -26,16 +27,18 @@ async function buscarMatriculaPendientePorCorreo(correo) {
     SELECT
       m."Id_Matricula" AS matricula,
       LOWER(u."Correo") AS correo,
-      TRIM(a."Nombre" || ' ' || COALESCE(a."Segundo_Nombre" || ' ', '') ||
-        a."Apellido_Paterno" || ' ' || a."Apellido_Materno") AS nombre,
-      COALESCE(SUM(d.tarifa), 0)::NUMERIC AS monto,
+      TRIM(p."Nombre" || ' ' || COALESCE(p."Segundo_Nombre" || ' ', '') ||
+        p."Apellido_Paterno" || ' ' || p."Apellido_Materno") AS nombre,
+      COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
       COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas,
       pago."Estado_Pago" AS estado_pago,
-      pago."Fecha_Vencimiento" AS fecha_vencimiento,
+      pago."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,
       UPPER(mp."Nombre_Metodo") AS medio_pago
     FROM "Academia Forca&Fitness"."Usuario" u
+    INNER JOIN "Academia Forca&Fitness"."Persona" p
+      ON p."Id_Persona" = u."Id_Persona"
     INNER JOIN "Academia Forca&Fitness"."Alumno" a
-      ON a."Id_alumno" = u."Id_alumno"
+      ON a."Id_Persona" = p."Id_Persona"
     INNER JOIN "Academia Forca&Fitness"."Matricula" m
       ON m."Id_alumno" = a."Id_alumno"
     INNER JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm
@@ -45,12 +48,12 @@ async function buscarMatriculaPendientePorCorreo(correo) {
     INNER JOIN "Academia Forca&Fitness"."Disciplina" d
       ON d."Id_Disciplinas" = dh."Id_Disciplina"
     LEFT JOIN LATERAL (
-      SELECT p."Estado_Pago", p."Fecha_Vencimiento", p."Id_MPago"
-      FROM "Academia Forca&Fitness"."Pago" p
-      WHERE p."Id_Matricula" = m."Id_Matricula"
-        AND p."Estado_Pago" = 'PENDIENTE'
-        AND (p."Fecha_Vencimiento" IS NULL OR p."Fecha_Vencimiento" >= CURRENT_TIMESTAMP)
-      ORDER BY p."Fecha_Pago" DESC
+      SELECT pay."Estado_Pago", pay."Fecha_Pago", pay."Id_MPago"
+      FROM "Academia Forca&Fitness"."Pago" pay
+      WHERE pay."Id_Matricula" = m."Id_Matricula"
+        AND pay."Estado_Pago" = 'PENDIENTE'
+        AND pay."Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
+      ORDER BY pay."Fecha_Pago" DESC
       LIMIT 1
     ) pago ON TRUE
     LEFT JOIN "Academia Forca&Fitness"."Metodo_Pago" mp
@@ -63,11 +66,11 @@ async function buscarMatriculaPendientePorCorreo(correo) {
         WHERE vencido."Id_Matricula" = m."Id_Matricula"
           AND vencido."Id_MPago" = 'MP02'
           AND vencido."Estado_Pago" = 'PENDIENTE'
-          AND vencido."Fecha_Vencimiento" < CURRENT_TIMESTAMP
+          AND vencido."Fecha_Pago" + INTERVAL '48 hours' < CURRENT_TIMESTAMP
       )
-    GROUP BY m."Id_Matricula", u."Correo", a."Nombre", a."Segundo_Nombre",
-      a."Apellido_Paterno", a."Apellido_Materno", pago."Estado_Pago",
-      pago."Fecha_Vencimiento", mp."Nombre_Metodo", m."Fecha_Inscripcion"
+    GROUP BY m."Id_Matricula", u."Correo", p."Nombre", p."Segundo_Nombre",
+      p."Apellido_Paterno", p."Apellido_Materno", pago."Estado_Pago",
+      pago."Fecha_Pago", mp."Nombre_Metodo", m."Fecha_Inscripcion"
     ORDER BY m."Fecha_Inscripcion" DESC
     LIMIT 1
   `;

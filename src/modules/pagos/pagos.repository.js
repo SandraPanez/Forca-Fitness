@@ -18,7 +18,7 @@ class PagosRepository {
             valores.push(`%${busqueda}%`);
             condiciones.push(`(
                 p."Id_Matricula" ILIKE $${valores.length}
-                OR a."Nombre" || ' ' || a."Apellido_Paterno" || ' ' || a."Apellido_Materno" ILIKE $${valores.length}
+                OR per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno" ILIKE $${valores.length}
             )`);
         }
 
@@ -30,20 +30,20 @@ class PagosRepository {
                 p."Monto" AS monto,
                 p."Estado_Pago" AS estado_pago,
                 p."Fecha_Pago" AS fecha_pago,
-                p."Fecha_Vencimiento" AS fecha_vencimiento,
-                p."Referencia_Operacion" AS referencia_operacion,
+                p."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,
                 UPPER(mp."Nombre_Metodo") AS medio_pago,
-                TRIM(a."Nombre" || ' ' || a."Apellido_Paterno" || ' ' || a."Apellido_Materno") AS alumno,
+                TRIM(per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
                 COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
             FROM "Academia Forca&Fitness"."Pago" p
             JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
             JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
             JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+            JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
             LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
             LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
             LEFT JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
             ${where}
-            GROUP BY p."Id_Pago", mp."Nombre_Metodo", a."Nombre", a."Apellido_Paterno", a."Apellido_Materno"
+            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno"
             ORDER BY p."Fecha_Pago" DESC
         `, valores);
         return result.rows;
@@ -52,7 +52,7 @@ class PagosRepository {
     async obtenerResumenMatricula(idMatricula) {
         const query = `
             SELECT
-                COALESCE(SUM(d.tarifa), 0)::NUMERIC AS monto,
+                COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
                 COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
             FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
             JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh
@@ -113,13 +113,13 @@ class PagosRepository {
     async registrarPagoEfectivo(datosPago) {
         const query = `
             INSERT INTO "Academia Forca&Fitness"."Pago"
-            ("Id_Pago", "Monto", "Estado_Pago", "Fecha_Vencimiento",
+            ("Id_Pago", "Monto", "Estado_Pago",
              "Id_Matricula", "Id_MPago")
-            SELECT $1, $2, 'PENDIENTE', CURRENT_TIMESTAMP + INTERVAL '48 hours',
+            SELECT $1, $2, 'PENDIENTE',
                    $3, "Id_MPago"
             FROM "Academia Forca&Fitness"."Metodo_Pago"
             WHERE UPPER("Nombre_Metodo") = 'EFECTIVO'
-            RETURNING "Id_Pago", "Monto", "Estado_Pago", "Fecha_Vencimiento",
+            RETURNING "Id_Pago", "Monto", "Estado_Pago", "Fecha_Pago",
                       "Id_Matricula"
         `;
         const result = await db.query(query, [datosPago.id_pago, datosPago.monto, datosPago.id_matricula]);
@@ -136,20 +136,20 @@ class PagosRepository {
         return result.rows[0];
     }
 
-    async confirmarPagoEfectivo(idMatricula, referenciaOperacion) {
+    async confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion) {
         const client = await db.pool.connect();
         try {
             await client.query('BEGIN');
             const pago = await client.query(`
                 UPDATE "Academia Forca&Fitness"."Pago"
                 SET "Estado_Pago" = 'APROBADO',
-                    "Referencia_Operacion" = $2
+                    "Id_Usuario_Registro" = $2
                 WHERE "Id_Matricula" = $1
                   AND "Id_MPago" = 'MP02'
                   AND "Estado_Pago" = 'PENDIENTE'
-                  AND ("Fecha_Vencimiento" IS NULL OR "Fecha_Vencimiento" >= CURRENT_TIMESTAMP)
+                  AND "Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
                 RETURNING "Id_Pago", "Monto"
-            `, [idMatricula, referenciaOperacion || null]);
+            `, [idMatricula, idUsuario || null]);
             if (!pago.rows[0]) {
                 throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
             }
@@ -162,7 +162,8 @@ class PagosRepository {
                 UPDATE "Academia Forca&Fitness"."Usuario" u
                 SET "Estado_Usuario" = 'ACTIVO'
                 FROM "Academia Forca&Fitness"."Matricula" m
-                WHERE m."Id_Matricula" = $1 AND u."Id_alumno" = m."Id_alumno"
+                JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+                WHERE m."Id_Matricula" = $1 AND u."Id_Persona" = a."Id_Persona"
             `, [idMatricula]);
             await client.query(`
                 INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
@@ -187,7 +188,7 @@ class PagosRepository {
                 SET "Estado_Pago" = 'ANULADO'
                 WHERE "Id_MPago" = 'MP02'
                   AND "Estado_Pago" = 'PENDIENTE'
-                  AND "Fecha_Vencimiento" < CURRENT_TIMESTAMP
+                  AND "Fecha_Pago" + INTERVAL '48 hours' < CURRENT_TIMESTAMP
                 RETURNING "Id_Pago", "Id_Matricula", "Monto"
             )
             SELECT * FROM vencidos
@@ -359,8 +360,10 @@ class PagosRepository {
             UPDATE "Academia Forca&Fitness"."Usuario" u
             SET "Estado_Usuario" = 'ACTIVO'
             FROM "Academia Forca&Fitness"."Matricula" m
+            JOIN "Academia Forca&Fitness"."Alumno" a
+              ON a."Id_alumno" = m."Id_alumno"
             WHERE m."Id_Matricula" = $1
-              AND u."Id_alumno" = m."Id_alumno"
+              AND u."Id_Persona" = a."Id_Persona"
             RETURNING
                 u."Id_Usuario",
                 u."Correo",
