@@ -1,12 +1,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Se abre como /comprobante.html?pago=<código del pago>
     const idPago = new URLSearchParams(window.location.search).get('pago');
+    const url = `/api/comprobantes/${encodeURIComponent(idPago)}`;
     const setText = (id, value) => {
         document.getElementById(id).textContent = value;
     };
 
     try {
-        const response = await authFetch(`/api/comprobantes/${encodeURIComponent(idPago)}`);
+        const response = await authFetch(url);
         const result = await response.json();
         if (!response.ok || !result.success) {
             throw new Error(result.message || 'No se pudo cargar el comprobante');
@@ -35,7 +36,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'index.html';
     });
 
-    document.getElementById('btn-descargar').addEventListener('click', () => {
-        window.print();
+    // Descarga el recibo virtual en PDF
+    document.getElementById('btn-descargar').addEventListener('click', async () => {
+        setText('comprobante-message', '');
+        try {
+            const response = await authFetch(`${url}/pdf`);
+            if (!response.ok) throw new Error();
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(await response.blob());
+            link.download = `recibo-${idPago}.pdf`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch {
+            setText('comprobante-message', 'No se pudo descargar el comprobante, intente nuevamente');
+        }
     });
 });

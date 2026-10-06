@@ -27,6 +27,9 @@ async function obtenerComprobante(idPago) {
     ...opciones
   }).format(emision);
 
+  const cantidad = montoEnLetras(pago.monto);
+  const periodo = pago.periodo ? `(${pago.periodo})` : '';
+
   return {
     id_pago: pago.id_pago,
     numero: pago.correlativo
@@ -37,11 +40,19 @@ async function obtenerComprobante(idPago) {
     alumno: pago.alumno,
     documento: pago.documento,
     disciplinas: pago.disciplinas || '—',
-    concepto: pago.periodo ? `Mensualidad (${pago.periodo})` : 'Mensualidad',
+    concepto: `Mensualidad ${periodo}`.trim(),
     metodo_pago: METODOS[pago.metodo_pago] || pago.metodo_pago,
     referencia: pago.referencia || '—',
     total: `S/ ${Number(pago.monto).toFixed(2)}`,
-    total_letras: montoEnLetras(pago.monto)
+    total_letras: cantidad,
+
+    // Textos del "Recibo virtual" que se descarga en PDF
+    recibo: {
+      pagador: pago.alumno,
+      cantidad,
+      concepto: `${pago.disciplinas || 'Mensualidad'} ${periodo}`.trim(),
+      fecha: formato({ day: '2-digit', month: '2-digit', year: '2-digit' })
+    }
   };
 }
 

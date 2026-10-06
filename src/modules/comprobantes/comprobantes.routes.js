@@ -12,4 +12,7 @@ router.use(autenticar, autorizar(PERMISOS.GESTIONAR_PAGOS));
 // GET /api/comprobantes/:idPago - Comprobante de un pago aprobado
 router.get('/:idPago', comprobantesController.obtener);
 
+// GET /api/comprobantes/:idPago/pdf - Descarga del recibo virtual en PDF
+router.get('/:idPago/pdf', comprobantesController.descargarPdf);
+
 module.exports = router;
