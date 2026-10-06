@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setText('numero-comprobante', comprobante.numero);
         setText('fecha-comprobante', comprobante.fecha);
         setText('hora-comprobante', comprobante.hora);
+        setText('nombre-alumno', comprobante.alumno);
+        setText('doc-alumno', comprobante.documento);
+        setText('disciplina-alumno', comprobante.disciplinas);
     } catch (error) {
         // Sin pago aprobado no hay comprobante que mostrar
         document.getElementById('area-impresion').hidden = true;

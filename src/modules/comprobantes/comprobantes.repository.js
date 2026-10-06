@@ -13,6 +13,10 @@ async function buscarPorPago(idPago) {
       p."Id_Pago" AS id_pago,
       p."Estado_Pago" AS estado_pago,
       COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_emision,
+      TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') ||
+        per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
+      per."Numero_Documento" AS documento,
+      det.disciplinas,
       (
         SELECT COUNT(DISTINCT rc."Id_Pago")
         FROM ${SCHEMA}."Registro_Cobro" rc
@@ -21,6 +25,9 @@ async function buscarPorPago(idPago) {
           AND DATE_TRUNC('year', rc."Fecha_Hora") = DATE_TRUNC('year', cobro."Fecha_Hora")
       )::int AS correlativo
     FROM ${SCHEMA}."Pago" p
+    JOIN ${SCHEMA}."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+    JOIN ${SCHEMA}."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+    JOIN ${SCHEMA}."Persona" per ON per."Id_Persona" = a."Id_Persona"
     LEFT JOIN LATERAL (
       SELECT rc."Fecha_Hora"
       FROM ${SCHEMA}."Registro_Cobro" rc
@@ -29,6 +36,13 @@ async function buscarPorPago(idPago) {
       ORDER BY rc."Fecha_Hora"
       LIMIT 1
     ) cobro ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina") AS disciplinas
+      FROM ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      JOIN ${SCHEMA}."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+      WHERE dm."Id_Matricula" = m."Id_Matricula"
+    ) det ON TRUE
     WHERE p."Id_Pago" = $1
   `, [idPago]);
 
