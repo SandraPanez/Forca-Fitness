@@ -1,11 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
   const usuario = obtenerUsuario();
+  const rolesUsuario = obtenerRolesUsuario(usuario);
   const rolesPermitidos = ['DIRECTOR', 'TESORERO'];
-  if (!usuario || !rolesPermitidos.includes(usuario.rol)) {
+
+  const tieneAcceso = rolesUsuario.some((rol) =>
+    rolesPermitidos.includes(rol)
+  );
+
+  if (!usuario || !tieneAcceso) {
     window.location.href = '/login.html';
     return;
   }
-
+  
   const tbody = document.getElementById('treasury-tbody');
   const message = document.getElementById('treasury-message');
   const search = document.getElementById('treasury-search');

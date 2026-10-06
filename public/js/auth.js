@@ -16,6 +16,23 @@ function obtenerUsuario() {
     }
 }
 
+function obtenerRolesUsuario(usuario = obtenerUsuario()) {
+    if (!usuario) {
+        return [];
+    }
+
+    if (Array.isArray(usuario.roles) && usuario.roles.length > 0) {
+        return usuario.roles;
+    }
+
+    // Compatibilidad con sesiones anteriores de un solo rol
+    if (usuario.rol) {
+        return [usuario.rol];
+    }
+
+    return [];
+}
+
 function limpiarSesion() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
@@ -69,8 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const usuario = obtenerUsuario();
 
     if (usuario) {
+        const roles = obtenerRolesUsuario(usuario);
+
         document.querySelectorAll('.user-role').forEach(element => {
-            element.textContent = usuario.rol;
+            element.textContent = roles.length > 0
+                ? roles.join(' / ')
+                : 'SIN ROL';
         });
 
         document.querySelectorAll('.user-name').forEach(element => {

@@ -19,24 +19,49 @@ async function login(correo, password) {
     throw new Error('CREDENCIALES_INVALIDAS');
   }
 
-  // El usuario solo puede ingresar cuando su cuenta esté habilitada.
-  // Al registrarse queda PENDIENTE hasta que se confirme el pago.
   const estadoUsuario = String(
     usuario.Estado_Usuario || ''
   ).toUpperCase();
 
   if (estadoUsuario !== 'ACTIVO') {
-    const pagoPendiente = await authRepository.buscarMatriculaPendientePorCorreo(correo);
+    const pagoPendiente =
+      await authRepository.buscarMatriculaPendientePorCorreo(correo);
+
     const error = new Error(
-      pagoPendiente ? 'USUARIO_PAGO_PENDIENTE' : 'USUARIO_NO_HABILITADO'
+      pagoPendiente
+        ? 'USUARIO_PAGO_PENDIENTE'
+        : 'USUARIO_NO_HABILITADO'
     );
+
     error.pagoPendiente = pagoPendiente;
     throw error;
   }
 
   const rolesValidos = Object.values(ROLES);
 
-  if (!rolesValidos.includes(usuario.Rol)) {
+  const rolesUsuario = Array.isArray(usuario.Roles)
+    ? usuario.Roles
+        .map(rol => String(rol).toUpperCase())
+        .filter(rol => rolesValidos.includes(rol))
+    : [];
+
+  if (rolesUsuario.length === 0) {
+    throw new Error('ROL_INVALIDO');
+  }
+
+  // Rol principal para mantener compatibilidad con el código existente.
+  // Si el usuario tiene varios roles, se usa esta prioridad.
+  const prioridadRoles = [
+    ROLES.DIRECTOR,
+    ROLES.TESORERO,
+    ROLES.PROFESOR,
+    ROLES.ALUMNO
+  ];
+
+  const rolPrincipal =
+    prioridadRoles.find(rol => rolesUsuario.includes(rol));
+
+  if (!rolPrincipal) {
     throw new Error('ROL_INVALIDO');
   }
 
@@ -47,7 +72,12 @@ async function login(correo, password) {
   const token = jwt.sign(
     {
       sub: usuario.Id_Usuario,
-      rol: usuario.Rol
+
+      // Compatibilidad con código existente
+      rol: rolPrincipal,
+
+      // Nuevo soporte para múltiples roles
+      roles: rolesUsuario
     },
     process.env.JWT_SECRET,
     {
@@ -59,7 +89,12 @@ async function login(correo, password) {
     usuario: {
       id: usuario.Id_Usuario,
       correo: usuario.Correo,
-      rol: usuario.Rol
+
+      // Compatibilidad
+      rol: rolPrincipal,
+
+      // Todos los roles
+      roles: rolesUsuario
     },
     token
   };

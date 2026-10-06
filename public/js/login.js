@@ -48,11 +48,22 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('token', result.token);
             localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
+            const roles = Array.isArray(result.usuario.roles)
+                ? result.usuario.roles
+                : result.usuario.rol
+                    ? [result.usuario.rol]
+                    : [];
+
             if (
-                result.usuario.rol === 'DIRECTOR' ||
-                result.usuario.rol === 'TESORERO'
+                roles.includes('DIRECTOR') ||
+                roles.includes('TESORERO')
             ) {
                 window.location.href = '/alumnos.html';
+                return;
+            }
+
+            if (roles.includes('PROFESOR')) {
+                window.location.href = '/control-acceso';
                 return;
             }
 

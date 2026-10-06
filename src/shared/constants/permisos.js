@@ -37,14 +37,22 @@ const PERMISOS_POR_ROL = Object.freeze({
   ]
 });
 
-function tienePermiso(rol, permiso) {
-  const permisos = PERMISOS_POR_ROL[rol];
+function tienePermiso(roles, permiso) {
+  const rolesUsuario = Array.isArray(roles)
+    ? roles
+    : roles
+      ? [roles]
+      : [];
 
-  if (!permisos) {
-    return false;
-  }
+  return rolesUsuario.some(rol => {
+    const permisos = PERMISOS_POR_ROL[rol];
 
-  return permisos.includes(permiso);
+    if (!permisos) {
+      return false;
+    }
+
+    return permisos.includes(permiso);
+  });
 }
 
 module.exports = {

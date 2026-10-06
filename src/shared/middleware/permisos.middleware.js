@@ -8,7 +8,7 @@ function autorizar(permiso) {
       });
     }
 
-    if (!tienePermiso(req.user.rol, permiso)) {
+    if (!tienePermiso(req.user.roles, permiso)) {
       return res.status(403).json({
         message: 'No tiene permisos para realizar esta acción'
       });

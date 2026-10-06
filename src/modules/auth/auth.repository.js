@@ -7,13 +7,29 @@ async function buscarPorCorreo(correo) {
       u."Correo",
       u."Password_Hash",
       u."Estado_Usuario",
-      r."Rol_Cargo" AS "Rol"
+      ARRAY_REMOVE(
+        ARRAY_AGG(
+          DISTINCT r."Rol_Cargo"
+          ORDER BY r."Rol_Cargo"
+        ),
+        NULL
+      ) AS "Roles"
     FROM "Academia Forca&Fitness"."Usuario" u
-    INNER JOIN "Academia Forca&Fitness"."Usuario_Rol" ur
+
+    LEFT JOIN "Academia Forca&Fitness"."Usuario_Rol" ur
       ON ur."Id_Usuario" = u."Id_Usuario"
-    INNER JOIN "Academia Forca&Fitness"."Rol" r
+
+    LEFT JOIN "Academia Forca&Fitness"."Rol" r
       ON r."Id_Rol" = ur."Id_Rol"
+
     WHERE LOWER(u."Correo") = LOWER($1)
+
+    GROUP BY
+      u."Id_Usuario",
+      u."Correo",
+      u."Password_Hash",
+      u."Estado_Usuario"
+
     LIMIT 1
   `;
 
