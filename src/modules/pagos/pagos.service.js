@@ -208,8 +208,8 @@ class PagosService {
         };
     }
 
-    async confirmarEfectivo(idMatricula, referenciaOperacion) {
-        return pagosRepository.confirmarPagoEfectivo(idMatricula, referenciaOperacion);
+    async confirmarEfectivo(idMatricula, referenciaOperacion, idUsuario) {
+        return pagosRepository.confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion);
     }
 
     async anularSolicitudesEfectivoVencidas() {
