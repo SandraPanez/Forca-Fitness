@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Clases | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img" onerror="this.src='https://placehold.co/150x50/1a4f8b/FFFFFF?text=FORCA+FITNESS'">
+            <h1>Portal Forca&Fitness</h1>
+        </div>
+        
+        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
+            <!-- Menú superior sincronizado -->
+            <nav class="top-nav">
+                <a href="/alumnos.html">Alumnos</a>
+                <a href="/index.html">Matrículas</a>
+                <a href="/disciplinas.html" class="active">Disciplinas</a>
+                <a href="/pagos.html">Pagos</a>
+            </nav>
+
+            <div class="user-info">
+                <div class="user-details">
+                    <span class="user-name">Paul Bryan Rafael Yepez</span>
+                    <span class="user-role">Tesorero</span>
+                </div>
+                <a href="#" class="logout-btn">Cerrar sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+        
+        <!-- Page Header -->
+        <section class="page-header">
+            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">Consulta de clases</p>
+            <h2 class="title">Horarios y disponibilidad</h2>
+            <p class="description">Revisa los horarios y cupos disponibles por disciplina.</p>
+        </section>
+
+        <!-- Form Card -->
+        <div class="form-card">
+            
+            <div class="filtros-header">
+                <div class="filtros-texto">
+                    <h3>Disponibilidad por disciplina</h3>
+                    <p>Selecciona una disciplina para ver sus horarios.</p>
+                </div>
+                
+                <div class="disciplina-selector form-group">
+                    <label for="disciplina-select">Disciplina</label>
+                    <select id="disciplina-select">
+                        <option value="">Seleccione...</option>
+                        <!-- Mockup de opciones (Se llenarán por JS después) -->
+                        <option value="1">Boxeo</option>
+                        <option value="2">MMA</option>
+                        <option value="3">Muay Thai</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <!-- Grilla de Horarios (Mockup visual para T_06) -->
+            <div id="horarios-grid" class="horarios-grid">
+                
+                <!-- Tarjeta Disponible -->
+                <div class="horario-card">
+                    <div class="horario-info">
+                        <span class="horario-dias">Lunes / Miércoles / Viernes</span>
+                        <span class="horario-horas">7:00 p. m. - 8:00 p. m.</span>
+                    </div>
+                    
+                    <div class="horario-capacidad">
+                        <span class="cupos-text">4 cupos disponibles</span>
+                        <span class="capacidad-text">Capacidad total: 20</span>
+                    </div>
+                    
+                    <div class="horario-estado">
+                        <span class="badge-disponible">Disponible</span>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Últimos Cupos -->
+                <div class="horario-card">
+                    <div class="horario-info">
+                        <span class="horario-dias">Martes / Jueves</span>
+                        <span class="horario-horas">6:00 a. m. - 7:00 a. m.</span>
+                    </div>
+                    
+                    <div class="horario-capacidad">
+                        <span class="cupos-text" style="color: var(--danger-color)">2 cupos disponibles</span>
+                        <span class="capacidad-text">Capacidad total: 15</span>
+                    </div>
+                    
+                    <div class="horario-estado">
+                        <span class="badge-ultimos">Últimos cupos</span>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Agotado -->
+                <div class="horario-card agotado">
+                    <div class="horario-info">
+                        <span class="horario-dias">Sábados / Domingos</span>
+                        <span class="horario-horas">9:00 a. m. - 10:30 a. m.</span>
+                    </div>
+                    
+                    <div class="horario-capacidad">
+                        <span class="cupos-text">0 cupos disponibles</span>
+                        <span class="capacidad-text">Capacidad total: 25</span>
+                    </div>
+                    
+                    <div class="horario-estado">
+                        <span class="badge-agotado">Agotado</span>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/disciplinas.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de cobros | Forca & Fitness</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="treasury-page">
+  <header class="header">
+    <div class="logo"><img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img"><h1>Portal Forca&Fitness</h1></div>
+    <nav class="top-nav"><a href="/alumnos.html">Alumnos</a><a href="/index.html">Matrículas</a><a href="/tesoreria.html" class="active">Tesorería</a></nav>
+    <div class="user-info"><div class="user-details"><span class="user-name">Usuario</span><span class="user-role">Tesorería</span></div><a href="#" class="logout-btn">Cerrar sesión</a></div>
+  </header>
+  <main class="treasury-container">
+    <div class="page-header">
+      <p class="subtitle">TESORERÍA</p>
+      <h2 class="title">Gestión de cobros</h2>
+      <p class="description">Consulta solicitudes, confirma pagos en efectivo y revisa el historial de cobros.</p>
+    </div>
+    <section class="treasury-toolbar" aria-label="Filtros de cobros">
+      <input id="treasury-search" type="search" placeholder="Buscar alumno o matrícula">
+      <select id="treasury-status">
+        <option value="">Todos los estados</option>
+        <option value="PENDIENTE">Pendientes</option>
+        <option value="APROBADO">Aprobados</option>
+        <option value="RECHAZADO">Rechazados</option>
+        <option value="ANULADO">Anulados</option>
+      </select>
+      <select id="treasury-method">
+        <option value="">Todos los medios</option>
+        <option value="EFECTIVO">Efectivo</option>
+        <option value="MERCADO_PAGO">Mercado Pago</option>
+      </select>
+      <button id="treasury-refresh" class="btn-submit" type="button">Actualizar</button>
+    </section>
+    <div id="treasury-message" class="payment-message" role="status"></div>
+    <section class="table-container treasury-table-container">
+      <table class="alumnos-table treasury-table">
+        <thead><tr><th>Alumno / matrícula</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th>Vencimiento</th><th>Acción</th></tr></thead>
+        <tbody id="treasury-tbody"><tr><td colspan="7" class="text-center text-muted">Cargando cobros...</td></tr></tbody>
+      </table>
+    </section>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script src="/js/tesoreria.js"></script>
+</body>
+</html>

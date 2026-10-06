@@ -4,10 +4,8 @@ class AlumnosService {
   async listarAlumnos() {
     const records = await alumnosRepository.findAllAlumnos();
     
-    // Procesar datos (calcular días restantes, iniciales, etc)
     return records.map(al => {
       const hoy = new Date();
-      // Supongamos 30 días por matrícula por defecto (Regla de negocio)
       const fechaVencimiento = new Date(al.fecha_matricula);
       fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
       
@@ -32,7 +30,6 @@ class AlumnosService {
     const record = await alumnosRepository.findAlumnoById(id);
     if (!record) return null;
 
-    // Supongamos 30 días de vigencia
     const hoy = new Date();
     const fechaVencimiento = new Date(record.fecha_matricula);
     fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
@@ -52,7 +49,6 @@ class AlumnosService {
       dni: record.numero_documento,
       correo: record.correo_electronico,
       celular: record.numero_celular || 'No registrado',
-      // Formatear fecha de nacimiento (YYYY-MM-DD a DD/MM/YYYY)
       fecha_nacimiento: new Date(record.fecha_nacimiento).toLocaleDateString('es-PE'),
       direccion: record.direccion || 'No registrada',
       disciplinas: record.disciplinas || 'Ninguna',

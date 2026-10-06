@@ -122,7 +122,7 @@ body {
     display: flex;
     align-items: center;
     margin-bottom: 2rem;
-    width: 400px;
+    width: min(100%, 620px);
 }
 
 .step {
@@ -154,6 +154,8 @@ body {
     font-size: 0.85rem;
     color: var(--text-muted);
     font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .step.active .step-label {
@@ -176,6 +178,224 @@ body {
     border-radius: 8px;
     padding: 2.5rem;
     box-shadow: var(--shadow);
+}
+
+/* Flujo de pago */
+.payment-container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+}
+
+.payment-stepper {
+    display: flex;
+    align-items: center;
+    max-width: 760px;
+    margin: 0 auto 2rem;
+}
+
+.payment-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    color: var(--text-muted);
+    font-size: .85rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.payment-step span {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.payment-step.active,
+.payment-step.completed {
+    color: var(--primary-color);
+}
+
+.payment-step.active span,
+.payment-step.completed span {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.payment-step-line {
+    flex: 1;
+    height: 2px;
+    margin: 0 1rem 1.5rem;
+    background: #d7dce3;
+}
+
+.payment-step-line.active {
+    background: var(--primary-color);
+}
+
+.payment-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, .75fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.payment-form {
+    min-width: 0;
+}
+
+.payment-summary {
+    padding: 1.75rem;
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: var(--shadow);
+}
+
+.summary-student {
+    margin-top: 1.25rem;
+}
+
+.summary-student strong,
+.summary-student small {
+    display: block;
+}
+
+.summary-student small {
+    margin-top: .35rem;
+    color: var(--text-muted);
+}
+
+.payment-summary dl {
+    display: grid;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.payment-summary dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.payment-summary dt {
+    color: var(--text-muted);
+}
+
+.payment-summary dd {
+    margin: 0;
+    text-align: right;
+    font-weight: 600;
+}
+
+.method-option {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: .75rem;
+    cursor: pointer;
+}
+
+.method-option span {
+    display: grid;
+    gap: .25rem;
+}
+
+.method-option small {
+    color: var(--text-muted);
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.15rem;
+}
+
+.summary-total strong {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.treasury-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.treasury-toolbar {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 1rem;
+    margin: 2rem 0 1rem;
+}
+
+.treasury-toolbar input,
+.treasury-toolbar select {
+    min-width: 0;
+    padding: .75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font: inherit;
+}
+
+.treasury-table-container {
+    overflow-x: auto;
+}
+
+.treasury-table {
+    min-width: 1050px;
+}
+
+.treasury-table td small,
+.treasury-muted {
+    display: block;
+    color: var(--text-muted);
+    margin-top: .25rem;
+}
+
+.btn-confirm-cash {
+    border: 0;
+    border-radius: 4px;
+    padding: .55rem .8rem;
+    background: var(--primary-color);
+    color: var(--white);
+    cursor: pointer;
+}
+
+.btn-confirm-cash:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+@media (max-width: 768px) {
+    .treasury-container {
+        padding: 1rem;
+    }
+
+    .treasury-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-step strong {
+        white-space: normal;
+    }
+
+    .payment-step-line {
+        margin-left: .5rem;
+        margin-right: .5rem;
+    }
 }
 
 .form-header {
@@ -286,6 +506,17 @@ body {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(26, 79, 139, 0.1);
+}
+
+.payment-form input[readonly] {
+    background-color: #f3f5f7;
+    color: var(--text-main);
+    cursor: not-allowed;
+}
+
+.payment-form input[readonly]:focus {
+    border-color: var(--border-color);
+    box-shadow: none;
 }
 
 /* Disciplinas specific */
@@ -541,6 +772,40 @@ body {
     .disciplina-card input[type="checkbox"] {
         align-self: flex-end;
     }
+}
+
+
+/* Password wrapper and toggle */
+.position-relative {
+    position: relative;
+}
+.password-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+.password-wrapper input {
+    width: 100%;
+    padding-right: 40px; /* Make room for the button */
+}
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.toggle-password:hover {
+    opacity: 1;
 }
 
 /* ========================================================
@@ -856,5 +1121,157 @@ body {
     }
     .side-panel {
         width: 100%;
+    }
+
+}
+
+/* ========================================================
+   ESTILOS PARA HU-07: CONSULTA DE HORARIOS
+   ======================================================== */
+.horarios-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.horario-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--white);
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+}
+
+.horario-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.horario-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.horario-dias {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.horario-horas {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.horario-capacidad {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    align-items: flex-end;
+    gap: 0.25rem;
+    padding-right: 2rem;
+    border-right: 1px solid var(--border-color);
+    margin-right: 2rem;
+}
+
+.cupos-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.capacidad-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.horario-estado {
+    width: 120px;
+    text-align: right;
+}
+
+.badge-disponible {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-ultimos {
+    background-color: #fff3e0;
+    color: #e65100;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-agotado {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.horario-card.agotado {
+    opacity: 0.6;
+    border-left-color: #c62828;
+    background-color: var(--secondary-color);
+}
+
+.filtros-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filtros-texto h3 {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.filtros-texto p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.disciplina-selector {
+    min-width: 280px;
+}
+
+@media (max-width: 768px) {
+    .horario-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .horario-capacidad {
+        border-right: none;
+        padding-right: 0;
+        margin-right: 0;
+        text-align: left;
+        align-items: flex-start;
+        width: 100%;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+    }
+    
+    .horario-estado {
+        text-align: left;
     }
 }

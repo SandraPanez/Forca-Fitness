@@ -1,0 +1,62 @@
+const ROLES = require('./roles');
+
+const PERMISOS = Object.freeze({
+  VER_TODOS_ALUMNOS: 'VER_TODOS_ALUMNOS',
+  VER_ALUMNOS_DISCIPLINAS: 'VER_ALUMNOS_DISCIPLINAS',
+  VER_PROPIO_PERFIL: 'VER_PROPIO_PERFIL',
+  VER_MATRICULAS: 'VER_MATRICULAS',
+  VER_PROPIA_MATRICULA: 'VER_PROPIA_MATRICULA',
+  REGISTRAR_MATRICULA: 'REGISTRAR_MATRICULA',
+  GESTIONAR_PAGOS: 'GESTIONAR_PAGOS',
+  INHABILITAR_ALUMNO: 'INHABILITAR_ALUMNO'
+});
+
+const PERMISOS_POR_ROL = Object.freeze({
+  [ROLES.DIRECTOR]: [
+    PERMISOS.VER_TODOS_ALUMNOS,
+    PERMISOS.VER_MATRICULAS,
+    PERMISOS.GESTIONAR_PAGOS,
+    PERMISOS.INHABILITAR_ALUMNO
+  ],
+
+  [ROLES.TESORERO]: [
+    PERMISOS.VER_TODOS_ALUMNOS,
+    PERMISOS.VER_MATRICULAS,
+    PERMISOS.GESTIONAR_PAGOS
+  ],
+
+  [ROLES.PROFESOR]: [
+    PERMISOS.VER_ALUMNOS_DISCIPLINAS,
+    PERMISOS.INHABILITAR_ALUMNO
+  ],
+
+  [ROLES.ALUMNO]: [
+    PERMISOS.VER_PROPIO_PERFIL,
+    PERMISOS.VER_PROPIA_MATRICULA,
+    PERMISOS.REGISTRAR_MATRICULA
+  ]
+});
+
+function tienePermiso(roles, permiso) {
+  const rolesUsuario = Array.isArray(roles)
+    ? roles
+    : roles
+      ? [roles]
+      : [];
+
+  return rolesUsuario.some(rol => {
+    const permisos = PERMISOS_POR_ROL[rol];
+
+    if (!permisos) {
+      return false;
+    }
+
+    return permisos.includes(permiso);
+  });
+}
+
+module.exports = {
+  PERMISOS,
+  PERMISOS_POR_ROL,
+  tienePermiso
+};
