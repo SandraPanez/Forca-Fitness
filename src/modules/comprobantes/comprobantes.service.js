@@ -1,4 +1,7 @@
 const comprobantesRepository = require('./comprobantes.repository');
+const { montoEnLetras } = require('../../shared/utils/monto-letras.util');
+
+const METODOS = { EFECTIVO: 'Efectivo', MERCADO_PAGO: 'Mercado Pago' };
 
 function crearError(status, message) {
   const error = new Error(message);
@@ -33,7 +36,12 @@ async function obtenerComprobante(idPago) {
     hora: formato({ hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
     alumno: pago.alumno,
     documento: pago.documento,
-    disciplinas: pago.disciplinas || '—'
+    disciplinas: pago.disciplinas || '—',
+    concepto: pago.periodo ? `Mensualidad (${pago.periodo})` : 'Mensualidad',
+    metodo_pago: METODOS[pago.metodo_pago] || pago.metodo_pago,
+    referencia: pago.referencia || '—',
+    total: `S/ ${Number(pago.monto).toFixed(2)}`,
+    total_letras: montoEnLetras(pago.monto)
   };
 }
 
