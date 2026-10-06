@@ -32,8 +32,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setText('comprobante-message', error.message);
     }
 
+    // Vuelve a la interfaz de pagos del tesorero (Gestión de cobros)
     document.getElementById('btn-volver').addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '/tesoreria.html';
     });
 
     // Descarga el recibo virtual en PDF
