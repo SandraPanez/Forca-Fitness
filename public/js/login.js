@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('password').value;
 
         errorElement.style.display = 'none';
+        document.getElementById('pending-payment-link')?.remove();
 
         try {
             const response = await fetch('/api/auth/login', {
@@ -38,17 +39,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (!response.ok) {
+                if (result.pagoPendiente) {
+                    mostrarPagoPendiente(result.pagoPendiente);
+                }
                 throw new Error(result.message || 'No se pudo iniciar sesión');
             }
 
             localStorage.setItem('token', result.token);
             localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
+            const roles = Array.isArray(result.usuario.roles)
+                ? result.usuario.roles
+                : result.usuario.rol
+                    ? [result.usuario.rol]
+                    : [];
+
             if (
-                result.usuario.rol === 'DIRECTOR' ||
-                result.usuario.rol === 'TESORERO'
+                roles.includes('DIRECTOR') ||
+                roles.includes('TESORERO')
             ) {
                 window.location.href = '/alumnos.html';
+                return;
+            }
+
+            if (roles.includes('PROFESOR')) {
+                window.location.href = '/control-acceso';
                 return;
             }
 
@@ -59,6 +74,27 @@ document.addEventListener('DOMContentLoaded', () => {
             errorElement.style.display = 'block';
         }
     });
+
+    function mostrarPagoPendiente(pago) {
+        const existente = document.getElementById('pending-payment-link');
+        if (existente) existente.remove();
+
+        const params = new URLSearchParams({
+            preview: '1',
+            resultado: 'pendiente',
+            matricula: pago.matricula,
+            nombre: pago.nombre,
+            correo: pago.correo,
+            concepto: `Mensualidad - ${pago.disciplinas || 'Disciplinas seleccionadas'}`,
+            monto: String(pago.monto)
+        });
+        const link = document.createElement('a');
+        link.id = 'pending-payment-link';
+        link.className = 'pending-payment-link';
+        link.href = `/pagos.html?${params.toString()}`;
+        link.textContent = 'Pagar matrícula con Mercado Pago';
+        errorElement.insertAdjacentElement('afterend', link);
+    }
 });
 
 const togglePassword = document.getElementById('togglePassword');

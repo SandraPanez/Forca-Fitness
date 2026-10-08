@@ -25,6 +25,13 @@ async function login(req, res) {
       });
     }
 
+    if (error.message === 'USUARIO_PAGO_PENDIENTE') {
+      return res.status(403).json({
+        message: 'Tu matrícula tiene un pago pendiente. Puedes continuar el pago con Mercado Pago.',
+        pagoPendiente: error.pagoPendiente
+      });
+    }
+
     if (error.message === 'USUARIO_NO_HABILITADO') {
       return res.status(403).json({
         message:
