@@ -531,6 +531,54 @@ class MatriculasRepository {
     return idMatricula;
   }
 
+  // =========================================================
+  // T_41 - CONSULTAR MATRÍCULAS DEL CLIENTE AUTENTICADO
+  // =========================================================
+
+  async getMatriculasPorUsuario(idUsuario) {
+    const query = `
+      SELECT
+        m."Id_Matricula" AS id_matricula,
+        m."Fecha_Inscripcion" AS fecha_inscripcion,
+        m."Estado_Matricula" AS estado_matricula,
+        a."Id_alumno" AS id_alumno,
+
+        dm."Id_DetMatricula" AS id_detalle,
+        d."Id_Disciplinas" AS id_disciplina,
+        d."Nombre_Disciplina" AS disciplina,
+        dm."Fecha_Inicio" AS fecha_inicio,
+        dm."Fecha_Fin" AS fecha_fin
+
+      FROM ${SCHEMA}."Usuario" u
+
+      JOIN ${SCHEMA}."Alumno" a
+        ON a."Id_Persona" = u."Id_Persona"
+
+      JOIN ${SCHEMA}."Matricula" m
+        ON m."Id_alumno" = a."Id_alumno"
+
+      LEFT JOIN ${SCHEMA}."Detalles_Matricula" dm
+        ON dm."Id_Matricula" = m."Id_Matricula"
+
+      LEFT JOIN ${SCHEMA}."Disciplina_Horario" dh
+        ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+
+      LEFT JOIN ${SCHEMA}."Disciplina" d
+        ON d."Id_Disciplinas" = dh."Id_Disciplina"
+
+      WHERE u."Id_Usuario" = $1
+
+      ORDER BY
+        m."Fecha_Inscripcion" DESC,
+        m."Id_Matricula" DESC,
+        d."Nombre_Disciplina" ASC
+    `;
+
+    const result = await db.query(query, [idUsuario]);
+
+    return result.rows;
+  }
+
 
   // =========================================================
   // DETALLES DE MATRÍCULA

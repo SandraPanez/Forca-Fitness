@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis matrículas | Forca & Fitness</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+    <header class="header">
+        <div class="logo">
+            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img">
+            <h1>Portal Forca&Fitness</h1>
+        </div>
+
+        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
+
+            <nav class="top-nav">
+                <a href="/mis-matriculas.html" class="active">Mis matrículas</a>
+                <a href="/index.html">Nueva matrícula</a>
+            </nav>
+
+            <div class="user-info">
+                <div class="user-details">
+                    <span class="user-name">Usuario</span>
+                    <span class="user-role">Alumno</span>
+                </div>
+
+                <a href="#" class="logout-btn">Cerrar sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="max-width: 1200px;">
+
+        <section class="page-header">
+            <h2 class="title">Mis matrículas</h2>
+            <p class="description">
+                Consulta la vigencia y fecha de vencimiento de tus disciplinas.
+            </p>
+        </section>
+
+        <div class="table-container">
+            <table class="alumnos-table">
+                <thead>
+                    <tr>
+                        <th>Disciplina</th>
+                        <th>Fecha de inicio</th>
+                        <th>Fecha de vencimiento</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody id="mis-matriculas-tbody">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            Cargando matrículas...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/mis-matriculas.js"></script>
+
+</body>
+</html>

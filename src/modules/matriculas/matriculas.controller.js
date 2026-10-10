@@ -24,6 +24,33 @@ class MatriculasController {
     }
   }
 
+  async getMisMatriculas(req, res) {
+    try {
+      const idUsuario = req.user.id;
+
+      const matriculas = await matriculasService.getMatriculasPorUsuario(
+        idUsuario
+      );
+
+      return successResponse(
+        res,
+        200,
+        matriculas,
+        'Matrículas obtenidas correctamente'
+      );
+    } catch (error) {
+      console.error('Error en getMisMatriculas:', error);
+
+      const isUserError = error.message.includes('obligatorio');
+
+      return errorResponse(
+        res,
+        isUserError ? 400 : 500,
+        error.message || 'Error interno al obtener las matrículas'
+      );
+    }
+  }
+
   async registrarMatricula(req, res) {
     try {
       const datosMatricula = req.body;
