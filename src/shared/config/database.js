@@ -2,7 +2,8 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
-const useSsl = process.env.DB_SSL === 'true' || hasDatabaseUrl;
+const sslSetting = String(process.env.DB_SSL || '').trim().toLowerCase();
+const useSsl = ['true', 'require', 'required', 'yes', '1'].includes(sslSetting) || hasDatabaseUrl;
 
 const pool = new Pool({
   ...(hasDatabaseUrl

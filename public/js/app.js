@@ -68,9 +68,24 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(result => {
             if (result.success) {
-                alert('¡Matrícula registrada exitosamente!');
-                form.reset();
-                document.getElementById('disciplinas-count').style.display = 'none';
+                const nombre = [
+                    document.getElementById('nombres').value,
+                    document.getElementById('apellido_paterno').value,
+                    document.getElementById('apellido_materno').value
+                ].join(' ');
+                const correo = document.getElementById('correo_electronico').value;
+                const cursos = Array.from(disciplinas)
+                    .map((checkbox) => checkbox.closest('label')?.querySelector('.disciplina-name')?.textContent?.trim())
+                    .filter(Boolean);
+                const monto = Number(result.monto);
+                const params = new URLSearchParams({
+                    matricula: result.data.matriculaId,
+                    nombre,
+                    correo,
+                    concepto: `Mensualidad - ${result.disciplinas || cursos.join(', ')}`,
+                    monto: String(monto)
+                });
+                window.location.href = `/pagos.html?preview=1&${params.toString()}`;
             } else {
                 throw new Error(result.message || 'No se pudo registrar la matrícula.');
             }
@@ -149,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="disciplina-info">
                             <span class="disciplina-name">${d.nombre}</span>
                             <span class="disciplina-desc">${d.descripcion}</span>
+                            <span class="disciplina-tarifa">Tarifa mensual: S/ ${Number(d.tarifa).toFixed(2)}</span>
                         </div>
                         <input type="checkbox" name="disciplinas" value="${d.id}">
                     `;
