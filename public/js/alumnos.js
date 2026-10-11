@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadAlumnos = async () => {
         try {
-            const response = await fetch('/api/alumnos');
+            const response = await authFetch('/api/alumnos');
             const result = await response.json();
             if (!response.ok || !result.success) {
                 throw new Error(result.message || 'No se pudieron cargar los alumnos.');
@@ -84,7 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sidePanel.classList.add('active');
         sidePanelContent.innerHTML = '<div class="text-center text-muted mt-4">Cargando información...</div>';
         try {
-            const response = await fetch(`/api/alumnos/${encodeURIComponent(id)}`);
+            const response = await authFetch(
+                `/api/alumnos/${encodeURIComponent(id)}`
+            );
             const result = await response.json();
             if (!response.ok || !result.success) {
                 throw new Error(result.message || 'No se pudo cargar el detalle.');
