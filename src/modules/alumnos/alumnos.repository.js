@@ -1,7 +1,7 @@
 const db = require("../../shared/config/database");
 
 class AlumnosRepository {
-  async findAllAlumnos() {
+  async findAllAlumnos(idProfesor = null) {
     const query = `
       SELECT DISTINCT ON (a."Id_alumno")
         a."Id_alumno" AS id,
@@ -9,13 +9,28 @@ class AlumnosRepository {
         p."Apellido_Paterno" AS apellido_paterno,
         p."Apellido_Materno" AS apellido_materno,
         m."Fecha_Inscripcion" AS fecha_matricula,
-        m."Estado_Matricula" AS estado
+        m."Estado_Matricula" AS estado,
+        ARRAY(
+          SELECT DISTINCT d."Nombre_Disciplina"
+          FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_alumno
+          JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh_alumno
+            ON dm_alumno."Id_DiscHorario" = dh_alumno."Id_DiscHorario"
+          JOIN "Academia Forca&Fitness"."Disciplina" d
+            ON dh_alumno."Id_Disciplina" = d."Id_Disciplinas"
+          WHERE dm_alumno."Id_Matricula" = m."Id_Matricula"
+            ${idProfesor !== null ? 'AND dh_alumno."Id_Profesor" = $1' : ''}
+          ORDER BY d."Nombre_Disciplina"
+        ) AS disciplinas
       FROM "Academia Forca&Fitness"."Alumno" a
       JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
       JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
+      JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
+      ${idProfesor !== null ? 'WHERE dh."Id_Profesor" = $1' : ''}
       ORDER BY a."Id_alumno", p."Nombre" ASC
     `;
-    const result = await db.query(query);
+    const values = idProfesor !== null ? [idProfesor] : [];
+    const result = await db.query(query, values);
     return result.rows;
   }
 

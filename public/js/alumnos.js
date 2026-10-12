@@ -66,16 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadAlumnos = async () => {
         try {
+            console.log('Obteniendo alumnos desde API...');
             const response = await authFetch('/api/alumnos');
+
+            if (!response.ok) {
+                const statusMessage = response.status === 401
+                    ? 'La sesión no es válida o ha vencido.'
+                    : response.status === 403
+                        ? 'No tienes permisos para consultar los alumnos.'
+                        : 'No se pudieron cargar los alumnos.';
+                throw new Error(`Error ${response.status}: ${statusMessage}`);
+            }
+
             const result = await response.json();
-            if (!response.ok || !result.success) {
+            if (!result.success) {
                 throw new Error(result.message || 'No se pudieron cargar los alumnos.');
             }
+            if (!Array.isArray(result.data)) {
+                throw new Error('La API devolvió un formato de alumnos no válido.');
+            }
+
+            console.log('Alumnos recibidos:', result.data);
             alumnosCache = result.data;
             filterAlumnos();
         } catch (error) {
             console.error('Error cargando alumnos:', error);
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">${escapeHtml(error.message)}</td></tr>`;
+            const message = error instanceof Error ? error.message : 'Error desconocido al cargar alumnos.';
+            tbody.innerHTML = `<tr><td colspan="3"><div role="alert" class="text-center text-danger">${escapeHtml(message)}</div></td></tr>`;
         }
     };
 
