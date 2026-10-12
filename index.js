@@ -35,13 +35,15 @@ const {
   matriculasRoutes,
   alumnosRoutes,
   authRoutes,
-  pagosRoutes
+  pagosRoutes,
+  comprobantesRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
 app.use('/api/alumnos', alumnosRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
+app.use('/api/comprobantes', comprobantesRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
