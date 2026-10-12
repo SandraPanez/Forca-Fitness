@@ -20,6 +20,8 @@
   },
   "homepage": "https://github.com/SandraPanez/Forca-Fitness#readme",
   "dependencies": {
+    "@bull-board/api": "^9.10.4",
+    "@bull-board/express": "^9.10.4",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.3.11",
     "dotenv": "^18.0.2",
