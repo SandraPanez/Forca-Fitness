@@ -28,6 +28,7 @@ class PagosService {
 
         const preference = new Preference(client);
 
+        const isPublicUrl = appUrl.startsWith('https://');
         const body = {
             items: [{
                 title: `Mensualidad - ${resumen.disciplinas}`,
@@ -45,7 +46,7 @@ class PagosService {
                 pending: `${appUrl}/api/pagos/pending`
             },
             external_reference: datosMatricula.id_matricula,
-            notification_url: `${appUrl}/api/pagos/webhook`
+            ...(isPublicUrl ? { notification_url: `${appUrl}/api/pagos/webhook` } : {})
         };
 
         const resultado = await preference.create({ body });

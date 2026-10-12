@@ -77,12 +77,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cursos = Array.from(disciplinas)
                     .map((checkbox) => checkbox.closest('label')?.querySelector('.disciplina-name')?.textContent?.trim())
                     .filter(Boolean);
-                const monto = Number(result.monto);
+                const monto = Number(result.data?.monto ?? result.monto ?? 0);
+                const matriculaId = result.data?.matriculaId || result.matriculaId;
+                const disciplinasTexto = result.data?.disciplinas || result.disciplinas || cursos.join(', ');
                 const params = new URLSearchParams({
-                    matricula: result.data.matriculaId,
+                    matricula: matriculaId,
                     nombre,
                     correo,
-                    concepto: `Mensualidad - ${result.disciplinas || cursos.join(', ')}`,
+                    concepto: `Mensualidad - ${disciplinasTexto}`,
                     monto: String(monto)
                 });
                 window.location.href = `/pagos.html?preview=1&${params.toString()}`;

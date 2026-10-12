@@ -18,9 +18,13 @@ class PagosController {
         try {
             const datosMatricula = req.body;
             const preferencia = await pagosService.crearPreferencia(datosMatricula);
+            const checkoutUrl = (process.env.NODE_ENV === 'production' && !preferencia.sandbox_init_point)
+                ? preferencia.init_point
+                : (preferencia.sandbox_init_point || preferencia.init_point);
             return res.status(200).json({
                 success: true,
-                init_point: preferencia.init_point,
+                init_point: checkoutUrl,
+                sandbox_init_point: preferencia.sandbox_init_point,
                 preference_id: preferencia.id
             });
         } catch (error) {

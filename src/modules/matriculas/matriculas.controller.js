@@ -31,8 +31,13 @@ class MatriculasController {
       return successResponse(res, 201, resultado, 'Matrícula registrada exitosamente');
     } catch (error) {
       console.error('Error en registrarMatricula:', error);
-      const isValidationError = error.message.includes('Campos obligatorios') || error.message.includes('Debe seleccionar al menos una disciplina');
-      return errorResponse(res, isValidationError ? 400 : 500, isValidationError ? error.message : 'Error interno al registrar la matrícula');
+      let mensaje = error.message || 'Error al registrar la matrícula';
+      if (mensaje.includes('UQ_Usuario_Correo') || (mensaje.includes('unique constraint') && mensaje.includes('Correo'))) {
+        mensaje = 'El correo electrónico ya se encuentra registrado con otra cuenta.';
+      } else if (mensaje.includes('unique constraint') && mensaje.includes('Documento')) {
+        mensaje = 'El número de documento ya se encuentra registrado.';
+      }
+      return errorResponse(res, 400, mensaje);
     }
   }
 }
