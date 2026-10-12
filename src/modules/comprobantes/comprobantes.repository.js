@@ -6,8 +6,6 @@ const SCHEMA = '"Academia Forca&Fitness"';
 // La fecha de emisión es la del cobro aprobado en Registro_Cobro, que no se
 // puede editar ni borrar; por eso el comprobante siempre sale igual.
 async function buscarPorPago(idPago) {
-  // ponytail: el correlativo se calcula contando los cobros aprobados del año;
-  // si se crea una tabla de comprobantes, leer el número de ahí.
   const result = await db.query(`
     SELECT
       p."Id_Pago" AS id_pago,

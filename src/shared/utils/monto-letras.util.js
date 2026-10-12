@@ -34,7 +34,6 @@ const enteroEnLetras = (n) => {
 // 150 -> "Ciento cincuenta y 00/100 soles" (formato del recibo de la academia)
 const montoEnLetras = (monto) => {
   const centimos = Math.round(Number(monto) * 100);
-  // ponytail: llega hasta 999 999.99; agregar millones si algún cobro lo necesita
   if (!Number.isFinite(centimos) || centimos < 0 || centimos >= 100000000) {
     throw new RangeError(`Monto no válido para el recibo: ${monto}`);
   }
