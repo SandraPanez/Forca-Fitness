@@ -1,13 +1,10 @@
 const { Queue } = require('bullmq');
+const { redisConnection } = require('../config/redis');
 const { QUEUE_NAMES, JOB_NAMES } = require('./queue.constants');
 
-function createEmailTransactionalQueue(redisConnection) {
-  if (!redisConnection) {
-    throw new Error('Se requiere una conexion Redis para crear la cola.');
-  }
-
+function createEmailTransactionalQueue(connection = redisConnection) {
   return new Queue(QUEUE_NAMES.EMAIL_TRANSACTIONAL, {
-    connection: redisConnection,
+    connection,
     defaultJobOptions: {
       attempts: 3,
       backoff: {
