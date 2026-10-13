@@ -6,10 +6,24 @@ const path = require('path');
 const { autenticar } = require('./src/shared/middleware/auth.middleware');
 const { autorizar } = require('./src/shared/middleware/permisos.middleware');
 const { PERMISOS } = require('./src/shared/constants/permisos');
+const { autenticarDashboard } = require('./src/shared/middleware/queues-auth.middleware');
+const { createQueuesDashboard } = require('./src/shared/queues/queues.dashboard');
+const { createEmailTransactionalWorker } = require('./src/shared/queues/email-transactional.worker');
 
 const app = express();
 
 app.use(express.json());
+
+const queuesDashboard = createQueuesDashboard();
+
+createEmailTransactionalWorker();
+
+app.use(
+  queuesDashboard.path,
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_COLAS),
+  queuesDashboard.router
+);
 
 
 // Primera página del sistema = Login

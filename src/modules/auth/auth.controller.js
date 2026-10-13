@@ -1,5 +1,16 @@
 const authService = require('./auth.service');
 
+const AUTH_COOKIE_NAME = 'forca_auth_token';
+
+function getCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  };
+}
+
 async function login(req, res) {
   try {
     const { correo, password } = req.body;
@@ -14,6 +25,11 @@ async function login(req, res) {
       correo,
       password
     );
+
+    res.cookie(AUTH_COOKIE_NAME, resultado.token, {
+      ...getCookieOptions(),
+      maxAge: 8 * 60 * 60 * 1000
+    });
 
     return res.status(200).json(resultado);
 
@@ -51,6 +67,11 @@ async function login(req, res) {
 }
 
 function logout(req, res) {
+  res.clearCookie(
+    AUTH_COOKIE_NAME,
+    getCookieOptions()
+  );
+
   return res.status(200).json({
     message: 'Sesión cerrada correctamente'
   });
