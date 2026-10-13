@@ -2,7 +2,6 @@ const { QueueEvents } = require('bullmq');
 const { randomUUID } = require('crypto');
 
 const comprobantesService = require('./comprobantes.service');
-const envioRepository = require('./comprobantes-envio.repository');
 const { generarReciboPdf } = require('./comprobantes.pdf');
 
 const {
@@ -27,6 +26,11 @@ const emailQueueEvents = new QueueEvents(
   }
 );
 
+// Persistencia temporal mientras la tabla Envio_Comprobante
+// no haya sido creada por el responsable de base de datos.
+// Se reinicia cuando se reinicia el servidor.
+const enviosTemporales = new Map();
+
 emailQueueEvents.on('error', (error) => {
   console.error(
     `[HU-13][QUEUE_EVENTS_ERROR] ${error.message}`
@@ -39,8 +43,8 @@ function crearError(status, message) {
   return error;
 }
 
-// Convierte el PDF generado por HU-12 a Base64.
-// Esto permite transportarlo de forma segura dentro del job de BullMQ.
+// Convierte el PDF generado por HU-12 a Base64 para poder
+// transportarlo de forma segura dentro del job de BullMQ.
 function generarPdfBase64(recibo) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -61,7 +65,7 @@ function generarPdfBase64(recibo) {
 }
 
 async function enviarComprobante(idPago) {
-  // Reutiliza las validaciones y datos de HU-12.
+  // Reutiliza las validaciones y datos generados por HU-12.
   const comprobante =
     await comprobantesService.obtenerComprobante(idPago);
 
@@ -72,10 +76,8 @@ async function enviarComprobante(idPago) {
     );
   }
 
-  const ultimoEnvio =
-    await envioRepository.obtenerUltimoEnvio(idPago);
+  const ultimoEnvio = enviosTemporales.get(idPago);
 
-  // No permitimos crear otro envio mientras uno siga pendiente.
   if (ultimoEnvio?.estado === 'PENDIENTE') {
     throw crearError(
       409,
@@ -83,7 +85,6 @@ async function enviarComprobante(idPago) {
     );
   }
 
-  // Los reenvios manuales son únicamente después de un error.
   if (ultimoEnvio?.estado === 'ENVIADO') {
     throw crearError(
       409,
@@ -92,10 +93,10 @@ async function enviarComprobante(idPago) {
   }
 
   const intento = ultimoEnvio
-    ? Number(ultimoEnvio.intento) + 1
+    ? ultimoEnvio.intento + 1
     : 1;
 
-  // Envio inicial + máximo dos reenvios manuales.
+  // Envío inicial + máximo 2 reenvíos manuales.
   if (intento > 3) {
     throw crearError(
       409,
@@ -105,14 +106,11 @@ async function enviarComprobante(idPago) {
 
   const traceId = `hu13-${idPago}-${randomUUID()}`;
 
-  const registro =
-    await envioRepository.crearEnvioPendiente({
-      idPago,
-      correoDestino: comprobante.correo,
-      numeroComprobante: comprobante.numero,
-      intento,
-      traceId
-    });
+  enviosTemporales.set(idPago, {
+    intento,
+    estado: 'PENDIENTE',
+    traceId
+  });
 
   try {
     const pdfBase64 =
@@ -149,12 +147,6 @@ async function enviarComprobante(idPago) {
       }
     );
 
-    await envioRepository.asignarJob(
-      registro.id_envio,
-      job.id
-    );
-
-    // Esperamos a que el Worker de HT-08 termine el envio real.
     await emailQueueEvents.waitUntilReady();
 
     const resultado = await job.waitUntilFinished(
@@ -162,32 +154,36 @@ async function enviarComprobante(idPago) {
       60000
     );
 
-    await envioRepository.marcarEnviado(
-      registro.id_envio,
-      resultado.messageId
+    enviosTemporales.set(idPago, {
+      intento,
+      estado: 'ENVIADO',
+      traceId,
+      jobId: String(job.id),
+      messageId: resultado.messageId
+    });
+
+    console.log(
+      `[HU-13][ENVIADO] pago=${idPago} ` +
+      `intento=${intento} job=${job.id} ` +
+      `messageId=${resultado.messageId}`
     );
 
     return {
-      id_envio: registro.id_envio,
       id_pago: idPago,
       correo: comprobante.correo,
       comprobante: comprobante.numero,
       intento,
       estado: 'ENVIADO',
+      job_id: String(job.id),
       message_id: resultado.messageId
     };
   } catch (error) {
-    try {
-      await envioRepository.marcarError(
-        registro.id_envio,
-        error.message
-      );
-    } catch (registroError) {
-      console.error(
-        `[HU-13][REGISTRO_ERROR] envio=${registro.id_envio} ` +
-        `error=${registroError.message}`
-      );
-    }
+    enviosTemporales.set(idPago, {
+      intento,
+      estado: 'ERROR',
+      traceId,
+      error: error.message
+    });
 
     console.error(
       `[HU-13][ENVIO_ERROR] pago=${idPago} ` +
