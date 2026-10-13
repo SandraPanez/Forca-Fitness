@@ -14,7 +14,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        "Tarifa" AS tarifa
+        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
@@ -126,6 +126,7 @@ class MatriculasRepository {
       ) + 1 AS siguiente
       FROM ${SCHEMA}."${tabla}"
       WHERE "${columna}" LIKE $1
+        AND SUBSTRING("${columna}" FROM ${posicionInicio}) ~ '^[0-9]+$'
     `;
 
     const result = await client.query(
@@ -235,7 +236,18 @@ class MatriculasRepository {
         : null;
 
 
-    const idPersona = await this.generateId(client, 'Persona', 'Id_Persona', 'PER');
+    let genero = 'OTRO';
+    if (data.genero) {
+      const g = data.genero.trim().toUpperCase();
+      if (g.startsWith('M')) genero = 'M';
+      else if (g.startsWith('F')) genero = 'F';
+      else genero = g.substring(0, 6);
+    }
+    const direccion = (data.direccion || 'Sin direccion').substring(0, 50);
+    const apPaterno = (data.apellido_paterno || '').substring(0, 20);
+    const apMaterno = (data.apellido_materno || '').substring(0, 20);
+
+    const idPersona = await this.generateId(client, 'Persona', 'Id_Persona', 'PERALU');
     await client.query(`
       INSERT INTO ${SCHEMA}."Persona" (
         "Id_Persona", "Nombre", "Segundo_Nombre", "Apellido_Paterno",
@@ -243,9 +255,9 @@ class MatriculasRepository {
         "Numero_Documento", "Id_Documento"
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     `, [
-      idPersona, primerNombre, segundoNombre, data.apellido_paterno,
-      data.apellido_materno, data.fecha_nacimiento, data.genero || 'OTRO',
-      data.direccion || 'Sin direccion', data.numero_documento, idDocumento
+      idPersona, primerNombre, segundoNombre, apPaterno,
+      apMaterno, data.fecha_nacimiento, genero,
+      direccion, data.numero_documento, idDocumento
     ]);
 
     const query = `
@@ -385,6 +397,17 @@ class MatriculasRepository {
         : null;
 
 
+    let genero = 'OTRO';
+    if (data.genero) {
+      const g = data.genero.trim().toUpperCase();
+      if (g.startsWith('M')) genero = 'M';
+      else if (g.startsWith('F')) genero = 'F';
+      else genero = g.substring(0, 6);
+    }
+    const direccion = (data.direccion || 'Sin direccion').substring(0, 50);
+    const apPaterno = (data.apellido_paterno || '').substring(0, 20);
+    const apMaterno = (data.apellido_materno || '').substring(0, 20);
+
     const query = `
       UPDATE ${SCHEMA}."Persona" p
       SET
@@ -400,11 +423,11 @@ class MatriculasRepository {
       [
         primerNombre,
         segundoNombre,
-        data.apellido_paterno,
-        data.apellido_materno,
+        apPaterno,
+        apMaterno,
         data.fecha_nacimiento,
-        data.genero,
-        data.direccion,
+        genero,
+        direccion,
         id
       ]
     );
