@@ -29,7 +29,27 @@ Estructura actual:
 - alumnos.service.js
 - alumnos.repository.js
 
-## 3. Módulo Matrículas
+## 3. Módulo Profesores
+
+Responsable de resolver el perfil del profesor autenticado y consultar sus disciplinas y alumnos según las asignaciones de horarios en PostgreSQL.
+
+Ubicación:
+
+src/modules/profesores/
+
+Rutas disponibles:
+
+- `GET /api/profesores/me`
+- `GET /api/profesores/me/alumnos`
+
+Estructura:
+
+- profesores.routes.js
+- profesores.controller.js
+- profesores.service.js
+- profesores.repository.js
+
+## 4. Módulo Matrículas
 
 Responsable de gestionar los procesos de matrícula, renovación, reserva y vigencia.
 
@@ -54,7 +74,7 @@ Estructura actual:
 - matriculas.service.js
 - matriculas.repository.js
 
-## 4. Módulo Pagos
+## 5. Módulo Pagos
 
 Responsable de gestionar los cobros y pagos realizados por los alumnos.
 
@@ -68,7 +88,7 @@ Ubicación prevista:
 
 src/modules/pagos/
 
-## 5. Módulo Comprobantes
+## 6. Módulo Comprobantes
 
 Responsable de gestionar los comprobantes relacionados con los pagos.
 
@@ -82,7 +102,7 @@ Ubicación prevista:
 
 src/modules/comprobantes/
 
-## 6. Módulo Seguimiento
+## 7. Módulo Seguimiento
 
 Responsable del seguimiento de matrículas y su historial.
 
@@ -95,7 +115,7 @@ Ubicación prevista:
 
 src/modules/seguimiento/
 
-## 7. Módulo Notificaciones
+## 8. Módulo Notificaciones
 
 Responsable del envío de avisos y recordatorios automáticos.
 
@@ -107,7 +127,7 @@ Ubicación prevista:
 
 src/modules/notificaciones/
 
-## 8. Módulo Reportes
+## 9. Módulo Reportes
 
 Responsable de proporcionar información consolidada para la administración de la academia.
 
@@ -119,7 +139,7 @@ Ubicación prevista:
 
 src/modules/reportes/
 
-## 9. Componentes compartidos
+## 10. Componentes compartidos
 
 Los componentes técnicos reutilizables por distintos módulos se ubican en:
 
@@ -133,7 +153,7 @@ Entre ellos se encuentran:
 - Utilidades compartidas.
 - Componentes de autenticación y control de acceso.
 
-## 10. Organización interna de los módulos
+## 11. Organización interna de los módulos
 
 Los módulos del backend seguirán el siguiente flujo:
 
@@ -150,7 +170,7 @@ Cada componente tiene una responsabilidad específica:
 - Service: contiene la lógica de negocio.
 - Repository: gestiona el acceso y persistencia de datos.
 
-## 11. Separación de responsabilidades
+## 12. Separación de responsabilidades
 
 Cada módulo debe mantener únicamente las funcionalidades correspondientes a su responsabilidad.
 

@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.user-name').forEach(element => {
-            element.textContent = usuario.correo;
+            element.textContent = usuario.nombre || usuario.correo;
         });
     }
 

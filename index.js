@@ -48,6 +48,7 @@ app.get('/control-acceso', (req, res) => {
 const {
   matriculasRoutes,
   alumnosRoutes,
+  profesoresRoutes,
   authRoutes,
   pagosRoutes,
   comprobantesRoutes
@@ -55,6 +56,7 @@ const {
 
 app.use('/api/matriculas', matriculasRoutes);
 app.use('/api/alumnos', alumnosRoutes);
+app.use('/api/profesores', profesoresRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);

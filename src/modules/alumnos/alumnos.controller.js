@@ -3,7 +3,8 @@ const alumnosService = require('./alumnos.service');
 class AlumnosController {
   async listarAlumnos(req, res) {
     try {
-      const alumnos = await alumnosService.listarAlumnos();
+      const idProfesor = req.usuario?.id_profesor || req.query.id_profesor || null;
+      const alumnos = await alumnosService.listarAlumnos(idProfesor);
       return res.status(200).json({
         success: true,
         data: alumnos

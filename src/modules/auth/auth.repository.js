@@ -7,6 +7,13 @@ async function buscarPorCorreo(correo) {
       u."Correo",
       u."Password_Hash",
       u."Estado_Usuario",
+      TRIM(CONCAT_WS(
+        ' ',
+        NULLIF(BTRIM(pe."Nombre"), ''),
+        NULLIF(BTRIM(pe."Segundo_Nombre"), ''),
+        NULLIF(BTRIM(pe."Apellido_Paterno"), ''),
+        NULLIF(BTRIM(pe."Apellido_Materno"), '')
+      )) AS nombre,
       ARRAY_REMOVE(
         ARRAY_AGG(
           DISTINCT r."Rol_Cargo"
@@ -15,6 +22,9 @@ async function buscarPorCorreo(correo) {
         NULL
       ) AS "Roles"
     FROM "Academia Forca&Fitness"."Usuario" u
+
+    LEFT JOIN "Academia Forca&Fitness"."Persona" pe
+      ON pe."Id_Persona" = u."Id_Persona"
 
     LEFT JOIN "Academia Forca&Fitness"."Usuario_Rol" ur
       ON ur."Id_Usuario" = u."Id_Usuario"
@@ -28,7 +38,11 @@ async function buscarPorCorreo(correo) {
       u."Id_Usuario",
       u."Correo",
       u."Password_Hash",
-      u."Estado_Usuario"
+      u."Estado_Usuario",
+      pe."Nombre",
+      pe."Segundo_Nombre",
+      pe."Apellido_Paterno",
+      pe."Apellido_Materno"
 
     LIMIT 1
   `;
