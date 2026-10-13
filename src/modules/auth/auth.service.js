@@ -89,6 +89,7 @@ async function login(correo, password) {
     usuario: {
       id: usuario.Id_Usuario,
       correo: usuario.Correo,
+      nombre: usuario.nombre || usuario.Correo,
 
       // Compatibilidad
       rol: rolPrincipal,

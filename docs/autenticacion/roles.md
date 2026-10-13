@@ -31,6 +31,13 @@ Acceso general:
 - Visualizar únicamente alumnos matriculados en las disciplinas que tiene asignadas.
 - Consultar información necesaria para sus clases.
 - Realizar las acciones disciplinarias permitidas dentro de su ámbito.
+- Consultar su propio perfil y las disciplinas asociadas a sus horarios.
+
+API del profesor autenticado:
+- `GET /api/profesores/me`: devuelve el perfil y las disciplinas asignadas desde la base de datos.
+- `GET /api/profesores/me/alumnos`: devuelve únicamente los alumnos vinculados a sus horarios.
+- `GET /api/profesores/me/alumnos/:id`: devuelve el detalle solo si el alumno está matriculado en un horario del profesor; las disciplinas se limitan a sus asignaciones.
+- Las tres rutas requieren autenticación y el permiso `VER_ALUMNOS_DISCIPLINAS`; el servidor obtiene el profesor desde el usuario del token.
 
 ## ALUMNO
 

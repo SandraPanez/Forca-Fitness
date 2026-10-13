@@ -34,8 +34,8 @@ class AlumnosService {
     });
   }
 
-  async obtenerDetalleAlumno(id) {
-    const record = await alumnosRepository.findAlumnoById(id);
+  async obtenerDetalleAlumno(id, idProfesor = null) {
+    const record = await alumnosRepository.findAlumnoById(id, idProfesor);
     if (!record) return null;
 
     const hoy = new Date();

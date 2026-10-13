@@ -34,7 +34,7 @@ class AlumnosRepository {
     return result.rows;
   }
 
-  async findAlumnoById(id) {
+  async findAlumnoById(id, idProfesor = null) {
     const query = `
       SELECT 
         a."Id_alumno" AS id,
@@ -53,6 +53,7 @@ class AlumnosRepository {
           JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
           JOIN "Academia Forca&Fitness"."Disciplina" d ON dh."Id_Disciplina" = d."Id_Disciplinas"
           WHERE dm."Id_Matricula" = m."Id_Matricula"
+            AND ($2::VARCHAR IS NULL OR dh."Id_Profesor" = $2)
         ) AS disciplinas,
         (
           SELECT mc."Contacto" 
@@ -70,8 +71,19 @@ class AlumnosRepository {
       JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
       JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
       WHERE a."Id_alumno" = $1
+        AND (
+          $2::VARCHAR IS NULL
+          OR EXISTS (
+            SELECT 1
+            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_profesor
+            JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh_profesor
+              ON dm_profesor."Id_DiscHorario" = dh_profesor."Id_DiscHorario"
+            WHERE dm_profesor."Id_Matricula" = m."Id_Matricula"
+              AND dh_profesor."Id_Profesor" = $2
+          )
+        )
     `;
-    const result = await db.query(query, [id]);
+    const result = await db.query(query, [id, idProfesor]);
     return result.rows[0] || null;
   }
 }

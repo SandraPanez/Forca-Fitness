@@ -31,14 +31,14 @@
 </head>
 <body>
   <main id="alumnos">
-    <header class="topbar"><div class="topbar-inner"><div class="brand"><img class="brand-mark" src="/images/logo.png" alt="Logo Força &amp; Fitness"><span>Força &amp; Fitness<small>Gestión académica</small></span></div><div class="topbar-actions"><nav class="topnav" aria-label="Navegación del profesor"><a href="#vista-alumnos" data-view="students">Alumnos</a><a href="#vista-control" data-view="access" aria-current="page">Control de acceso</a></nav><div class="account"><strong>Faridh Gustavo Cruz Suarez</strong><span>Profesor</span></div><button class="logout-btn" type="button">Cerrar sesión</button></div></div></header>
+    <header class="topbar"><div class="topbar-inner"><div class="brand"><img class="brand-mark" src="/images/logo.png" alt="Logo Força &amp; Fitness"><span>Força &amp; Fitness<small>Gestión académica</small></span></div><div class="topbar-actions"><nav class="topnav" aria-label="Navegación del profesor"><a href="#vista-alumnos" data-view="students">Alumnos</a><a href="#vista-control" data-view="access" aria-current="page">Control de acceso</a></nav><div class="account"><strong class="user-name">Profesor</strong><span class="user-role">Profesor</span></div><button class="logout-btn" type="button">Cerrar sesión</button></div></div></header>
     <div class="content">
-      <section class="page-view" id="view-access" aria-labelledby="access-title"><section class="heading" id="control-acceso" aria-labelledby="access-title"><p class="eyebrow">PROFESOR</p><h1 id="access-title">Control de acceso: <label class="title-discipline"><span class="sr-only">Disciplina</span><select id="discipline"><option>Capoeira</option><option>Capoeira Kids</option><option>Boxeo</option><option>Jiu-jitsu</option></select></label></h1><p class="description">Verifica la vigencia de matrícula de los alumnos de tu disciplina.</p></section>
+      <section class="page-view" id="view-access" aria-labelledby="access-title"><section class="heading" id="control-acceso" aria-labelledby="access-title"><p class="eyebrow">PROFESOR</p><h1 id="access-title">Control de acceso: <label class="title-discipline"><span class="sr-only">Disciplina</span><select id="discipline"><option value="">Cargando disciplinas...</option></select></label></h1><p class="description">Verifica la vigencia de matrícula de los alumnos de tu disciplina.</p></section>
         <section class="roster" aria-label="Alumnos de la disciplina seleccionada"><div class="roster-head"><div><h2>Alumnos</h2><span class="count" id="count"></span></div><div class="controls"><label class="search"><span class="sr-only">Buscar alumno por nombre o apellido</span><input id="search" type="search" placeholder="Buscar alumno por nombre o apellido..."></label><label><span class="sr-only">Estado de acceso</span><select id="status"><option value="all">Todos</option><option value="active">Activo</option><option value="soon">Próximo a vencer</option><option value="inactive">Inactivo</option><option value="disabled">Inhabilitado</option></select></label></div></div>
           <div class="table-wrap"><table><thead><tr><th>Alumno</th><th>Estado de acceso</th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty" hidden><strong>No encontramos alumnos</strong>Prueba con otro nombre o cambia el estado.</div></div>
         </section>
       </section>
-      <section class="page-view" id="view-students" aria-labelledby="students-title" hidden><header class="teacher-heading"><p class="eyebrow">ALUMNOS</p><h1 id="students-title">Faridh Gustavo Cruz Suarez</h1><p class="description">Alumnos de las disciplinas a tu cargo.</p></header><div class="discipline-groups" id="discipline-groups"></div></section>
+      <section class="page-view" id="view-students" aria-labelledby="students-title" hidden><header class="teacher-heading"><p class="eyebrow">ALUMNOS</p><h1 id="students-title">Alumnos</h1><p class="description">Alumnos de las disciplinas a tu cargo.</p></header><div class="discipline-groups" id="discipline-groups"></div></section>
     </div>
     <div class="drawer-overlay" id="drawer-overlay" hidden></div>
     <aside class="student-drawer" id="student-drawer" aria-labelledby="drawer-title" aria-hidden="true">
@@ -55,6 +55,7 @@
     const statusInfo={active:['Activo','active',0],soon:['Próximo a vencer','soon',1],inactive:['Inactivo','inactive',2],disabled:['Inhabilitado','disabled',3]};
     const filter=document.querySelector('#status'),search=document.querySelector('#search'),discipline=document.querySelector('#discipline');
     const teacherDisciplines=new Set();
+    let teacherProfile=null;
     const navigationLinks=document.querySelectorAll('[data-view]');
     const views={students:document.querySelector('#view-students'),access:document.querySelector('#view-access')};
     const studentsById=new Map();
@@ -69,18 +70,26 @@
       const disciplines=Array.isArray(record.disciplinas)?record.disciplinas:[];
       return {id:record.id,name,days,status,disciplines};
     }
-    function updateDisciplines(){
+    function updateDisciplines(disciplines){
       teacherDisciplines.clear();
-      students.forEach((student)=>student.disciplines.forEach((name)=>teacherDisciplines.add(name)));
+      disciplines.forEach((name)=>teacherDisciplines.add(name));
       const selected=discipline.value;
-      discipline.replaceChildren(...[...teacherDisciplines].sort((a,b)=>a.localeCompare(b,'es')).map((name)=>{
+      const options=[...teacherDisciplines].sort((a,b)=>a.localeCompare(b,'es')).map((name)=>{
         const option=document.createElement('option');option.value=name;option.textContent=name;return option;
-      }));
+      });
+      if(options.length===0){
+        const option=document.createElement('option');option.value='';option.textContent='No tienes disciplinas asignadas';options.push(option);
+      }
+      discipline.replaceChildren(...options);
       if(teacherDisciplines.has(selected))discipline.value=selected;
+      else if(options.length>0)discipline.value=options[0].value;
     }
     async function readApiResponse(response){
       let result;
-      try{result=await response.json()}catch{throw new Error(`La API devolvió una respuesta no válida (HTTP ${response.status}).`)}
+      try{result=await response.json()}catch{
+        if(response.status===404)throw new Error('Esta versión del servidor no tiene la ruta del profesor. Reinicia el servidor local o vuelve a desplegar los últimos cambios.');
+        throw new Error(`La API devolvió una respuesta no válida (HTTP ${response.status}).`);
+      }
       if(!response.ok){
         const message=response.status===401?'La sesión no es válida o ha vencido.':response.status===403?'No tienes permisos para consultar estos alumnos.':result.message||'No se pudieron cargar los alumnos.';
         throw new Error(`Error ${response.status}: ${message}`);
@@ -125,7 +134,7 @@
         document.querySelector(`#${id}`).textContent='Cargando...';
       });
       try{
-        const response=await authFetch(`/api/alumnos/${encodeURIComponent(student.id)}`);
+        const response=await authFetch(`/api/profesores/me/alumnos/${encodeURIComponent(student.id)}`);
         const details=await readApiResponse(response);
         const statusBadge=document.querySelector('#drawer-status');
         statusBadge.textContent=details.estado||'No registrado';
@@ -180,16 +189,25 @@
       const loadingRow=document.createElement('tr'),loadingCell=document.createElement('td');
       loadingCell.colSpan=2;loadingCell.className='empty';loadingCell.textContent='Cargando alumnos...';loadingRow.append(loadingCell);tbody.replaceChildren(loadingRow);
       try{
-        const response=await authFetch(`/api/alumnos?id_profesor=${encodeURIComponent('PROF01')}`);
+        const profileResponse=await authFetch('/api/profesores/me');
+        teacherProfile=await readApiResponse(profileResponse);
+        if(!teacherProfile||!Array.isArray(teacherProfile.disciplinas))throw new Error('El perfil del profesor devolvió disciplinas no válidas.');
+        document.querySelector('.account .user-name').textContent=teacherProfile.nombre;
+        document.querySelector('#students-title').textContent=teacherProfile.nombre;
+        updateDisciplines(teacherProfile.disciplinas);
+
+        const response=await authFetch('/api/profesores/me/alumnos');
         const records=await readApiResponse(response);
         if(!Array.isArray(records))throw new Error('La API devolvió un formato de alumnos no válido.');
         students.push(...records.map(mapStudent));
         students.forEach((student)=>studentsById.set(String(student.id),student));
-        updateDisciplines();
         render();
         renderDisciplineGroups();
       }catch(error){
         console.error('Error al cargar alumnos desde la API:',error);
+        if(!teacherProfile){
+          discipline.replaceChildren(new Option('No se pudieron cargar las disciplinas',''));
+        }
         const errorRow=document.createElement('tr'),errorCell=document.createElement('td');
         errorCell.colSpan=2;errorCell.className='empty';errorCell.setAttribute('role','alert');errorCell.textContent=error.message||'No se pudieron cargar los alumnos.';
         errorRow.append(errorCell);tbody.replaceChildren(errorRow);
