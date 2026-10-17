@@ -114,6 +114,7 @@
             </div>
             <div style="display: flex; gap: 1rem;">
                 <button id="btn-descargar" class="btn-submit">Descargar comprobante</button>
+                <button id="btn-enviar-correo" class="btn-submit">Enviar por correo</button>
                 <button id="btn-volver" class="btn-cancel" style="border: 1px solid var(--border-color); border-radius: 4px;">Volver a pagos</button>
             </div>
         </div>
@@ -199,6 +200,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="total-box">
                 <div class="total-monto">
                     <span>TOTAL PAGADO</span>
@@ -212,6 +214,34 @@
                 <span>Firma del Tesorero: <strong style="color: var(--text-main);">Paul Bryan Rafael Yepez</strong> - Tesorero</span>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de envío por correo -->
+    <div class="modal-overlay" id="email-modal">
+        <div class="modal">
+            <h3>Enviar comprobante por correo</h3>
+
+            <p>Verifica los datos antes de realizar el envío.</p>
+
+            <div style="text-align: left; margin-bottom: 1.5rem;">
+                <div class="info-item" style="margin-bottom: 1rem;">
+                    <span class="info-label">Correo del alumno</span>
+                    <span class="info-value font-medium" id="email-alumno">—</span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">Comprobante</span>
+                    <span class="info-value font-medium" id="email-comprobante">—</span>
+                </div>
+            </div>
+
+            <p id="email-message" class="error-message" role="alert"></p>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="btn-cancelar-envio">Cancelar</button>
+                <button class="btn-submit" id="btn-confirmar-envio">Enviar comprobante</button>
+            </div>
         </div>
     </div>
 

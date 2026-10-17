@@ -17,6 +17,13 @@ async function buscarPorPago(idPago) {
       TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') ||
         per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
       per."Numero_Documento" AS documento,
+      (
+        SELECT mc."Contacto"
+        FROM ${SCHEMA}."Metodo_Contacto" mc
+        WHERE mc."Id_Persona" = a."Id_Persona"
+          AND mc."Tipo_Contacto" = 'CORREO'
+        LIMIT 1
+      ) AS correo_electronico,
       det.disciplinas,
       det.periodo,
       (

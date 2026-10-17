@@ -39,6 +39,7 @@ async function obtenerComprobante(idPago) {
     hora: formato({ hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
     alumno: pago.alumno,
     documento: pago.documento,
+    correo: pago.correo_electronico,
     disciplinas: pago.disciplinas || '—',
     concepto: `Mensualidad ${periodo}`.trim(),
     metodo_pago: METODOS[pago.metodo_pago] || pago.metodo_pago,

@@ -15,4 +15,7 @@ router.get('/:idPago', comprobantesController.obtener);
 // GET /api/comprobantes/:idPago/pdf - Descarga del recibo virtual en PDF
 router.get('/:idPago/pdf', comprobantesController.descargarPdf);
 
+// POST /api/comprobantes/:idPago/enviar-correo - Envia el comprobante al alumno
+router.post('/:idPago/enviar-correo', comprobantesController.enviarPorCorreo);
+
 module.exports = router;
