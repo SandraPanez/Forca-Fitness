@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
         year: 'numeric'
     });
 
+    // Fecha de nacimiento sin edad mínima (también se matriculan niños), pero no puede ser futura
+    document.getElementById('fecha_nacimiento').max = today.toLocaleDateString('en-CA');
+
     // 2. Manejo de formulario (Validaciones básicas para T_01/T_06)
     const form = document.getElementById('matriculaForm');
     const errorDiv = document.getElementById('disciplinas-error');
