@@ -117,11 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnYesCancel.addEventListener('click', () => {
-        // Descartar datos ingresados y redirigir a la pantalla principal (Criterio de Aceptación 2)
+        // Descartar datos ingresados y volver a la pantalla principal (Criterio de Aceptación 2)
         form.reset();
         modal.style.display = 'none';
-        alert('Simulación: Redirigiendo al Menú Principal...');
-        // En producción sería: window.location.href = '/ruta-del-menu';
+        window.location.href = paginaDeInicio();
     });
 
     // 4. Contador de caracteres para Observaciones Médicas (T_03)

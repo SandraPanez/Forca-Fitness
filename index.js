@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
 
 app.get(
   '/tesoreria.html',
-  autenticar,
+  autenticarDashboard,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
 );
