@@ -67,6 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (roles.includes('ALUMNO')) {
+                window.location.href = '/mis-matriculas.html';
+                return;
+            }
+
             window.location.href = '/index.html';
 
         } catch (error) {

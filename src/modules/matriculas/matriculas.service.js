@@ -25,6 +25,57 @@ class MatriculasService {
     return horarios;
   }
 
+  async getMatriculasPorUsuario(idUsuario) {
+    if (!idUsuario) {
+      throw new Error('El ID del usuario es obligatorio.');
+    }
+
+    const matriculas = await matriculasRepository.getMatriculasPorUsuario(
+      idUsuario
+    );
+
+    const MILISEGUNDOS_POR_DIA = 1000 * 60 * 60 * 24;
+
+    return matriculas.map(matricula => {
+      // Algunas matrículas antiguas todavía no tienen detalle asociado.
+      if (!matricula.fecha_fin) {
+        return {
+          ...matricula,
+          estado_vigencia: null,
+          dias_restantes: null,
+          vigente: false
+        };
+      }
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      const fechaFin = new Date(matricula.fecha_fin);
+      fechaFin.setHours(0, 0, 0, 0);
+
+      const diasRestantes = Math.round(
+        (fechaFin - hoy) / MILISEGUNDOS_POR_DIA
+      );
+
+      let estadoVigencia;
+
+      if (diasRestantes < 0) {
+        estadoVigencia = 'Vencida';
+      } else if (diasRestantes <= 3) {
+        estadoVigencia = 'Próxima a vencer';
+      } else {
+        estadoVigencia = 'Activa';
+      }
+
+      return {
+        ...matricula,
+        estado_vigencia: estadoVigencia,
+        dias_restantes: diasRestantes,
+        vigente: diasRestantes >= 0
+      };
+    });
+  }
+
   async registrarMatricula(datosMatricula) {
     const { disciplinas, observaciones_medicas, password, confirm_password, ...datosEstudiante } = datosMatricula;
 

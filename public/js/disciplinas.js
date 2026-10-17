@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const selectDisciplina = document.getElementById('disciplina-select');
     const horariosGrid = document.getElementById('horarios-grid');
+    const params = new URLSearchParams(window.location.search);
+    const disciplinaInicial = params.get('disciplina');
 
     // 1. Cargar las disciplinas al iniciar la página
     async function loadDisciplinas() {
@@ -18,6 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     option.textContent = disc.nombre;
                     selectDisciplina.appendChild(option);
                 });
+                if (disciplinaInicial) {
+                    selectDisciplina.value = disciplinaInicial;
+
+                    if (selectDisciplina.value === disciplinaInicial) {
+                        await loadHorarios(disciplinaInicial);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error cargando disciplinas:', error);

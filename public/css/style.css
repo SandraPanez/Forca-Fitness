@@ -971,6 +971,21 @@ body {
     color: #e65100;
 }
 
+.badge-proxima {
+    background-color: #fff8e1;
+    color: #f57f17;
+}
+
+.badge-inhabilitada {
+    background-color: #212121;
+    color: #ffffff;
+}
+
+.badge-vencida-hu17 {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
 .dias-text {
     font-size: 0.85rem;
     color: var(--text-muted);
