@@ -164,6 +164,7 @@
     }
     navigationLinks.forEach((link)=>link.addEventListener('click',(event)=>{
       event.preventDefault();
+      window.history.replaceState(null,'',link.href);
       const selectedView=link.dataset.view;
       Object.entries(views).forEach(([viewName,view])=>{view.hidden=viewName!==selectedView});
       navigationLinks.forEach((navigationLink)=>{
@@ -171,6 +172,8 @@
         else navigationLink.removeAttribute('aria-current');
       });
     }));
+    const initialViewLink=[...navigationLinks].find((link)=>link.hash===window.location.hash);
+    if(initialViewLink)initialViewLink.click();
     document.querySelector('#discipline-groups').addEventListener('click',(event)=>{
       const trigger=event.target.closest('[data-student-id]');
       if(trigger)openStudentDrawer(trigger.dataset.studentId,trigger);
@@ -193,7 +196,7 @@
         const profileResponse=await authFetch('/api/profesores/me');
         teacherProfile=await readApiResponse(profileResponse);
         if(!teacherProfile||!Array.isArray(teacherProfile.disciplinas))throw new Error('El perfil del profesor devolvió disciplinas no válidas.');
-        document.querySelector('.account .user-name').textContent=teacherProfile.nombre;
+        document.querySelector('.app-usuario-nombre').textContent=teacherProfile.nombre;
         document.querySelector('#students-title').textContent=teacherProfile.nombre;
         updateDisciplines(teacherProfile.disciplinas);
 

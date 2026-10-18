@@ -107,14 +107,10 @@ async function cerrarSesion(event) {
 const MENU_POR_ROL = {
     DIRECTOR: [
         ['Alumnos', '/alumnos.html'],
-        ['Matrículas', '/index.html'],
-        ['Pagos', '/tesoreria.html'],
-        ['Control de acceso', '/control-acceso'],
-        ['Panel de correos', '/admin/queues']
+        ['Control de acceso', '/control-acceso']
     ],
     TESORERO: [
         ['Alumnos', '/alumnos.html'],
-        ['Matrículas', '/index.html'],
         ['Pagos', '/tesoreria.html']
     ],
     PROFESOR: [
@@ -139,7 +135,7 @@ const NOMBRE_ROL = {
 // La misma página a la que lleva el login según el rol
 const INICIO_POR_ROL = {
     DIRECTOR: '/alumnos.html',
-    TESORERO: '/alumnos.html',
+    TESORERO: '/tesoreria.html',
     PROFESOR: '/control-acceso',
     ALUMNO: '/mis-matriculas.html'
 };
