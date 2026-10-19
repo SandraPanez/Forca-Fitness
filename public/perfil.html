@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">
+            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img">
+            <h1>Portal Forca&Fitness</h1>
+        </div>
+        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
+            <nav class="top-nav">
+                <a href="/mis-matriculas.html">Mis matrículas</a>
+                <a href="/perfil.html" class="active">Mi Perfil</a>
+                <a href="/index.html">Nueva matrícula</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-details">
+                    <span class="user-name">Usuario</span>
+                    <span class="user-role">Alumno</span>
+                </div>
+                <a href="#" class="logout-btn">Cerrar sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="max-width: 700px;">
+
+        <section class="page-header">
+            <h2 class="title">Mi Perfil</h2>
+            <p class="description">Consulta y edita tu información personal.</p>
+        </section>
+
+        <div class="form-card">
+            <div id="datos-perfil">
+                <p>Cargando...</p>
+            </div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <a href="/editar-perfil.html" class="btn-submit">✏️ Editar datos</a>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        async function cargarPerfil() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) { window.location.href = '/login.html'; return; }
+
+                const res = await fetch('/api/perfil', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = '/login.html'; return;
+                }
+
+                const json = await res.json();
+                const d = json.data;
+                const generoTexto = d.genero === 'M' ? 'Masculino' : d.genero === 'F' ? 'Femenino' : d.genero || '—';
+
+                document.getElementById('datos-perfil').innerHTML = `
+                    <table style="width:100%; border-collapse:collapse;">
+                        <tr>
+                            <td style="padding:0.6rem; color:#666; width:40%;">Nombre completo</td>
+                            <td style="padding:0.6rem; font-weight:600;">${d.nombre || '—'} ${d.apellido_paterno || ''} ${d.apellido_materno || ''}</td>
+                        </tr>
+                        <tr style="background:#f9f9f9;">
+                            <td style="padding:0.6rem; color:#666;">Fecha de nacimiento</td>
+                            <td style="padding:0.6rem;">${d.fecha_nacimiento ? d.fecha_nacimiento.substring(0,10) : '—'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.6rem; color:#666;">Género</td>
+                            <td style="padding:0.6rem;">${generoTexto}</td>
+                        </tr>
+                        <tr style="background:#f9f9f9;">
+                            <td style="padding:0.6rem; color:#666;">Dirección</td>
+                            <td style="padding:0.6rem;">${d.direccion || '—'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.6rem; color:#666;">N° Documento</td>
+                            <td style="padding:0.6rem;">${d.numero_documento || '—'}</td>
+                        </tr>
+                        <tr style="background:#f9f9f9;">
+                            <td style="padding:0.6rem; color:#666;">Correo electrónico</td>
+                            <td style="padding:0.6rem;">${d.correo_electronico || '—'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.6rem; color:#666;">Celular</td>
+                            <td style="padding:0.6rem;">${d.numero_celular || '—'}</td>
+                        </tr>
+                    </table>
+                `;
+            } catch (e) {
+                document.getElementById('datos-perfil').innerHTML = '<p style="color:red;">Error al cargar perfil.</p>';
+            }
+        }
+
+        cargarPerfil();
+    </script>
+</body>
+</html>
