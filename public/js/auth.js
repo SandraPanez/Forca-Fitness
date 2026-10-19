@@ -25,7 +25,6 @@ function obtenerRolesUsuario(usuario = obtenerUsuario()) {
         return usuario.roles;
     }
 
-    // Compatibilidad con sesiones anteriores de un solo rol
     if (usuario.rol) {
         return [usuario.rol];
     }
@@ -121,5 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '/login.html';
             }
         });
+    });
+
+    // Mostrar/ocultar elementos según rol
+    const roles = usuario ? obtenerRolesUsuario(usuario) : [];
+    document.querySelectorAll('[data-rol]').forEach(el => {
+        const rolesPermitidos = el.dataset.rol.split(',').map(r => r.trim());
+        const tieneRol = roles.some(r => rolesPermitidos.includes(r));
+        el.style.display = tieneRol ? '' : 'none';
     });
 });
