@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 
 const express = require('express');
 const db = require('./src/shared/config/database');
@@ -82,7 +82,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = '0.0.0.0';
 
 const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
 const expirationCheck = setInterval(async () => {
@@ -99,7 +99,5 @@ const expirationCheck = setInterval(async () => {
 expirationCheck.unref();
 
 app.listen(PORT, HOST, () => {
-  const url = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
-  console.log(`Servidor iniciado en ${url}`);
+  console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
 });
-
