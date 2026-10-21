@@ -121,7 +121,8 @@ const MENU_POR_ROL = {
         ['Nueva matrícula', '/index.html'],
         ['Disciplinas', '/disciplinas.html'],
         ['Renovar', '/mis-matriculas.html#renovar'],
-        ['Mis matrículas', '/mis-matriculas.html']
+        ['Mis matrículas', '/mis-matriculas.html'],
+        ['Mi perfil', '/perfil.html']
     ]
 };
 

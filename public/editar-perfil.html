@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar datos personales | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+<body data-menu="/perfil.html">
+
+    <header id="app-header"></header>
+
+    <main class="container">
+
+        <section class="page-header">
+            <h2 class="title">Editar datos personales</h2>
+            <p class="description">Actualiza tu información personal. Los cambios se guardarán en tu perfil.</p>
+        </section>
+
+        <div class="form-card">
+            <div class="form-header">
+                <div>
+                    <h3 class="form-title">Datos personales</h3>
+                    <p class="form-description">Modifica los campos que desees actualizar.</p>
+                </div>
+                <div class="required-note">
+                    <span class="asterisk">*</span> Campos obligatorios
+                </div>
+            </div>
+
+            <form id="editarPerfilForm" novalidate>
+
+                <div class="section">
+                    <h4 class="section-title">Información básica</h4>
+                    <hr class="divider">
+
+                    <div class="grid-2-cols">
+                        <div class="form-group">
+                            <label for="nombre">Nombre(s) <span class="asterisk">*</span></label>
+                            <input type="text" id="nombre" name="nombre"
+                                   placeholder="Ej: Juan"
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                                   title="Solo se permiten letras y espacios" required>
+                            <span class="error-message" id="error-nombre" style="display:none">El nombre es obligatorio y solo debe contener letras.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="apellido_paterno">Apellido paterno <span class="asterisk">*</span></label>
+                            <input type="text" id="apellido_paterno" name="apellido_paterno"
+                                   placeholder="Ej: Rondón"
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                                   title="Solo se permiten letras y espacios" required>
+                            <span class="error-message" id="error-apellido_paterno" style="display:none">El apellido paterno es obligatorio.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="apellido_materno">Apellido materno <span class="asterisk">*</span></label>
+                            <input type="text" id="apellido_materno" name="apellido_materno"
+                                   placeholder="Ej: Pujay"
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                                   title="Solo se permiten letras y espacios" required>
+                            <span class="error-message" id="error-apellido_materno" style="display:none">El apellido materno es obligatorio.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fecha_nacimiento">Fecha de nacimiento <span class="asterisk">*</span></label>
+                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento"
+                                   min="1930-01-01" required>
+                            <span class="error-message" id="error-fecha_nacimiento" style="display:none">La fecha de nacimiento es obligatoria.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="genero">Género <span class="asterisk">*</span></label>
+                            <select id="genero" name="genero" required>
+                                <option value="">Seleccionar</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                            <span class="error-message" id="error-genero" style="display:none">Debes seleccionar un género.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="direccion">Dirección <span class="asterisk">*</span></label>
+                            <input type="text" id="direccion" name="direccion"
+                                   placeholder="Ej: Los Olivos, Lima, Perú" required>
+                            <span class="error-message" id="error-direccion" style="display:none">La dirección es obligatoria.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h4 class="section-title">Información de contacto</h4>
+                    <hr class="divider">
+
+                    <div class="grid-2-cols">
+                        <div class="form-group">
+                            <label for="correo_electronico">Correo electrónico</label>
+                            <input type="email" id="correo_electronico" name="correo_electronico"
+                                   placeholder="Ej: juan@gmail.com">
+                            <span class="error-message" id="error-correo_electronico" style="display:none">Ingresa un correo válido.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numero_celular">Número de celular</label>
+                            <input type="tel" id="numero_celular" name="numero_celular"
+                                   placeholder="Ej: 987654321"
+                                   pattern="^[0-9]{9}$"
+                                   title="Ingresa un número de 9 dígitos"
+                                   maxlength="9"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            <span class="error-message" id="error-numero_celular" style="display:none">Ingresa un número de 9 dígitos.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-submit" id="btn-guardar">Guardar cambios</button>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+    <!-- Modal de éxito -->
+    <div class="modal-overlay" id="modalExito" style="display:none; align-items:center; justify-content:center;">
+        <div class="modal">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+            <h3>¡Listo!</h3>
+            <p>Datos actualizados correctamente.</p>
+            <div class="modal-actions" style="justify-content:center;">
+                <button class="btn-submit" id="btn-ok-exito">Volver al perfil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de cancelar (T-07) -->
+    <div class="modal-overlay" id="modalCancelar" style="display:none; align-items:center; justify-content:center;">
+        <div class="modal">
+            <h3>¿Descartar cambios?</h3>
+            <p>Los cambios que realizaste no se guardarán.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="btn-no-cancelar">No, seguir editando</button>
+                <button class="btn-submit btn-danger" id="btn-si-cancelar">Sí, descartar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/editar-perfil.js"></script>
+</body>
+</html>

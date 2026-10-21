@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+<body>
+
+    <header id="app-header"></header>
+
+    <main class="container" style="max-width: 700px;">
+
+        <section class="page-header">
+            <h2 class="title">Mi Perfil</h2>
+            <p class="description">Consulta y edita tu información personal.</p>
+        </section>
+
+        <div class="form-card">
+            <div id="datos-perfil">
+                <p>Cargando...</p>
+            </div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <a href="/editar-perfil.html" class="btn-submit">✏️ Editar datos</a>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        async function cargarPerfil() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) { window.location.href = '/login.html'; return; }
+
+                const res = await authFetch('/api/perfil');
+
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = '/login.html'; return;
+                }
+
+                const json = await res.json();
+                if (!res.ok || !json.success) throw new Error(json.message || 'No se pudo cargar el perfil.');
+                const d = json.data;
+                const generoTexto = d.genero === 'M' ? 'Masculino' : d.genero === 'F' ? 'Femenino' : d.genero || '—';
+                const nombreCompleto = [d.nombre, d.apellido_paterno, d.apellido_materno].filter(Boolean).join(' ');
+                document.querySelector('.app-usuario-nombre').textContent = nombreCompleto;
+                const campos = [
+                    ['Nombre completo', nombreCompleto],
+                    ['Fecha de nacimiento', d.fecha_nacimiento?.substring(0, 10)],
+                    ['Género', generoTexto],
+                    ['Dirección', d.direccion],
+                    ['N° Documento', d.numero_documento],
+                    ['Correo electrónico', d.correo_electronico],
+                    ['Celular', d.numero_celular]
+                ];
+                const tabla = document.createElement('table');
+                tabla.style.cssText = 'width:100%; border-collapse:collapse;';
+                campos.forEach(([etiqueta, valor], index) => {
+                    const fila = document.createElement('tr');
+                    if (index % 2) fila.style.background = '#f9f9f9';
+                    const titulo = document.createElement('th');
+                    titulo.scope = 'row';
+                    titulo.style.cssText = 'padding:0.6rem; color:#666; width:40%; text-align:left; font-weight:400;';
+                    titulo.textContent = etiqueta;
+                    const dato = document.createElement('td');
+                    dato.style.padding = '0.6rem';
+                    dato.textContent = valor || '—';
+                    fila.append(titulo, dato);
+                    tabla.append(fila);
+                });
+                document.getElementById('datos-perfil').replaceChildren(tabla);
+            } catch (e) {
+                document.getElementById('datos-perfil').textContent = 'Error al cargar perfil. Recarga la página para reintentar.';
+            }
+        }
+
+        cargarPerfil();
+    </script>
+</body>
+</html>
