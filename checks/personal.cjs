@@ -33,6 +33,8 @@ const { tienePermiso, PERMISOS } = require(path.join(repo, 'src/shared/constants
   detalle = null;
   assert.equal(await obtenerDetalle('NOEXISTE'), null, 'Una cuenta fuera del personal operativo no se detalla.');
 
+  assert.equal(PERMISOS.ADMINISTRAR_ACCESOS, 'ADMINISTRAR_ACCESOS', 'El permiso debe estar declarado con su nombre.');
+  assert(!tienePermiso(['DIRECTOR'], undefined), 'Un permiso inexistente no debe autorizar al director.');
   assert(tienePermiso(['DIRECTOR'], PERMISOS.ADMINISTRAR_ACCESOS), 'El director ve Administración de accesos.');
   assert(tienePermiso(['DIRECTOR', 'PROFESOR'], PERMISOS.ADMINISTRAR_ACCESOS), 'Director + Profesor conserva el acceso.');
   for (const rol of ['TESORERO', 'PROFESOR', 'ALUMNO']) {
