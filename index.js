@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 const express = require('express');
 const db = require('./src/shared/config/database');
@@ -92,8 +92,13 @@ const expirationCheck = setInterval(async () => {
     if (expired > 0) {
       console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
     }
+    const activadas = await require('./src/modules/pagos/pagos.service')
+      .activarReservasIniciadas();
+    if (activadas > 0) {
+      console.log(`Reservas activadas automáticamente al iniciar periodo: ${activadas}`);
+    }
   } catch (error) {
-    console.error('Error al anular solicitudes de efectivo vencidas:', error);
+    console.error('Error al procesar tareas periódicas de pagos/reservas:', error);
   }
 }, EXPIRATION_CHECK_INTERVAL);
 expirationCheck.unref();

@@ -32,9 +32,13 @@ document.addEventListener('DOMContentLoaded', () => {
   methodInputs.forEach(input => input.addEventListener('change', updateSummary));
 
   const result = params.get('resultado');
+  const tipo = params.get('tipo');
   const steps = document.querySelectorAll('.payment-step');
   if (result === 'exitoso') {
-    showMessage('¡Pago aprobado! Tu matrícula está confirmada. Redirigiendo a Mis matrículas en 3 segundos...', 'success');
+    const successMsg = tipo === 'reserva'
+      ? '¡Pago aprobado! Cupo reservado correctamente. Redirigiendo a Mis matrículas en 3 segundos...'
+      : '¡Pago aprobado! Tu matrícula está confirmada. Redirigiendo a Mis matrículas en 3 segundos...';
+    showMessage(successMsg, 'success');
     steps[1]?.classList.remove('active');
     steps[1]?.classList.add('completed');
     steps[1].querySelector('span').textContent = '✓';

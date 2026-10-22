@@ -143,13 +143,13 @@ class PagosService {
         );
 
 
-        const estadoMatricula =
-            estadoMP === 'approved'
-                ? 'Activa'
-                : estadoMP === 'rejected'
-                    ? 'Inactiva'
-                    : 'Pendiente';
-
+        let estadoMatricula = 'Pendiente';
+        if (estadoMP === 'approved') {
+            const esFutura = await pagosRepository.esMatriculaPeriodoFuturo(idMatricula);
+            estadoMatricula = esFutura ? 'Reservada' : 'Activa';
+        } else if (estadoMP === 'rejected') {
+            estadoMatricula = 'Inactiva';
+        }
 
         // Actualizar matrícula
         await pagosRepository.actualizarEstadoMatricula(
@@ -216,6 +216,10 @@ class PagosService {
 
     async anularSolicitudesEfectivoVencidas() {
         return pagosRepository.anularSolicitudesEfectivoVencidas();
+    }
+
+    async activarReservasIniciadas() {
+        return pagosRepository.activarReservasIniciadas();
     }
 }
 

@@ -142,7 +142,18 @@ class MatriculasService {
 
       let estadoVigencia;
 
-      if (diasRestantes < 0) {
+      const fechaInicio = matricula.fecha_inicio ? new Date(matricula.fecha_inicio) : null;
+      if (fechaInicio) fechaInicio.setHours(0, 0, 0, 0);
+
+      if (matricula.estado_matricula === 'Reservada') {
+        if (fechaInicio && fechaInicio <= hoy) {
+          estadoVigencia = 'Activa';
+        } else {
+          estadoVigencia = 'Reservada';
+        }
+      } else if (fechaInicio && fechaInicio > hoy) {
+        estadoVigencia = 'Reservada';
+      } else if (diasRestantes < 0) {
         estadoVigencia = 'Vencida';
       } else if (diasRestantes <= 3) {
         estadoVigencia = 'Próxima a vencer';

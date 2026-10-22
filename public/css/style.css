@@ -1005,6 +1005,11 @@ body {
     color: #c62828;
 }
 
+.badge-reservada {
+    background-color: #ede7f6;
+    color: #4527a0;
+}
+
 .dias-text {
     font-size: 0.85rem;
     color: var(--text-muted);

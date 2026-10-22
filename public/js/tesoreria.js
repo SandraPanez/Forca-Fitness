@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'No se pudo confirmar el pago.');
-      showMessage('Pago en efectivo confirmado correctamente.', 'success');
+      showMessage(result.message || 'Pago en efectivo confirmado correctamente.', 'success');
       await cargarCobros();
     } catch (error) {
       showMessage(error.message, 'error');

@@ -62,10 +62,13 @@ class PagosController {
                 req.body.referencia_operacion,
                 req.user.id
             );
+            const esReserva = pago?.estadoMatricula === 'Reservada';
             return res.status(200).json({
                 success: true,
                 data: pago,
-                message: 'Pago en efectivo confirmado'
+                message: esReserva
+                    ? 'Pago en efectivo confirmado. Cupo reservado correctamente.'
+                    : 'Pago en efectivo confirmado correctamente.'
             });
         } catch (error) {
             console.error('Error al confirmar pago en efectivo:', error);
@@ -82,14 +85,13 @@ class PagosController {
 
             if (status === 'approved' && payment_id) {
 
-                // Confirmar el pago también desde la URL de retorno.
-                // Esto actualiza Pago, Matrícula y activa el Usuario.
-                await pagosService.procesarWebhook(
+                const resultado = await pagosService.procesarWebhook(
                     'payment',
                     payment_id
                 );
 
-                return res.redirect('/pagos.html?preview=1&resultado=exitoso');
+                const esReserva = resultado?.estadoMatricula === 'Reservada';
+                return res.redirect(`/pagos.html?preview=1&resultado=exitoso${esReserva ? '&tipo=reserva' : ''}`);
             }
 
             return res.redirect('/pagos.html?preview=1&resultado=pendiente');

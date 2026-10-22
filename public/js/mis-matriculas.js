@@ -99,6 +99,10 @@ function formatearFecha(fecha) {
 
 
 function obtenerClaseEstado(estado) {
+    if (estado === 'Reservada') {
+        return 'badge-reservada';
+    }
+
     if (estado === 'Activa') {
         return 'badge-activa';
     }
@@ -120,6 +124,14 @@ function obtenerClaseEstado(estado) {
 
 
 function obtenerTextoDias(estado, diasRestantes) {
+    if (estado === 'Reservada') {
+        return `
+            <span class="dias-text">
+                Inicio próximo periodo
+            </span>
+        `;
+    }
+
     if (diasRestantes === null || diasRestantes === undefined) {
         return '';
     }

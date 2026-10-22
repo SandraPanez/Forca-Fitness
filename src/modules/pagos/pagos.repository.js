@@ -153,11 +153,14 @@ class PagosRepository {
             if (!pago.rows[0]) {
                 throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
             }
+            const esFutura = await this.esMatriculaPeriodoFuturo(idMatricula, client);
+            const estadoMatricula = esFutura ? 'Reservada' : 'Activa';
+
             await client.query(`
                 UPDATE "Academia Forca&Fitness"."Matricula"
-                SET "Estado_Matricula" = 'Activa'
+                SET "Estado_Matricula" = $2
                 WHERE "Id_Matricula" = $1
-            `, [idMatricula]);
+            `, [idMatricula, estadoMatricula]);
             await client.query(`
                 UPDATE "Academia Forca&Fitness"."Usuario" u
                 SET "Estado_Usuario" = 'ACTIVO'
@@ -172,7 +175,10 @@ class PagosRepository {
                 VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
             `, [`REG${Date.now().toString().slice(-14)}`, pago.rows[0].Monto, pago.rows[0].Id_Pago, referenciaOperacion || null]);
             await client.query('COMMIT');
-            return pago.rows[0];
+            return {
+                ...pago.rows[0],
+                estadoMatricula
+            };
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
@@ -207,6 +213,21 @@ class PagosRepository {
                 id_pago: pago.Id_Pago
             });
         }
+        return result.rows.length;
+    }
+
+    async activarReservasIniciadas() {
+        const result = await db.query(`
+            UPDATE "Academia Forca&Fitness"."Matricula" m
+            SET "Estado_Matricula" = 'Activa'
+            WHERE m."Estado_Matricula" = 'Reservada'
+              AND EXISTS (
+                  SELECT 1 FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                  WHERE dm."Id_Matricula" = m."Id_Matricula"
+                    AND dm."Fecha_Inicio" <= CURRENT_DATE
+              )
+            RETURNING m."Id_Matricula"
+        `);
         return result.rows.length;
     }
 
@@ -351,6 +372,24 @@ class PagosRepository {
         );
 
         return result.rows[0];
+    }
+
+    async esMatriculaPeriodoFuturo(idMatricula, client = db) {
+        const query = `
+            SELECT 1
+            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+            WHERE dm."Id_Matricula" = $1
+              AND (
+                  EXTRACT(YEAR FROM dm."Fecha_Inicio") > EXTRACT(YEAR FROM CURRENT_DATE)
+                  OR (
+                      EXTRACT(YEAR FROM dm."Fecha_Inicio") = EXTRACT(YEAR FROM CURRENT_DATE)
+                      AND EXTRACT(MONTH FROM dm."Fecha_Inicio") > EXTRACT(MONTH FROM CURRENT_DATE)
+                  )
+              )
+            LIMIT 1
+        `;
+        const result = await client.query(query, [idMatricula]);
+        return result.rows.length > 0;
     }
 
 
