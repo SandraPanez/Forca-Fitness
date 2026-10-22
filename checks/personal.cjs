@@ -4,12 +4,12 @@ const path = require('node:path');
 const repo = path.resolve(__dirname, '..');
 
 const repositoryPath = require.resolve(path.join(repo, 'src/modules/personal/personal.repository.js'));
-let filas = [];
+let filas = [], detalle = null;
 require.cache[repositoryPath] = {
   id: repositoryPath, filename: repositoryPath, loaded: true,
-  exports: { listarPersonalOperativo: async () => filas }
+  exports: { listarPersonalOperativo: async () => filas, obtenerDetallePersonal: async () => detalle }
 };
-const { listarPersonal } = require(path.join(repo, 'src/modules/personal/personal.service.js'));
+const { listarPersonal, obtenerDetalle } = require(path.join(repo, 'src/modules/personal/personal.service.js'));
 const { tienePermiso, PERMISOS } = require(path.join(repo, 'src/shared/constants/permisos.js'));
 
 (async () => {
@@ -25,6 +25,13 @@ const { tienePermiso, PERMISOS } = require(path.join(repo, 'src/shared/constants
   assert.deepEqual(lista.map(p => p.id), ['U2', 'U6', 'U5', 'U4', 'U3', 'U7'],
     'Tesoreros primero y profesores alfabéticos sin importar tildes ni mayúsculas.');
   assert.equal(lista.at(-1).nombre, 'Sin nombre registrado', 'Una cuenta sin persona no debe romper la lista.');
+
+  detalle = { id: 'U6', nombre: 'Zoila Vega Soto', roles: ['PROFESOR', 'TESORERO'], disciplinas: ['MMA'] };
+  assert.deepEqual((await obtenerDetalle('U6')).disciplinas, ['MMA'], 'El profesor muestra sus disciplinas.');
+  detalle = { id: 'U2', nombre: 'Paul Rafael Yepez', roles: ['TESORERO'], disciplinas: ['MMA'] };
+  assert.deepEqual((await obtenerDetalle('U2')).disciplinas, [], 'El tesorero no muestra disciplinas.');
+  detalle = null;
+  assert.equal(await obtenerDetalle('NOEXISTE'), null, 'Una cuenta fuera del personal operativo no se detalla.');
 
   assert(tienePermiso(['DIRECTOR'], PERMISOS.ADMINISTRAR_ACCESOS), 'El director ve Administración de accesos.');
   assert(tienePermiso(['DIRECTOR', 'PROFESOR'], PERMISOS.ADMINISTRAR_ACCESOS), 'Director + Profesor conserva el acceso.');

@@ -13,4 +13,11 @@ router.get(
   personalController.listarPersonal
 );
 
+router.get(
+  '/:id',
+  autenticar,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  personalController.obtenerDetalle
+);
+
 module.exports = router;

@@ -819,6 +819,10 @@ body {
     background-color: rgba(241, 245, 249, 0.5); /* var(--hover-bg) con opacidad */
 }
 
+.personal-detalle td {
+    background-color: var(--hover-bg);
+}
+
 .alumno-row {
     display: flex;
     align-items: center;

@@ -23,6 +23,22 @@ async function listarPersonal() {
     });
 }
 
+// Información detallada de un trabajador. Las disciplinas solo aplican a quien es profesor.
+async function obtenerDetalle(idUsuario) {
+  const persona = await personalRepository.obtenerDetallePersonal(idUsuario);
+
+  if (!persona) {
+    return null;
+  }
+
+  return {
+    ...persona,
+    nombre: persona.nombre || 'Sin nombre registrado',
+    disciplinas: persona.roles.includes(ROLES.PROFESOR) ? persona.disciplinas : []
+  };
+}
+
 module.exports = {
-  listarPersonal
+  listarPersonal,
+  obtenerDetalle
 };
