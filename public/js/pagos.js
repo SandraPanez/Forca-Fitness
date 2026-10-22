@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const methodInputs = document.querySelectorAll('input[name="method"]');
   const message = document.getElementById('payment-message');
   const params = new URLSearchParams(window.location.search);
+  if (params.get('renovacion') === '1') form.querySelector('.btn-cancel').href = '/mis-matriculas.html';
   if (params.get('matricula')) document.getElementById('id-matricula').value = params.get('matricula');
   if (params.get('concepto')) document.getElementById('concept').value = params.get('concepto');
   if (params.get('nombre')) {

@@ -153,11 +153,7 @@ class PagosRepository {
             if (!pago.rows[0]) {
                 throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
             }
-            await client.query(`
-                UPDATE "Academia Forca&Fitness"."Matricula"
-                SET "Estado_Matricula" = 'Activa'
-                WHERE "Id_Matricula" = $1
-            `, [idMatricula]);
+            await this.actualizarEstadoMatricula(idMatricula, 'Activa', client);
             await client.query(`
                 UPDATE "Academia Forca&Fitness"."Usuario" u
                 SET "Estado_Usuario" = 'ACTIVO'
@@ -331,8 +327,45 @@ class PagosRepository {
 
     async actualizarEstadoMatricula(
         id_matricula,
-        estado_matricula
+        estado_matricula,
+        client = db
     ) {
+        if (['ACTIVA', 'ACTIVO'].includes(String(estado_matricula).toUpperCase())) {
+            // Se activa y se calcula la renovación una sola vez, también ante webhooks repetidos.
+            const result = await client.query(`
+                WITH activacion AS (
+                    UPDATE "Academia Forca&Fitness"."Matricula"
+                    SET "Estado_Matricula" = $1
+                    WHERE "Id_Matricula" = $2
+                      AND UPPER("Estado_Matricula") NOT IN ('ACTIVA', 'ACTIVO')
+                    RETURNING "Id_Matricula", "Estado_Matricula", "Id_alumno"
+                ), periodos AS (
+                    SELECT actual."Id_DetMatricula",
+                        GREATEST(CURRENT_DATE, MAX(anterior."Fecha_Fin") + 1) AS inicio
+                    FROM activacion a
+                    JOIN "Academia Forca&Fitness"."Detalles_Matricula" actual
+                      ON actual."Id_Matricula" = a."Id_Matricula"
+                    JOIN "Academia Forca&Fitness"."Matricula" previa
+                      ON previa."Id_alumno" = a."Id_alumno" AND previa."Id_Matricula" <> a."Id_Matricula"
+                      AND UPPER(previa."Estado_Matricula") IN ('ACTIVA', 'ACTIVO', 'VENCIDA')
+                    JOIN "Academia Forca&Fitness"."Detalles_Matricula" anterior
+                      ON anterior."Id_Matricula" = previa."Id_Matricula"
+                      AND anterior."Id_DiscHorario" = actual."Id_DiscHorario"
+                    GROUP BY actual."Id_DetMatricula"
+                ), fechas AS (
+                    UPDATE "Academia Forca&Fitness"."Detalles_Matricula" dm
+                    SET "Fecha_Inicio" = p.inicio,
+                        "Fecha_Fin" = (p.inicio + INTERVAL '29 days')::DATE
+                    FROM periodos p WHERE dm."Id_DetMatricula" = p."Id_DetMatricula"
+                    RETURNING dm."Id_DetMatricula"
+                )
+                SELECT "Id_Matricula", "Estado_Matricula" FROM activacion
+                UNION ALL
+                SELECT "Id_Matricula", "Estado_Matricula" FROM "Academia Forca&Fitness"."Matricula"
+                WHERE "Id_Matricula" = $2 AND NOT EXISTS (SELECT 1 FROM activacion)
+            `, [estado_matricula, id_matricula]);
+            return result.rows[0] || null;
+        }
         const query = `
             UPDATE "Academia Forca&Fitness"."Matricula"
             SET "Estado_Matricula" = $1
@@ -342,13 +375,7 @@ class PagosRepository {
                 "Estado_Matricula"
         `;
 
-        const result = await db.query(
-            query,
-            [
-                estado_matricula,
-                id_matricula
-            ]
-        );
+        const result = await client.query(query, [estado_matricula, id_matricula]);
 
         return result.rows[0];
     }
