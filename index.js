@@ -52,7 +52,8 @@ const {
   authRoutes,
   pagosRoutes,
   comprobantesRoutes,
-  perfilRoutes
+  perfilRoutes,
+  personalRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
@@ -62,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
 app.use('/api/perfil', perfilRoutes);
+app.use('/api/personal', personalRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
