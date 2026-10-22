@@ -96,9 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const roles = obtenerRolesUsuario(usuario);
 
         document.querySelectorAll('.user-role').forEach(element => {
-            element.textContent = roles.length > 0
-                ? roles.join(' / ')
-                : 'SIN ROL';
+            if (roles.includes('ALUMNO')) {
+                element.textContent = 'Cliente';
+            } else if (roles.length > 0) {
+                element.textContent = roles.join(' / ');
+            } else {
+                element.textContent = 'Cliente';
+            }
         });
 
         document.querySelectorAll('.user-name').forEach(element => {

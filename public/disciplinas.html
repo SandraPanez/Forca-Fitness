@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-allow-guest="true">
 
     <!-- Header -->
     <header class="header">
@@ -20,19 +20,23 @@
         
         <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
             <!-- Menú superior sincronizado -->
-            <nav class="top-nav">
-                <a href="/alumnos.html">Alumnos</a>
-                <a href="/index.html">Matrículas</a>
+            <nav class="top-nav" id="top-nav">
+                <a href="/index.html">Matrícula</a>
                 <a href="/disciplinas.html" class="active">Disciplinas</a>
-                <a href="/pagos.html">Pagos</a>
+                <a href="/mis-matriculas.html">Renovar</a>
+                <a href="/mis-matriculas.html">Mi matrícula</a>
             </nav>
 
-            <div class="user-info">
+            <div class="user-info" id="user-info">
                 <div class="user-details">
-                    <span class="user-name">Paul Bryan Rafael Yepez</span>
-                    <span class="user-role">Tesorero</span>
+                    <span class="user-name">Juan Rondón Pujay</span>
+                    <span class="user-role">Cliente</span>
                 </div>
                 <a href="#" class="logout-btn">Cerrar sesión</a>
+            </div>
+
+            <div id="guest-nav" style="display: none;">
+                <a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>
             </div>
         </div>
     </header>
@@ -42,7 +46,7 @@
         
         <!-- Page Header -->
         <section class="page-header">
-            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">Consulta de clases</p>
+            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">CONSULTA DE CLASES</p>
             <h2 class="title">Horarios y disponibilidad</h2>
             <p class="description">Revisa los horarios y cupos disponibles por disciplina.</p>
         </section>
@@ -60,70 +64,15 @@
                     <label for="disciplina-select">Disciplina</label>
                     <select id="disciplina-select">
                         <option value="">Seleccione...</option>
-                        <!-- Mockup de opciones (Se llenarán por JS después) -->
-                        <option value="1">Boxeo</option>
-                        <option value="2">MMA</option>
-                        <option value="3">Muay Thai</option>
                     </select>
                 </div>
             </div>
 
             <hr class="divider">
 
-            <!-- Grilla de Horarios (Mockup visual para T_06) -->
+            <!-- Grilla de Horarios -->
             <div id="horarios-grid" class="horarios-grid">
-                
-                <!-- Tarjeta Disponible -->
-                <div class="horario-card">
-                    <div class="horario-info">
-                        <span class="horario-dias">Lunes / Miércoles / Viernes</span>
-                        <span class="horario-horas">7:00 p. m. - 8:00 p. m.</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text">4 cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: 20</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="badge-disponible">Disponible</span>
-                    </div>
-                </div>
-
-                <!-- Tarjeta Últimos Cupos -->
-                <div class="horario-card">
-                    <div class="horario-info">
-                        <span class="horario-dias">Martes / Jueves</span>
-                        <span class="horario-horas">6:00 a. m. - 7:00 a. m.</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text" style="color: var(--danger-color)">2 cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: 15</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="badge-ultimos">Últimos cupos</span>
-                    </div>
-                </div>
-
-                <!-- Tarjeta Agotado -->
-                <div class="horario-card agotado">
-                    <div class="horario-info">
-                        <span class="horario-dias">Sábados / Domingos</span>
-                        <span class="horario-horas">9:00 a. m. - 10:30 a. m.</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text">0 cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: 25</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="badge-agotado">Agotado</span>
-                    </div>
-                </div>
-
+                <div class="text-muted" style="text-align: center; padding: 2rem;">Cargando horarios...</div>
             </div>
             
         </div>

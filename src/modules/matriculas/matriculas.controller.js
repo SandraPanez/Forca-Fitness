@@ -15,11 +15,12 @@ class MatriculasController {
   async getHorariosPorDisciplina(req, res) {
     try {
       const { id } = req.params;
-      const horarios = await matriculasService.getHorariosPorDisciplina(id);
-      return successResponse(res, 200, horarios, 'Horarios obtenidos correctamente');
+      const { periodo } = req.query;
+      const resultado = await matriculasService.getHorariosPorDisciplina(id, periodo);
+      return successResponse(res, 200, resultado, 'Horarios obtenidos correctamente');
     } catch (error) {
       console.error('Error en getHorariosPorDisciplina:', error);
-      const isUserError = error.message.includes('obligatorio');
+      const isUserError = error.message.includes('obligatorio') || error.message.includes('periodo');
       return errorResponse(res, isUserError ? 400 : 500, error.message || 'Error al obtener los horarios');
     }
   }

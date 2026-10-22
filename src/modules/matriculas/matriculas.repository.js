@@ -97,6 +97,57 @@ class MatriculasRepository {
     return parseInt(result.rows[0].total, 10);
   }
 
+  async getDisciplinaById(id_disciplina) {
+    const query = `
+      SELECT
+        "Id_Disciplinas" AS id,
+        "Nombre_Disciplina" AS nombre,
+        "Descripcion" AS descripcion,
+        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
+      FROM ${SCHEMA}."Disciplina"
+      WHERE "Id_Disciplinas" = $1
+    `;
+    const result = await db.query(query, [id_disciplina]);
+    return result.rows[0] || null;
+  }
+
+  async countInscritosPorHorarioYPeriodo(id_disc_horario, fechaInicioStr, fechaFinStr) {
+    const query = `
+      SELECT COUNT(DISTINCT dm."Id_DetMatricula") AS total
+      FROM ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Matricula" m ON m."Id_Matricula" = dm."Id_Matricula"
+      LEFT JOIN ${SCHEMA}."Pago" p ON p."Id_Matricula" = m."Id_Matricula"
+      WHERE dm."Id_DiscHorario" = $1
+        AND dm."Fecha_Inicio" <= $3::date
+        AND dm."Fecha_Fin" >= $2::date
+        AND (
+          m."Estado_Matricula" IN ('Activa', 'Reservada')
+          OR p."Estado_Pago" = 'APROBADO'
+        )
+    `;
+    const result = await db.query(query, [id_disc_horario, fechaInicioStr, fechaFinStr]);
+    return parseInt(result.rows[0].total, 10);
+  }
+
+  async countReservasPorDisciplinaYPeriodo(id_disciplina, fechaInicioStr, fechaFinStr) {
+    const query = `
+      SELECT COUNT(DISTINCT m."Id_Matricula") AS total
+      FROM ${SCHEMA}."Matricula" m
+      JOIN ${SCHEMA}."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      JOIN ${SCHEMA}."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      LEFT JOIN ${SCHEMA}."Pago" p ON p."Id_Matricula" = m."Id_Matricula"
+      WHERE dh."Id_Disciplina" = $1
+        AND dm."Fecha_Inicio" <= $3::date
+        AND dm."Fecha_Fin" >= $2::date
+        AND (
+          m."Estado_Matricula" = 'Reservada'
+          OR (p."Estado_Pago" = 'APROBADO' AND m."Fecha_Inscripcion" < dm."Fecha_Inicio")
+        )
+    `;
+    const result = await db.query(query, [id_disciplina, fechaInicioStr, fechaFinStr]);
+    return parseInt(result.rows[0].total, 10);
+  }
+
 
   // =========================================================
   // GENERACIÓN DE IDs

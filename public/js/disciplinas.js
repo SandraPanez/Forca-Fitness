@@ -4,6 +4,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const disciplinaInicial = params.get('disciplina');
 
+    // Formatear horas a 12 horas con a. m. / p. m.
+    function formatHora12(horaStr) {
+        if (!horaStr) return '';
+        const parts = horaStr.split(':');
+        let h = parseInt(parts[0], 10);
+        const m = parts[1] || '00';
+        const ampm = h >= 12 ? 'p. m.' : 'a. m.';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return `${h}:${m} ${ampm}`;
+    }
+
+    // Formatear días completos
+    function formatDias(diasStr) {
+        if (!diasStr) return '';
+        const d = diasStr.trim();
+        if (d === 'L-M-V') return 'Lunes / Miércoles / Viernes';
+        if (d === 'M-J') return 'Martes / Jueves';
+        if (d === 'S-D') return 'Sábados / Domingos';
+        if (d === 'L-M-M-J-V') return 'Lunes a Viernes';
+        return d;
+    }
+
     // 1. Cargar las disciplinas al iniciar la página
     async function loadDisciplinas() {
         try {
@@ -11,21 +34,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             if (result.success && result.data) {
-                // Limpiar opciones por defecto
                 selectDisciplina.innerHTML = '<option value="">Seleccione...</option>';
                 
                 result.data.forEach(disc => {
                     const option = document.createElement('option');
-                    option.value = disc.id; // Puede ser id_disciplina o id, dependiendo de cómo responde el backend
+                    option.value = disc.id;
                     option.textContent = disc.nombre;
                     selectDisciplina.appendChild(option);
                 });
+
                 if (disciplinaInicial) {
                     selectDisciplina.value = disciplinaInicial;
-
                     if (selectDisciplina.value === disciplinaInicial) {
                         await loadHorarios(disciplinaInicial);
                     }
+                } else if (result.data.length > 0) {
+                    // Si no hay parámetro, seleccionar por defecto la primera para ver horarios
+                    const defaultDisc = result.data.find(d => d.nombre === 'MMA') || result.data[0];
+                    selectDisciplina.value = defaultDisc.id;
+                    await loadHorarios(defaultDisc.id);
                 }
             }
         } catch (error) {
@@ -48,7 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success && result.data) {
-                renderHorarios(result.data);
+                const horarios = Array.isArray(result.data) ? result.data : (result.data.horarios || []);
+                renderHorarios(horarios);
             } else {
                 horariosGrid.innerHTML = '<div class="error-message">Error cargando horarios.</div>';
             }
@@ -65,44 +93,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        horariosGrid.innerHTML = ''; // Limpiar grilla
+        horariosGrid.innerHTML = '';
 
         horarios.forEach(horario => {
             const card = document.createElement('div');
             card.className = 'horario-card';
 
-            // Formatear horas (ej. 17:00:00 -> 17:00)
-            const formatHora = (horaFull) => horaFull ? horaFull.substring(0,5) : '';
-
-            // Lógica de indicadores visuales (T_08)
             let badgeClass = 'badge-disponible';
             let badgeText = 'Disponible';
             let cuposStyle = '';
 
-            if (horario.cupos_disponibles <= 0) { 
+            const cupos = horario.cupos_disponibles !== undefined ? horario.cupos_disponibles : horario.capacidad_max;
+            const capacidad = horario.capacidad_max || 0;
+
+            if (cupos <= 0) { 
                 badgeClass = 'badge-agotado';
-                badgeText = 'Sin cupos disponibles para este horario';
-                // T_09: Deshabilitar tarjeta visualmente
+                badgeText = 'Agotado';
                 card.classList.add('agotado');
-                card.style.opacity = '0.6';
-                card.style.pointerEvents = 'none';
-            } else if (horario.cupos_disponibles <= 5) {
+            } else if (cupos <= 2) {
                 badgeClass = 'badge-ultimos';
                 badgeText = 'Últimos cupos';
                 cuposStyle = 'color: var(--danger-color)';
             }
 
-            // Renderizado base con lógica de estados (T_08)
             card.innerHTML = `
                 <div class="horario-info">
-                    <span class="horario-dias">${horario.dias}</span>
-                    <span class="horario-horas">${formatHora(horario.hora_inicio)} - ${formatHora(horario.hora_fin)}</span>
-                    <span class="horario-profesor" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Prof. ${horario.profesor_nombre || 'No asignado'}</span>
+                    <span class="horario-dias">${formatDias(horario.dias)}</span>
+                    <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
                 </div>
                 
                 <div class="horario-capacidad">
-                    <span class="cupos-text" style="${cuposStyle}">${horario.cupos_disponibles} cupos disponibles</span>
-                    <span class="capacidad-text">Capacidad total: ${horario.capacidad_max}</span>
+                    <span class="cupos-text" style="${cuposStyle}">${cupos} cupos disponibles</span>
+                    <span class="capacidad-text">Capacidad total: ${capacidad}</span>
                 </div>
                 
                 <div class="horario-estado">
@@ -121,6 +143,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Iniciar script
     loadDisciplinas();
-    // Limpiar grilla de inicio para que no salgan los falsos del HTML mockup
-    horariosGrid.innerHTML = '';
 });
