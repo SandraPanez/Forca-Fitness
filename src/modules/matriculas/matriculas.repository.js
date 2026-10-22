@@ -665,7 +665,8 @@ class MatriculasRepository {
   async addDisciplinasAMatricula(
     matricula_id,
     disciplinasIds,
-    client = db
+    client = db,
+    fechas = null
   ) {
 
     for (const disciplina_id of disciplinasIds) {
@@ -699,6 +700,8 @@ class MatriculasRepository {
           'DET'
         );
 
+      const fechaInicio = fechas?.fecha_inicio || null;
+      const fechaFin = fechas?.fecha_fin || null;
 
       await client.query(
         `
@@ -712,15 +715,17 @@ class MatriculasRepository {
           VALUES (
             $1,
             $2,
-            CURRENT_DATE,
-            (CURRENT_DATE + INTERVAL '30 days')::date,
+            COALESCE($4::date, CURRENT_DATE),
+            COALESCE($5::date, (CURRENT_DATE + INTERVAL '30 days')::date),
             $3
           )
         `,
         [
           idDetalle,
           matricula_id,
-          horarioResult.rows[0].Id_DiscHorario
+          horarioResult.rows[0].Id_DiscHorario,
+          fechaInicio,
+          fechaFin
         ]
       );
     }

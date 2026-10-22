@@ -11,6 +11,9 @@ router.get('/disciplinas', matriculasController.getDisciplinas);
 // GET /api/matriculas/disciplinas/:id/horarios - Obtener horarios por disciplina (T_03)
 router.get('/disciplinas/:id/horarios', matriculasController.getHorariosPorDisciplina);
 
+// GET /api/matriculas/validar-reserva - Validar tope de 4 cupos y ventana de 2 meses (PSW-199)
+router.get('/validar-reserva', matriculasController.validarReserva);
+
 router.get(
   '/mis-matriculas',
   autenticar,

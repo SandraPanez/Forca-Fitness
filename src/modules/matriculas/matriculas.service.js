@@ -6,11 +6,7 @@ class MatriculasService {
     return await matriculasRepository.getDisciplinas();
   }
 
-  async getHorariosPorDisciplina(id_disciplina, periodo) {
-    if (!id_disciplina) {
-      throw new Error('El ID de la disciplina es obligatorio.');
-    }
-
+  validarReglasReserva({ periodo }) {
     const hoy = new Date();
     const anioActual = hoy.getFullYear();
     const mesActual = hoy.getMonth() + 1;
@@ -29,19 +25,82 @@ class MatriculasService {
       diffMeses = (anio - anioActual) * 12 + (mes - mesActual);
 
       if (diffMeses < 0) {
-        throw new Error('No se puede consultar disponibilidad para un periodo pasado.');
+        throw new Error('No se puede seleccionar ni consultar un periodo pasado.');
       }
       if (diffMeses > 2) {
-        throw new Error('Solo se permite consultar disponibilidad con hasta un máximo de 2 meses de anticipación.');
+        throw new Error('Solo se permite seleccionar o reservar cupo con hasta un máximo de 2 meses de anticipación.');
       }
     } else {
       periodo = `${anioActual}-${String(mesActual).padStart(2, '0')}`;
     }
 
     const es_periodo_futuro = diffMeses > 0;
-    const fechaInicioStr = `${anio}-${String(mes).padStart(2, '0')}-01`;
     const ultimoDia = new Date(anio, mes, 0).getDate();
+    const fechaInicioStr = `${anio}-${String(mes).padStart(2, '0')}-01`;
     const fechaFinStr = `${anio}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
+
+    return {
+      valido: true,
+      periodo,
+      anio,
+      mes,
+      diffMeses,
+      es_periodo_futuro,
+      fechaInicioStr,
+      fechaFinStr
+    };
+  }
+
+  async validarTopeCuposReserva(id_disciplina, periodo) {
+    if (!id_disciplina) {
+      throw new Error('El ID de la disciplina es obligatorio.');
+    }
+    const reg = this.validarReglasReserva({ periodo });
+    const MAX_CUPOS_RESERVA = 4;
+
+    if (!reg.es_periodo_futuro) {
+      return {
+        valido: true,
+        puede_reservar: true,
+        es_periodo_futuro: false,
+        periodo: reg.periodo,
+        max_cupos_reserva: MAX_CUPOS_RESERVA,
+        cupos_reservados: 0,
+        cupos_reserva_disponibles: null,
+        mensaje: 'Periodo corriente'
+      };
+    }
+
+    const reservasDisciplina = await matriculasRepository.countReservasPorDisciplinaYPeriodo(
+      id_disciplina,
+      reg.fechaInicioStr,
+      reg.fechaFinStr
+    );
+    const cuposReservaRestantes = Math.max(0, MAX_CUPOS_RESERVA - reservasDisciplina);
+    const puedeReservar = cuposReservaRestantes > 0;
+
+    return {
+      valido: puedeReservar,
+      puede_reservar: puedeReservar,
+      es_periodo_futuro: true,
+      periodo: reg.periodo,
+      max_cupos_reserva: MAX_CUPOS_RESERVA,
+      cupos_reservados: reservasDisciplina,
+      cupos_reserva_disponibles: cuposReservaRestantes,
+      mensaje: puedeReservar
+        ? `${cuposReservaRestantes} cupo${cuposReservaRestantes > 1 ? 's' : ''} disponible${cuposReservaRestantes > 1 ? 's' : ''} para reserva`
+        : 'No hay cupos disponibles para reserva'
+    };
+  }
+
+  async getHorariosPorDisciplina(id_disciplina, periodo) {
+    if (!id_disciplina) {
+      throw new Error('El ID de la disciplina es obligatorio.');
+    }
+
+    const reg = this.validarReglasReserva({ periodo });
+    const { anio, mes, es_periodo_futuro, fechaInicioStr, fechaFinStr } = reg;
+    periodo = reg.periodo;
 
     const disciplina = await matriculasRepository.getDisciplinaById(id_disciplina);
     const horarios = await matriculasRepository.getHorariosPorDisciplina(id_disciplina);
@@ -171,7 +230,7 @@ class MatriculasService {
   }
 
   async registrarMatricula(datosMatricula) {
-    const { disciplinas, observaciones_medicas, password, confirm_password, ...datosEstudiante } = datosMatricula;
+    const { disciplinas, observaciones_medicas, password, confirm_password, periodo, ...datosEstudiante } = datosMatricula;
 
     // Validación básica de campos requeridos (T_06)
     if (!datosEstudiante.tipo_documento || !datosEstudiante.numero_documento || !datosEstudiante.nombres) {
@@ -195,6 +254,25 @@ class MatriculasService {
     
     if (!disciplinas || !Array.isArray(disciplinas) || disciplinas.length === 0) {
       throw new Error('Debe seleccionar al menos una disciplina.');
+    }
+
+    // Validación de periodo de reserva y tope máximo de 4 cupos
+    let fechasDetalle = null;
+    if (periodo) {
+      const reg = this.validarReglasReserva({ periodo });
+      if (reg.es_periodo_futuro) {
+        fechasDetalle = {
+          fecha_inicio: reg.fechaInicioStr,
+          fecha_fin: reg.fechaFinStr
+        };
+
+        for (const discId of disciplinas) {
+          const cuposInfo = await this.validarTopeCuposReserva(discId, periodo);
+          if (!cuposInfo.puede_reservar) {
+            throw new Error(`No hay cupos disponibles para reserva en la disciplina seleccionada. Se agotaron los 4 cupos de reserva para el periodo ${periodo}.`);
+          }
+        }
+      }
     }
 
     if (!password || password.length < 6) {
@@ -240,7 +318,7 @@ class MatriculasService {
       );
 
       if (!matriculaExistente) {
-        await matriculasRepository.addDisciplinasAMatricula(matriculaId, disciplinas, client);
+        await matriculasRepository.addDisciplinasAMatricula(matriculaId, disciplinas, client, fechasDetalle);
       }
 
       await client.query('COMMIT');

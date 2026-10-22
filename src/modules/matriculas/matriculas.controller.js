@@ -25,6 +25,20 @@ class MatriculasController {
     }
   }
 
+  async validarReserva(req, res) {
+    try {
+      const { disciplina, periodo } = req.query;
+      if (!disciplina) {
+        return errorResponse(res, 400, 'El ID de la disciplina es obligatorio para validar la reserva.');
+      }
+      const resultado = await matriculasService.validarTopeCuposReserva(disciplina, periodo);
+      return successResponse(res, 200, resultado, 'Validación de reserva completada');
+    } catch (error) {
+      console.error('Error en validarReserva:', error);
+      return errorResponse(res, 400, error.message || 'Error al validar la reserva');
+    }
+  }
+
   async getMisMatriculas(req, res) {
     try {
       const idUsuario = req.user.id;
