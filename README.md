@@ -64,10 +64,10 @@ quien inicia sesión (se define en `public/js/auth.js`, en `MENU_POR_ROL`):
 
 | Rol | Menú |
 |---|---|
-| Director | Alumnos, Matrículas, Pagos, Control de acceso, Panel de correos |
-| Tesorero | Alumnos, Matrículas, Pagos |
+| Director | Alumnos, Control de acceso |
+| Tesorero | Alumnos, Pagos |
 | Profesor | Control de acceso, Alumnos |
-| Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas |
+| Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas, Mi perfil |
 
 Si una cuenta tiene varios roles, ve las opciones de todos sin repetir.
 
