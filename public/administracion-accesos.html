@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de accesos | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+<body>
+    <header id="app-header"></header>
+
+    <main class="container" style="max-width: 1200px;">
+        <div class="page-header">
+            <h2 class="title">Administración de accesos</h2>
+            <p class="description">Consulta el personal operativo de la academia (tesoreros y profesores) y el rol asignado a cada persona.</p>
+        </div>
+
+        <div class="table-container">
+            <table class="alumnos-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Rol</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="personal-tbody">
+                    <tr><td colspan="3" class="text-center text-muted">La lista del personal se mostrará aquí.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+</body>
+</html>

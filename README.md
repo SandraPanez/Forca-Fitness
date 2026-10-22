@@ -64,7 +64,7 @@ quien inicia sesión (se define en `public/js/auth.js`, en `MENU_POR_ROL`):
 
 | Rol | Menú |
 |---|---|
-| Director | Alumnos, Control de acceso |
+| Director | Alumnos, Control de acceso, Administración de accesos |
 | Tesorero | Alumnos, Pagos |
 | Profesor | Control de acceso, Alumnos |
 | Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas, Mi perfil |

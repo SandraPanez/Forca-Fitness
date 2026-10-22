@@ -38,6 +38,13 @@ app.get(
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
 );
 
+app.get(
+  '/administracion-accesos.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion-accesos.html'))
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {

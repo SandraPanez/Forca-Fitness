@@ -107,7 +107,8 @@ async function cerrarSesion(event) {
 const MENU_POR_ROL = {
     DIRECTOR: [
         ['Alumnos', '/alumnos.html'],
-        ['Control de acceso', '/control-acceso']
+        ['Control de acceso', '/control-acceso'],
+        ['Administración de accesos', '/administracion-accesos.html']
     ],
     TESORERO: [
         ['Alumnos', '/alumnos.html'],
