@@ -45,6 +45,13 @@ app.get(
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion-accesos.html'))
 );
 
+app.get(
+  '/editar-acceso.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'editar-acceso.html'))
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {

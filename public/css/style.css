@@ -823,6 +823,10 @@ body {
     background-color: var(--hover-bg);
 }
 
+.alumnos-table td .btn-link + .btn-link {
+    margin-left: 1rem;
+}
+
 .alumno-row {
     display: flex;
     align-items: center;

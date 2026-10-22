@@ -102,6 +102,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return boton;
     }
 
+    // Lleva a la pantalla de modificar roles y permisos de la HU-24
+    function crearBotonModificar(persona) {
+        const boton = document.createElement('button');
+
+        boton.type = 'button';
+        boton.className = 'btn-link';
+        boton.textContent = 'Modificar';
+        boton.addEventListener('click', () => {
+            window.location.href = `/editar-acceso.html?id=${encodeURIComponent(persona.id)}`;
+        });
+
+        return boton;
+    }
+
     function crearFila(persona) {
         const fila = document.createElement('tr');
         const nombre = document.createElement('td');
@@ -111,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nombre.textContent = persona.nombre;
         rol.textContent = persona.roles.map(rolPersona => NOMBRE_ROL[rolPersona] || rolPersona).join(' y ');
         acciones.className = 'text-right';
-        acciones.append(crearBotonVerMas(persona, fila));
+        acciones.append(crearBotonVerMas(persona, fila), crearBotonModificar(persona));
 
         fila.append(nombre, rol, acciones);
         return fila;
