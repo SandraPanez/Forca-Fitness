@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
         year: 'numeric'
     });
 
+    // Fecha de nacimiento sin edad mínima (también se matriculan niños), pero no puede ser futura
+    document.getElementById('fecha_nacimiento').max = today.toLocaleDateString('en-CA');
+
     // 2. Manejo de formulario (Validaciones básicas para T_01/T_06)
     const form = document.getElementById('matriculaForm');
     const errorDiv = document.getElementById('disciplinas-error');
@@ -117,11 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnYesCancel.addEventListener('click', () => {
-        // Descartar datos ingresados y redirigir a la pantalla principal (Criterio de Aceptación 2)
+        // Descartar datos ingresados y volver a la pantalla principal (Criterio de Aceptación 2)
         form.reset();
         modal.style.display = 'none';
-        alert('Simulación: Redirigiendo al Menú Principal...');
-        // En producción sería: window.location.href = '/ruta-del-menu';
+        window.location.href = paginaDeInicio();
     });
 
     // 4. Contador de caracteres para Observaciones Médicas (T_03)

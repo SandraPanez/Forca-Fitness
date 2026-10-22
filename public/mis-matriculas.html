@@ -10,34 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
 </head>
 
 <body>
 
-    <header class="header">
-        <div class="logo">
-            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img">
-            <h1>Portal Forca&Fitness</h1>
-        </div>
-
-        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
-
-            <nav class="top-nav">
-                <a href="/mis-matriculas.html" class="active">Mis matrículas</a>
-                <a href="/perfil.html" data-rol="ALUMNO">Mi Perfil</a>
-                <a href="/index.html">Nueva matrícula</a>
-            </nav>
-
-            <div class="user-info">
-                <div class="user-details">
-                    <span class="user-name">Usuario</span>
-                    <span class="user-role">Alumno</span>
-                </div>
-
-                <a href="#" class="logout-btn">Cerrar sesión</a>
-            </div>
-        </div>
-    </header>
+    <header id="app-header"></header>
 
     <main class="container" style="max-width: 1200px;">
 
@@ -46,6 +24,25 @@
             <p class="description">
                 Consulta la vigencia y fecha de vencimiento de tus disciplinas.
             </p>
+        </section>
+
+        <p id="renovacion-mensaje" role="status" tabindex="-1"></p>
+
+        <section id="renovar" class="form-card" hidden aria-labelledby="renovacion-titulo">
+            <h3 id="renovacion-titulo">Renovar matrícula</h3>
+            <p class="description">Se conserva tu disciplina y horario. La renovación se activa cuando se confirme el pago.</p>
+            <form id="renovacion-form">
+                <div class="grid-2-cols">
+                    <div class="form-group"><label for="renovacion-disciplina">Disciplina</label><input id="renovacion-disciplina" readonly></div>
+                    <div class="form-group"><label for="renovacion-horario">Horario actual</label><input id="renovacion-horario" readonly></div>
+                    <div class="form-group"><label for="renovacion-periodo">Periodo de renovación estimado (30 días)</label><input id="renovacion-periodo" readonly></div>
+                </div>
+                <p>Si pagas después del vencimiento, el periodo comenzará el día que se confirme el pago.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="renovacion-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-submit" id="renovacion-continuar">Continuar al pago</button>
+                </div>
+            </form>
         </section>
 
         <div class="table-container">

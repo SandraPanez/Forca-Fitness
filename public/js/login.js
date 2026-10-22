@@ -48,31 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('token', result.token);
             localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
-            const roles = Array.isArray(result.usuario.roles)
-                ? result.usuario.roles
-                : result.usuario.rol
-                    ? [result.usuario.rol]
-                    : [];
-
-            if (
-                roles.includes('DIRECTOR') ||
-                roles.includes('TESORERO')
-            ) {
-                window.location.href = '/alumnos.html';
-                return;
-            }
-
-            if (roles.includes('PROFESOR')) {
-                window.location.href = '/control-acceso';
-                return;
-            }
-
-            if (roles.includes('ALUMNO')) {
-                window.location.href = '/mis-matriculas.html';
-                return;
-            }
-
-            window.location.href = '/index.html';
+            window.location.href = paginaDeInicio();
 
         } catch (error) {
             errorElement.textContent = error.message;

@@ -1,29 +1,75 @@
 # Forca-Fitness
 
-Aplicación Node.js/Express con PostgreSQL para la gestión de matrículas y
-alumnos.
+Sistema de matrículas y control de pagos de la Academia Forca & Fitness.
+Aplicación Node.js/Express con PostgreSQL, pagos con Mercado Pago, cola de
+correos con Redis y BullMQ, y comprobantes en PDF.
 
-## Configuración local
+## Puesta en marcha
 
-1. Copia `.env.example` a `.env` y completa las credenciales de PostgreSQL.
-2. Crea una base de datos llamada `forca_fitness`.
-3. Ejecuta el esquema:
+1. Instala las dependencias:
 
 ```bash
-psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagrama version 2.sql"
-psql -U postgres -d forca_fitness -f "src/modules/pagos/pagos.schema.sql"
+npm install
 ```
 
-4. Instala dependencias y ejecuta la aplicación:
+2. Copia `.env.example` a `.env` y completa los valores. Las credenciales
+   reales se piden al equipo; `.env` está en `.gitignore` y nunca se sube.
+
+| Variables | Para qué sirven |
+|---|---|
+| `PORT` | Puerto de la app (por defecto 3000) |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL` | Conexión a PostgreSQL. Para la base de Render, `DB_SSL=true` |
+| `DATABASE_URL` | Alternativa a las `DB_*`, con la URL completa de la base |
+| `JWT_SECRET` | Firma de la sesión. Cualquier texto largo; sin ella el login responde error interno |
+| `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `APP_URL` | Mercado Pago y la dirección de la app a la que vuelve el cliente después de pagar |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_USERNAME`, `REDIS_PASSWORD`, `REDIS_TLS` (o `REDIS_URL`) | Cola de correos |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Cuenta que envía los correos (comprobantes) |
+
+3. Inicia la app y abre `http://localhost:3000` (muestra el login):
 
 ```bash
-npm ci
 npm start
 ```
 
-El endpoint `GET /api/health` comprueba tanto el servidor como la conexión a
-PostgreSQL. Responde `200` con `database: "connected"` cuando está disponible y
-`503` con `database: "disconnected"` cuando no lo está.
+`GET /api/health` comprueba el servidor y la base: responde `200` con
+`database: "connected"`, o `503` con `database: "disconnected"`.
+
+## Base de datos
+
+El equipo trabaja con la base PostgreSQL compartida en Render: con sus
+credenciales en el `.env` no hace falta crear nada.
+
+Para usar una base propia, créala y ejecuta solo este archivo:
+
+```bash
+psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagrama version 4.sql"
+```
+
+- `src/modules/pagos/pagos.schema version 2.sql` es una copia del mismo
+  esquema: no ejecutes los dos, el segundo falla porque las tablas ya existen.
+- El esquema crea las tablas vacías. Los roles, métodos de pago, disciplinas,
+  horarios y profesores hay que cargarlos aparte; hoy solo existen en la base
+  del equipo.
+
+## Cuentas de prueba
+
+Hay una cuenta por rol (director, tesorero, profesor y cliente) para probar
+cada vista. Los accesos se piden al equipo por privado; nunca se escriben en el
+repositorio.
+
+## Qué ve cada rol
+
+El encabezado es el mismo en todas las páginas y el menú depende del rol de
+quien inicia sesión (se define en `public/js/auth.js`, en `MENU_POR_ROL`):
+
+| Rol | Menú |
+|---|---|
+| Director | Alumnos, Matrículas, Pagos, Control de acceso, Panel de correos |
+| Tesorero | Alumnos, Matrículas, Pagos |
+| Profesor | Control de acceso, Alumnos |
+| Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas |
+
+Si una cuenta tiene varios roles, ve las opciones de todos sin repetir.
 
 ## Despliegue con Docker en Render
 
@@ -32,9 +78,11 @@ variable `PORT` que Render inyecta. Para el servicio web en Render:
 
 1. Crea una base de datos PostgreSQL y un Web Service desde este repositorio
    seleccionando **Docker**.
-2. Define `DATABASE_URL` con la **Internal Database URL** de PostgreSQL. No
-   subas `.env` ni copies una URL con credenciales al repositorio.
-3. Ejecuta el archivo SQL anterior una vez contra esa base de datos.
+2. Define `DATABASE_URL` con la **Internal Database URL** de PostgreSQL y el
+   resto de variables de la tabla de arriba, con `APP_URL` igual a la
+   dirección pública del servicio. No subas `.env` ni copies una URL con
+   credenciales al repositorio.
+3. Ejecuta una vez el archivo SQL de la sección "Base de datos" contra esa base.
 4. Configura `/api/health` como health check del servicio.
 
 La imagen no crea tablas automáticamente: el esquema debe ejecutarse una vez

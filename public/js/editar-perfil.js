@@ -11,16 +11,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnNoCancelar  = document.getElementById('btn-no-cancelar');
     const btnSiCancelar  = document.getElementById('btn-si-cancelar');
 
-    const userName       = document.getElementById('user-name');
-    const userRole       = document.getElementById('user-role');
-    const btnLogout      = document.getElementById('btn-logout');
+    const userName       = document.querySelector('.app-usuario-nombre');
+    const fechaNacimiento = document.getElementById('fecha_nacimiento');
+    fechaNacimiento.max = new Date().toLocaleDateString('en-CA');
+    let datosCargados = false;
+    btnGuardar.disabled = true;
 
     // Datos originales guardados al cargar (para detectar cambios)
     let datosOriginales = {};
 
     // ── Helpers ──────────────────────────────────────────────
-    const getToken = () => localStorage.getItem('token');
-
     const mostrarError = (campo, mensaje) => {
         const el = document.getElementById(`error-${campo}`);
         if (el) { el.textContent = mensaje; el.style.display = 'block'; }
@@ -53,16 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── T-01: Cargar datos actuales del alumno ────────────────
     const cargarDatos = async () => {
-        const token = getToken();
+        const token = obtenerToken();
         if (!token) {
             window.location.href = '/login.html';
             return;
         }
 
         try {
-            const res  = await fetch('/api/perfil', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await authFetch('/api/perfil');
             const json = await res.json();
 
             if (!res.ok || !json.success) {
@@ -72,8 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = json.data;
 
             // Mostrar nombre en header
-            userName.textContent = `${d.nombre} ${d.apellido_paterno}`;
-            userRole.textContent = 'Alumno';
+            userName.textContent = [d.nombre, d.apellido_paterno, d.apellido_materno].filter(Boolean).join(' ');
 
             // T-04: Precargar formulario
             document.getElementById('nombre').value            = d.nombre            ?? '';
@@ -97,6 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 correo_electronico: document.getElementById('correo_electronico').value,
                 numero_celular:     document.getElementById('numero_celular').value,
             };
+            datosCargados = true;
+            btnGuardar.disabled = false;
 
         } catch (err) {
             console.error('Error cargando perfil:', err);
@@ -128,8 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const fechaNac = document.getElementById('fecha_nacimiento').value;
-        if (!fechaNac) {
-            mostrarError('fecha_nacimiento', 'La fecha de nacimiento es obligatoria.');
+        if (!fechaNac || fechaNac < fechaNacimiento.min || fechaNac > fechaNacimiento.max) {
+            mostrarError('fecha_nacimiento', 'Ingresa una fecha de nacimiento válida, sin fechas futuras.');
             valido = false;
         }
 
@@ -164,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        if (!datosCargados) return;
         if (!validarFormulario()) return;
 
         btnGuardar.disabled    = true;
@@ -181,11 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const res  = await fetch('/api/perfil', {
+            const res = await authFetch('/api/perfil', {
                 method:  'PUT',
                 headers: {
-                    'Content-Type':  'application/json',
-                    'Authorization': `Bearer ${getToken()}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)
             });
@@ -237,13 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
             modalCancelar.style.display = 'none';
             modalExito.style.display    = 'none';
         }
-    });
-
-    // Logout
-    btnLogout.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('token');
-        window.location.href = '/login.html';
     });
 
     // ── Init ─────────────────────────────────────────────────

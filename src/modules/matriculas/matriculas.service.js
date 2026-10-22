@@ -37,13 +37,19 @@ class MatriculasService {
     const MILISEGUNDOS_POR_DIA = 1000 * 60 * 60 * 24;
 
     return matriculas.map(matricula => {
+      const aprobada = ['ACTIVA', 'ACTIVO', 'VENCIDA'].includes(String(matricula.estado_matricula).toUpperCase());
+      if (!aprobada) {
+        return { ...matricula, estado_vigencia: String(matricula.estado_matricula).toUpperCase().startsWith('PENDIENTE')
+          ? 'Pendiente de pago' : matricula.estado_matricula, dias_restantes: null, vigente: false, puede_renovar: false };
+      }
       // Algunas matrículas antiguas todavía no tienen detalle asociado.
       if (!matricula.fecha_fin) {
         return {
           ...matricula,
           estado_vigencia: null,
           dias_restantes: null,
-          vigente: false
+          vigente: false,
+          puede_renovar: false
         };
       }
 
@@ -71,9 +77,57 @@ class MatriculasService {
         ...matricula,
         estado_vigencia: estadoVigencia,
         dias_restantes: diasRestantes,
-        vigente: diasRestantes >= 0
+        vigente: diasRestantes >= 0,
+        puede_renovar: diasRestantes <= 3 &&
+          new Date(matricula.fecha_fin).getTime() === new Date(matricula.fecha_fin_actual).getTime()
       };
     });
+  }
+
+  async renovarMatricula(idUsuario, idDetalle) {
+    if (typeof idDetalle !== 'string' || !idDetalle || idDetalle.length > 10) {
+      throw Object.assign(new Error('La matrícula seleccionada no es válida.'), { status: 400 });
+    }
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const info = await matriculasRepository.getDetalleParaRenovar(idUsuario, idDetalle, client);
+      if (!info) throw Object.assign(new Error('No se encontró una matrícula tuya habilitada para renovar.'), { status: 404 });
+      if (!info.puede_renovar) throw Object.assign(new Error('Puedes renovar cuando falten tres días o la matrícula haya vencido.'), { status: 409 });
+      const horario = await client.query(`
+        SELECT "Capacidad_Max" AS capacidad FROM "Academia Forca&Fitness"."Disciplina_Horario"
+        WHERE "Id_DiscHorario" = $1 FOR UPDATE
+      `, [info.id_disc_horario]);
+      const inscritos = await matriculasRepository.countInscritosPorHorario(info.id_disc_horario, client, info.id_alumno);
+      if (!horario.rows[0] || inscritos >= Number(horario.rows[0].capacidad)) {
+        throw Object.assign(new Error('No hay cupos disponibles en tu horario actual.'), { status: 409 });
+      }
+      const pendiente = await matriculasRepository.getMatriculaPendientePorAlumno(info.id_alumno, client);
+      if (pendiente) {
+        const detalles = await client.query(`
+          SELECT COUNT(*)::INT AS total,
+            COUNT(*) FILTER (WHERE "Id_DiscHorario" = $2)::INT AS coinciden
+          FROM "Academia Forca&Fitness"."Detalles_Matricula" WHERE "Id_Matricula" = $1
+        `, [pendiente, info.id_disc_horario]);
+        if (detalles.rows[0].total !== 1 || detalles.rows[0].coinciden !== 1) {
+          throw Object.assign(new Error('Ya tienes otra matrícula pendiente. Completa ese pago antes de renovar.'), { status: 409 });
+        }
+      }
+      const matriculaId = pendiente || await matriculasRepository.createMatricula(info.id_alumno, null, client);
+      if (!pendiente) await matriculasRepository.addDetalleRenovacion(matriculaId, info, client);
+      const resumen = await matriculasRepository.getResumenMatricula(matriculaId, client);
+      if (!Number.isFinite(Number(resumen.monto)) || Number(resumen.monto) <= 0) {
+        throw Object.assign(new Error('La disciplina no tiene una tarifa configurada.'), { status: 409 });
+      }
+      await client.query('COMMIT');
+      return { matriculaId, ...resumen, nombre: info.nombre, correo: info.correo,
+        fecha_inicio: info.fecha_inicio, fecha_fin: info.fecha_fin, reutilizada: Boolean(pendiente) };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async registrarMatricula(datosMatricula) {

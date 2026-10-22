@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
 
 app.get(
   '/tesoreria.html',
-  autenticar,
+  autenticarDashboard,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
 );
@@ -51,7 +51,8 @@ const {
   profesoresRoutes,
   authRoutes,
   pagosRoutes,
-  comprobantesRoutes
+  comprobantesRoutes,
+  perfilRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
@@ -60,6 +61,7 @@ app.use('/api/profesores', profesoresRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
+app.use('/api/perfil', perfilRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
