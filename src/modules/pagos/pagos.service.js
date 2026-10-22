@@ -45,6 +45,7 @@ class PagosService {
                 failure: `${appUrl}/api/pagos/failure`,
                 pending: `${appUrl}/api/pagos/pending`
             },
+            auto_return: 'approved',
             external_reference: datosMatricula.id_matricula,
             ...(isPublicUrl ? { notification_url: `${appUrl}/api/pagos/webhook` } : {})
         };

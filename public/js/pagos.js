@@ -34,12 +34,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const result = params.get('resultado');
   const steps = document.querySelectorAll('.payment-step');
   if (result === 'exitoso') {
-    showMessage('Pago aprobado. Tu matrícula está confirmada.', 'success');
+    showMessage('¡Pago aprobado! Tu matrícula está confirmada. Redirigiendo a Mis matrículas en 3 segundos...', 'success');
     steps[1]?.classList.remove('active');
     steps[1]?.classList.add('completed');
     steps[1].querySelector('span').textContent = '✓';
     steps[2]?.classList.add('active');
     document.querySelectorAll('.payment-step-line')[1]?.classList.add('active');
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.textContent = 'Ir a Mis matrículas';
+      submitBtn.disabled = false;
+      submitBtn.onclick = (e) => {
+        e.preventDefault();
+        window.location.href = '/mis-matriculas.html';
+      };
+    }
+
+    setTimeout(() => {
+      window.location.href = '/mis-matriculas.html';
+    }, 3000);
   }
   if (result === 'pendiente') {
     showMessage('Estamos pendientes de confirmar tu pago. Conserva tu código de matrícula.', 'info');

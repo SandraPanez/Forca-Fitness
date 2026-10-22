@@ -83,13 +83,32 @@ class MatriculasService {
     if (!datosEstudiante.tipo_documento || !datosEstudiante.numero_documento || !datosEstudiante.nombres) {
       throw new Error('Campos obligatorios faltantes en los datos del estudiante.');
     }
+
+    const numDoc = String(datosEstudiante.numero_documento).trim();
+    if (datosEstudiante.tipo_documento === 'DNI') {
+      if (!/^\d{8}$/.test(numDoc)) {
+        throw new Error('El DNI debe contener exactamente 8 dígitos numéricos.');
+      }
+    } else if (datosEstudiante.tipo_documento === 'CE') {
+      if (!/^\d{9}$/.test(numDoc) && !/^[a-zA-Z0-9]{9}$/.test(numDoc)) {
+        throw new Error('El Carnet de Extranjería debe contener exactamente 9 caracteres.');
+      }
+    } else if (datosEstudiante.tipo_documento === 'Pasaporte') {
+      if (!/^[a-zA-Z0-9]{6,10}$/.test(numDoc)) {
+        throw new Error('El Pasaporte debe contener entre 6 y 10 caracteres alfanuméricos.');
+      }
+    }
     
     if (!disciplinas || !Array.isArray(disciplinas) || disciplinas.length === 0) {
       throw new Error('Debe seleccionar al menos una disciplina.');
     }
 
-    if (!password || password !== confirm_password) {
-      throw new Error('La contraseña es inválida o no coinciden.');
+    if (!password || password.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    }
+
+    if (password !== confirm_password) {
+      throw new Error('Las contraseñas no coinciden.');
     }
 
     const bcrypt = require('bcryptjs');

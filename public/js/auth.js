@@ -45,7 +45,7 @@ function verificarSesion() {
             document.body?.dataset.previewAuth === 'true' &&
             new URLSearchParams(window.location.search).get('preview') === '1';
 
-        if (previewEnabled) {
+        if (previewEnabled || document.body?.dataset.allowGuest === 'true') {
             return true;
         }
 
@@ -84,7 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const usuario = obtenerUsuario();
 
+    const topNav = document.getElementById('top-nav');
+    const userInfo = document.getElementById('user-info');
+    const guestNav = document.getElementById('guest-nav');
+
     if (usuario) {
+        if (topNav) topNav.style.display = 'flex';
+        if (userInfo) userInfo.style.display = 'flex';
+        if (guestNav) guestNav.style.display = 'none';
+
         const roles = obtenerRolesUsuario(usuario);
 
         document.querySelectorAll('.user-role').forEach(element => {
@@ -96,9 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.user-name').forEach(element => {
             element.textContent = usuario.nombre || usuario.correo;
         });
+    } else {
+        if (topNav) topNav.style.display = 'none';
+        if (userInfo) userInfo.style.display = 'none';
+        if (guestNav) guestNav.style.display = 'block';
     }
 
-    document.querySelectorAll('.logout-btn').forEach(button => {
+    document.querySelectorAll('.logout-btn:not([data-no-logout])').forEach(button => {
         button.addEventListener('click', async event => {
             event.preventDefault();
 

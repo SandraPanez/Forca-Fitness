@@ -808,6 +808,25 @@ body {
     opacity: 1;
 }
 
+.password-feedback {
+    display: block;
+    font-size: 0.82rem;
+    margin-top: 0.35rem;
+    font-weight: 500;
+}
+.password-feedback.match {
+    color: #2e7d32;
+}
+.password-feedback.mismatch {
+    color: #d32f2f;
+}
+.input-success {
+    border-color: #2e7d32 !important;
+}
+.input-error {
+    border-color: #d32f2f !important;
+}
+
 /* ========================================================
    ESTILOS PARA HU-2: LISTA DE ALUMNOS Y SIDE PANEL
    ======================================================== */

@@ -153,6 +153,8 @@ class MatriculasRepository {
       SELECT "Id_Documento"
       FROM ${SCHEMA}."Documento_Identificacion"
       WHERE UPPER("Tipo_Documento") = UPPER($1)
+         OR ($1 = 'CE' AND UPPER("Tipo_Documento") LIKE '%EXTRANJER%')
+         OR (UPPER($1) LIKE '%EXTRANJER%' AND UPPER("Tipo_Documento") = 'CE')
       LIMIT 1
     `;
 
@@ -196,6 +198,8 @@ class MatriculasRepository {
       SELECT "Id_Documento"
       FROM ${SCHEMA}."Documento_Identificacion"
       WHERE UPPER("Tipo_Documento") = UPPER($1)
+         OR ($1 = 'CE' AND UPPER("Tipo_Documento") LIKE '%EXTRANJER%')
+         OR (UPPER($1) LIKE '%EXTRANJER%' AND UPPER("Tipo_Documento") = 'CE')
       LIMIT 1
     `;
 

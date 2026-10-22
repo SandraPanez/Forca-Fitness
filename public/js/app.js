@@ -12,11 +12,167 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('matriculaForm');
     const errorDiv = document.getElementById('disciplinas-error');
 
+    // Validación y restricción dinámica de documento según su tipo
+    const tipoDocSelect = document.getElementById('tipo_documento');
+    const numDocInput = document.getElementById('numero_documento');
+
+    const configDocs = {
+        DNI: {
+            placeholder: 'Ej: 74628153',
+            pattern: '^[0-9]{8}$',
+            title: 'El DNI debe contener exactamente 8 dígitos numéricos',
+            maxLength: 8,
+            minLength: 8,
+            inputMode: 'numeric',
+            cleaner: (val) => val.replace(/[^0-9]/g, '').slice(0, 8)
+        },
+        CE: {
+            placeholder: 'Ej: 001234567',
+            pattern: '^[0-9]{9}$',
+            title: 'El Carnet de Extranjería debe contener exactamente 9 dígitos numéricos',
+            maxLength: 9,
+            minLength: 9,
+            inputMode: 'numeric',
+            cleaner: (val) => val.replace(/[^0-9]/g, '').slice(0, 9)
+        },
+        Pasaporte: {
+            placeholder: 'Ej: PE1234567',
+            pattern: '^[a-zA-Z0-9]{6,10}$',
+            title: 'El Pasaporte debe contener entre 6 y 10 caracteres alfanuméricos',
+            maxLength: 10,
+            minLength: 6,
+            inputMode: 'text',
+            cleaner: (val) => val.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase()
+        }
+    };
+
+    function actualizarReglasDocumento() {
+        if (!tipoDocSelect || !numDocInput) return;
+        const tipo = tipoDocSelect.value || 'DNI';
+        const cfg = configDocs[tipo] || configDocs.DNI;
+
+        numDocInput.placeholder = cfg.placeholder;
+        numDocInput.pattern = cfg.pattern;
+        numDocInput.title = cfg.title;
+        numDocInput.maxLength = cfg.maxLength;
+        numDocInput.minLength = cfg.minLength;
+        numDocInput.inputMode = cfg.inputMode;
+
+        numDocInput.value = cfg.cleaner(numDocInput.value);
+    }
+
+    if (tipoDocSelect && numDocInput) {
+        tipoDocSelect.addEventListener('change', actualizarReglasDocumento);
+        numDocInput.addEventListener('input', function() {
+            const tipo = tipoDocSelect.value || 'DNI';
+            const cfg = configDocs[tipo] || configDocs.DNI;
+            this.value = cfg.cleaner(this.value);
+        });
+        actualizarReglasDocumento();
+    }
+
+    // Validación interactiva de coincidencia de contraseñas
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const confirmFeedback = document.getElementById('confirm-password-feedback');
+    const passwordHint = document.getElementById('password-hint');
+
+    function validarCoincidenciaPasswords() {
+        if (!passwordInput || !confirmPasswordInput) return;
+
+        const pass = passwordInput.value;
+        const confirm = confirmPasswordInput.value;
+
+        // Longitud mínima
+        if (passwordHint) {
+            if (pass.length > 0 && pass.length < 6) {
+                passwordHint.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+                passwordHint.className = 'password-feedback mismatch';
+                passwordHint.style.display = 'block';
+                passwordInput.classList.add('input-error');
+                passwordInput.classList.remove('input-success');
+            } else if (pass.length >= 6) {
+                passwordHint.style.display = 'none';
+                passwordInput.classList.remove('input-error');
+                passwordInput.classList.add('input-success');
+            } else {
+                passwordHint.style.display = 'none';
+                passwordInput.classList.remove('input-error', 'input-success');
+            }
+        }
+
+        // Coincidencia
+        if (!confirmFeedback) return;
+
+        if (!confirm) {
+            confirmFeedback.style.display = 'none';
+            confirmPasswordInput.classList.remove('input-error', 'input-success');
+            return;
+        }
+
+        if (pass === confirm) {
+            confirmFeedback.textContent = '✓ Las contraseñas coinciden';
+            confirmFeedback.className = 'password-feedback match';
+            confirmFeedback.style.display = 'block';
+            confirmPasswordInput.classList.add('input-success');
+            confirmPasswordInput.classList.remove('input-error');
+        } else {
+            confirmFeedback.textContent = '✕ Las contraseñas no coinciden';
+            confirmFeedback.className = 'password-feedback mismatch';
+            confirmFeedback.style.display = 'block';
+            confirmPasswordInput.classList.add('input-error');
+            confirmPasswordInput.classList.remove('input-success');
+        }
+    }
+
+    if (passwordInput && confirmPasswordInput) {
+        passwordInput.addEventListener('input', validarCoincidenciaPasswords);
+        confirmPasswordInput.addEventListener('input', validarCoincidenciaPasswords);
+    }
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         
         // Agregar clase para mostrar estilos de error en campos obligatorios vacíos (T_02)
         form.classList.add('was-validated');
+
+        // Validar cantidad exacta de caracteres según tipo de documento
+        const tipoDoc = tipoDocSelect ? tipoDocSelect.value : 'DNI';
+        const numDoc = numDocInput ? numDocInput.value.trim() : '';
+
+        if (tipoDoc === 'DNI' && numDoc.length !== 8) {
+            alert('El DNI debe contener exactamente 8 dígitos numéricos.');
+            numDocInput.focus();
+            return;
+        }
+        if (tipoDoc === 'CE' && numDoc.length !== 9) {
+            alert('El Carnet de Extranjería debe contener exactamente 9 dígitos numéricos.');
+            numDocInput.focus();
+            return;
+        }
+        if (tipoDoc === 'Pasaporte' && (numDoc.length < 6 || numDoc.length > 10)) {
+            alert('El Pasaporte debe contener entre 6 y 10 caracteres alfanuméricos.');
+            numDocInput.focus();
+            return;
+        }
+
+        // Validar contraseñas
+        const password = form.querySelector('#password').value;
+        const confirmPassword = form.querySelector('#confirm_password').value;
+
+        if (password.length < 6) {
+            validarCoincidenciaPasswords();
+            alert('La contraseña debe tener al menos 6 caracteres.');
+            form.querySelector('#password').focus();
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            validarCoincidenciaPasswords();
+            alert('Las contraseñas no coinciden. Por favor, verifícalas.');
+            form.querySelector('#confirm_password').focus();
+            return;
+        }
 
         // Validar que el formulario HTML nativo esté completo
         if (!form.checkValidity()) {
@@ -25,15 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Validar que al menos una disciplina esté seleccionada
         const disciplinas = document.querySelectorAll('input[name="disciplinas"]:checked');
-        
-        const password = form.querySelector('#password').value;
-        const confirmPassword = form.querySelector('#confirm_password').value;
-
-        if (password !== confirmPassword) {
-            alert('Las contraseñas no coinciden. Por favor, verifícalas.');
-            form.querySelector('#confirm_password').focus();
-            return;
-        }
         
         if (disciplinas.length === 0) {
             errorDiv.style.display = 'block';
@@ -117,12 +264,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnYesCancel.addEventListener('click', () => {
-        // Descartar datos ingresados y redirigir a la pantalla principal (Criterio de Aceptación 2)
+        // Descartar datos ingresados y regresar a Mis matrículas (o login si es invitado)
         form.reset();
         modal.style.display = 'none';
-        alert('Simulación: Redirigiendo al Menú Principal...');
-        // En producción sería: window.location.href = '/ruta-del-menu';
+        const usuario = typeof obtenerUsuario === 'function' ? obtenerUsuario() : null;
+        if (usuario) {
+            window.location.href = '/mis-matriculas.html';
+        } else {
+            window.location.href = '/login.html';
+        }
     });
+
+    // Precargar datos del alumno autenticado si ya tiene sesión
+    async function precargarDatosAlumno() {
+        const token = typeof obtenerToken === 'function' ? obtenerToken() : localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch('/api/perfil', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) return;
+            const result = await response.json();
+            const d = result.data;
+            if (!d) return;
+
+            if (d.numero_documento && document.getElementById('numero_documento')) {
+                document.getElementById('numero_documento').value = d.numero_documento;
+            }
+            if (d.nombre && document.getElementById('nombres')) {
+                document.getElementById('nombres').value = d.nombre;
+            }
+            if (d.apellido_paterno && document.getElementById('apellido_paterno')) {
+                document.getElementById('apellido_paterno').value = d.apellido_paterno;
+            }
+            if (d.apellido_materno && document.getElementById('apellido_materno')) {
+                document.getElementById('apellido_materno').value = d.apellido_materno;
+            }
+            if (d.fecha_nacimiento && document.getElementById('fecha_nacimiento')) {
+                document.getElementById('fecha_nacimiento').value = d.fecha_nacimiento.substring(0, 10);
+            }
+            if (d.correo_electronico && document.getElementById('correo_electronico')) {
+                document.getElementById('correo_electronico').value = d.correo_electronico;
+            }
+            if (d.numero_celular && document.getElementById('numero_celular')) {
+                document.getElementById('numero_celular').value = d.numero_celular;
+            }
+            if (d.genero && document.getElementById('genero')) {
+                document.getElementById('genero').value = d.genero;
+            }
+            if (d.direccion && document.getElementById('direccion')) {
+                document.getElementById('direccion').value = d.direccion;
+            }
+            actualizarReglasDocumento();
+        } catch (e) {
+            // Silencioso en caso de error
+        }
+    }
+    precargarDatosAlumno();
 
     // 4. Contador de caracteres para Observaciones Médicas (T_03)
     const observacionesInput = document.getElementById('observaciones_medicas');
