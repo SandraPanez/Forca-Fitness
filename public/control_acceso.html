@@ -51,6 +51,8 @@
   </main>
   <script src="/js/auth.js"></script>
   <script>
+    const isDirector=obtenerRolesUsuario().includes('DIRECTOR');
+    const studentsUrl=isDirector?'/api/alumnos':'/api/profesores/me/alumnos';
     const students=[];
     const studentDetails=new Map();
     const statusInfo={active:['Activo','active',0],soon:['Próximo a vencer','soon',1],inactive:['Inactivo','inactive',2],disabled:['Inhabilitado','disabled',3]};
@@ -62,6 +64,11 @@
     const studentsById=new Map();
     const drawer=document.querySelector('#student-drawer'),drawerOverlay=document.querySelector('#drawer-overlay'),drawerClose=document.querySelector('#drawer-close');
     let drawerTrigger=null;
+    if(isDirector){
+      document.querySelector('#control-acceso .eyebrow').textContent='DIRECTOR';
+      document.querySelector('#control-acceso .description').textContent='Verifica la vigencia de matrícula de los alumnos de todas las disciplinas.';
+      document.querySelector('#view-students .description').textContent='Alumnos de todas las disciplinas.';
+    }
     function dateFromToday(offset){const d=new Date();d.setDate(d.getDate()+offset);return new Intl.DateTimeFormat('es-CL',{day:'numeric',month:'short',year:'numeric'}).format(d)}
     function initials(name){return name.split(' ').slice(0,2).map(part=>part[0]).join('')}
     function mapStudent(record){
@@ -79,7 +86,7 @@
         const option=document.createElement('option');option.value=name;option.textContent=name;return option;
       });
       if(options.length===0){
-        const option=document.createElement('option');option.value='';option.textContent='No tienes disciplinas asignadas';options.push(option);
+        const option=document.createElement('option');option.value='';option.textContent=isDirector?'No hay disciplinas registradas':'No tienes disciplinas asignadas';options.push(option);
       }
       discipline.replaceChildren(...options);
       if(teacherDisciplines.has(selected))discipline.value=selected;
@@ -88,7 +95,7 @@
     async function readApiResponse(response){
       let result;
       try{result=await response.json()}catch{
-        if(response.status===404)throw new Error('Esta versión del servidor no tiene la ruta del profesor. Reinicia el servidor local o vuelve a desplegar los últimos cambios.');
+        if(response.status===404)throw new Error('Esta versión del servidor no tiene la ruta solicitada. Reinicia el servidor local o vuelve a desplegar los últimos cambios.');
         throw new Error(`La API devolvió una respuesta no válida (HTTP ${response.status}).`);
       }
       if(!response.ok){
@@ -135,7 +142,7 @@
         document.querySelector(`#${id}`).textContent='Cargando...';
       });
       try{
-        const response=await authFetch(`/api/profesores/me/alumnos/${encodeURIComponent(student.id)}`);
+        const response=await authFetch(`${studentsUrl}/${encodeURIComponent(student.id)}`);
         const details=await readApiResponse(response);
         const statusBadge=document.querySelector('#drawer-status');
         statusBadge.textContent=details.estado||'No registrado';
@@ -193,14 +200,21 @@
       const loadingRow=document.createElement('tr'),loadingCell=document.createElement('td');
       loadingCell.colSpan=2;loadingCell.className='empty';loadingCell.textContent='Cargando alumnos...';loadingRow.append(loadingCell);tbody.replaceChildren(loadingRow);
       try{
-        const profileResponse=await authFetch('/api/profesores/me');
-        teacherProfile=await readApiResponse(profileResponse);
-        if(!teacherProfile||!Array.isArray(teacherProfile.disciplinas))throw new Error('El perfil del profesor devolvió disciplinas no válidas.');
-        document.querySelector('.app-usuario-nombre').textContent=teacherProfile.nombre;
-        document.querySelector('#students-title').textContent=teacherProfile.nombre;
-        updateDisciplines(teacherProfile.disciplinas);
+        if(isDirector){
+          const response=await authFetch('/api/matriculas/disciplinas');
+          const disciplines=await readApiResponse(response);
+          if(!Array.isArray(disciplines))throw new Error('La API devolvió un formato de disciplinas no válido.');
+          updateDisciplines(disciplines.map(item=>item.nombre));
+        }else{
+          const profileResponse=await authFetch('/api/profesores/me');
+          teacherProfile=await readApiResponse(profileResponse);
+          if(!teacherProfile||!Array.isArray(teacherProfile.disciplinas))throw new Error('El perfil del profesor devolvió disciplinas no válidas.');
+          document.querySelector('.app-usuario-nombre').textContent=teacherProfile.nombre;
+          document.querySelector('#students-title').textContent=teacherProfile.nombre;
+          updateDisciplines(teacherProfile.disciplinas);
+        }
 
-        const response=await authFetch('/api/profesores/me/alumnos');
+        const response=await authFetch(studentsUrl);
         const records=await readApiResponse(response);
         if(!Array.isArray(records))throw new Error('La API devolvió un formato de alumnos no válido.');
         students.push(...records.map(mapStudent));
@@ -209,7 +223,7 @@
         renderDisciplineGroups();
       }catch(error){
         console.error('Error al cargar alumnos desde la API:',error);
-        if(!teacherProfile){
+        if(teacherDisciplines.size===0){
           discipline.replaceChildren(new Option('No se pudieron cargar las disciplinas',''));
         }
         const errorRow=document.createElement('tr'),errorCell=document.createElement('td');
