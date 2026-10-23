@@ -61,18 +61,21 @@ document.addEventListener('DOMContentLoaded', () => {
     steps[2]?.classList.add('active');
     document.querySelectorAll('.payment-step-line')[1]?.classList.add('active');
 
+    const isReserva = tipo === 'reserva';
+    const redirectUrl = isReserva ? '/mis-matriculas.html?reserva=exitosa' : '/mis-matriculas.html';
+
     const submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.textContent = 'Ir a Mis matrículas';
       submitBtn.disabled = false;
       submitBtn.onclick = (e) => {
         e.preventDefault();
-        window.location.href = '/mis-matriculas.html';
+        window.location.href = redirectUrl;
       };
     }
 
     setTimeout(() => {
-      window.location.href = '/mis-matriculas.html';
+      window.location.href = redirectUrl;
     }, 3000);
   }
   if (result === 'pendiente') {

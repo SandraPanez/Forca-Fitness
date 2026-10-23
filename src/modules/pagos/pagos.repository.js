@@ -33,7 +33,8 @@ class PagosRepository {
                 p."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,
                 UPPER(mp."Nombre_Metodo") AS medio_pago,
                 TRIM(per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
-                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas,
+                m."Estado_Matricula" AS estado_matricula
             FROM "Academia Forca&Fitness"."Pago" p
             JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
             JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
@@ -43,7 +44,7 @@ class PagosRepository {
             LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
             LEFT JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
             ${where}
-            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno"
+            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno", m."Estado_Matricula"
             ORDER BY p."Fecha_Pago" DESC
         `, valores);
         return result.rows;

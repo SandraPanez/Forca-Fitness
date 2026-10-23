@@ -59,7 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     tbody.innerHTML = cobros.map(cobro => `
       <tr>
-        <td><strong>${escapeHtml(cobro.alumno)}</strong><small class="treasury-muted">${escapeHtml(cobro.id_matricula)}</small></td>
+        <td>
+          <strong>${escapeHtml(cobro.alumno)}</strong>
+          <small class="treasury-muted">${escapeHtml(cobro.id_matricula)}</small>
+          ${cobro.estado_matricula === 'Reservada' ? '<span class="badge-status badge-reservada" style="margin-left: 0.35rem; font-size: 0.7rem; padding: 2px 6px;">Reservada</span>' : ''}
+        </td>
         <td>${escapeHtml(cobro.disciplinas || 'Mensualidad')}</td>
         <td>S/ ${Number(cobro.monto).toFixed(2)}</td>
         <td>${escapeHtml(cobro.medio_pago)}</td>
