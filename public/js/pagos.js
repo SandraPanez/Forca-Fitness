@@ -29,18 +29,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const cash = document.querySelector('input[name="method"]:checked').value === 'efectivo';
     document.getElementById('summary-method').textContent = cash ? 'Efectivo' : 'Mercado Pago';
     document.getElementById('cash-notice').hidden = !cash;
+    if (cash && tipo === 'reserva') {
+      document.getElementById('cash-notice').innerHTML =
+        'Al elegir efectivo, la reserva quedará <strong>Pendiente de confirmación</strong> hasta que el tesorero registre el pago en recepción. Recuerda que el cupo se asegura tras la confirmación.';
+    }
   };
   methodInputs.forEach(input => input.addEventListener('change', updateSummary));
 
   const result = params.get('resultado');
+  const tipo = params.get('tipo');
+
+  if (tipo === 'reserva') {
+    const pageSubtitle = document.querySelector('.page-header .subtitle');
+    const pageTitle = document.querySelector('.page-header .title');
+    const pageDesc = document.querySelector('.page-header .description');
+    const btnCancel = document.querySelector('.form-actions .btn-cancel');
+
+    if (pageSubtitle) pageSubtitle.textContent = 'PAGO DE RESERVA';
+    if (pageTitle) pageTitle.textContent = 'Pago de reserva de cupo';
+    if (pageDesc) pageDesc.textContent = 'Asegura tu cupo con tarifa congelada procesando el pago de tu reserva.';
+    if (btnCancel) btnCancel.href = '/disciplinas.html';
+  }
   const steps = document.querySelectorAll('.payment-step');
   if (result === 'exitoso') {
-    showMessage('Pago aprobado. Tu matrícula está confirmada.', 'success');
+    const successMsg = tipo === 'reserva'
+      ? '¡Pago aprobado! Cupo reservado correctamente. Redirigiendo a Mis matrículas en 3 segundos...'
+      : '¡Pago aprobado! Tu matrícula está confirmada. Redirigiendo a Mis matrículas en 3 segundos...';
+    showMessage(successMsg, 'success');
     steps[1]?.classList.remove('active');
     steps[1]?.classList.add('completed');
     steps[1].querySelector('span').textContent = '✓';
     steps[2]?.classList.add('active');
     document.querySelectorAll('.payment-step-line')[1]?.classList.add('active');
+
+    const isReserva = tipo === 'reserva';
+    const redirectUrl = isReserva ? '/mis-matriculas.html?reserva=exitosa' : '/mis-matriculas.html';
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.textContent = 'Ir a Mis matrículas';
+      submitBtn.disabled = false;
+      submitBtn.onclick = (e) => {
+        e.preventDefault();
+        window.location.href = redirectUrl;
+      };
+    }
+
+    setTimeout(() => {
+      window.location.href = redirectUrl;
+    }, 3000);
   }
   if (result === 'pendiente') {
     showMessage('Estamos pendientes de confirmar tu pago. Conserva tu código de matrícula.', 'info');
@@ -67,7 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const resultData = await response.json();
       if (!response.ok || !resultData.success) throw new Error(resultData.message || 'No se pudo registrar el pago.');
       if (cash) {
-        showMessage('Solicitud creada. Acércate a la academia antes de 48 horas para confirmar el pago.', 'success');
+        const cashMsg = tipo === 'reserva'
+          ? 'Solicitud de reserva en efectivo registrada. Acércate a recepción en las próximas 48 horas para asegurar tu cupo.'
+          : 'Solicitud creada. Acércate a la academia antes de 48 horas para confirmar el pago.';
+        showMessage(cashMsg, 'success');
         button.textContent = 'Solicitud registrada';
       } else {
         window.location.href = resultData.init_point;

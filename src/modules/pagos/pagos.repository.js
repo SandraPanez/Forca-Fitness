@@ -33,7 +33,8 @@ class PagosRepository {
                 p."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,
                 UPPER(mp."Nombre_Metodo") AS medio_pago,
                 TRIM(per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
-                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas,
+                m."Estado_Matricula" AS estado_matricula
             FROM "Academia Forca&Fitness"."Pago" p
             JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
             JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
@@ -43,7 +44,7 @@ class PagosRepository {
             LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
             LEFT JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
             ${where}
-            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno"
+            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno", m."Estado_Matricula"
             ORDER BY p."Fecha_Pago" DESC
         `, valores);
         return result.rows;
@@ -153,7 +154,10 @@ class PagosRepository {
             if (!pago.rows[0]) {
                 throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
             }
-            await this.actualizarEstadoMatricula(idMatricula, 'Activa', client);
+            const esFutura = await this.esMatriculaPeriodoFuturo(idMatricula, client);
+            const estadoMatricula = esFutura ? 'Reservada' : 'Activa';
+
+            await this.actualizarEstadoMatricula(idMatricula, estadoMatricula, client);
             await client.query(`
                 UPDATE "Academia Forca&Fitness"."Usuario" u
                 SET "Estado_Usuario" = 'ACTIVO'
@@ -168,7 +172,10 @@ class PagosRepository {
                 VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
             `, [`REG${Date.now().toString().slice(-14)}`, pago.rows[0].Monto, pago.rows[0].Id_Pago, referenciaOperacion || null]);
             await client.query('COMMIT');
-            return pago.rows[0];
+            return {
+                ...pago.rows[0],
+                estadoMatricula
+            };
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
@@ -203,6 +210,36 @@ class PagosRepository {
                 id_pago: pago.Id_Pago
             });
         }
+        return result.rows.length;
+    }
+
+    async activarReservasIniciadas() {
+        const result = await db.query(`
+            WITH activadas AS (
+                UPDATE "Academia Forca&Fitness"."Matricula" m
+                SET "Estado_Matricula" = 'Activa'
+                WHERE m."Estado_Matricula" = 'Reservada'
+                  AND EXISTS (
+                      SELECT 1 FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                      WHERE dm."Id_Matricula" = m."Id_Matricula"
+                        AND dm."Fecha_Inicio" <= CURRENT_DATE
+                  )
+                RETURNING m."Id_Matricula", m."Id_alumno"
+            )
+            SELECT * FROM activadas
+        `);
+
+        if (result.rows.length > 0) {
+            for (const row of result.rows) {
+                await db.query(`
+                    UPDATE "Academia Forca&Fitness"."Usuario" u
+                    SET "Estado_Usuario" = 'ACTIVO'
+                    FROM "Academia Forca&Fitness"."Alumno" a
+                    WHERE a."Id_alumno" = $1 AND u."Id_Persona" = a."Id_Persona"
+                `, [row.Id_alumno]);
+            }
+        }
+
         return result.rows.length;
     }
 
@@ -263,9 +300,11 @@ class PagosRepository {
 
     async obtenerTransaccionPorPaymentId(paymentId) {
         const result = await db.query(`
-            SELECT "Id_Mp_Transaccion", "Id_Pago"
-            FROM "Academia Forca&Fitness"."Mercado_Pago"
-            WHERE "Mp_Payment_Id" = $1
+            SELECT mp."Id_Mp_Transaccion", mp."Id_Pago", m."Estado_Matricula"
+            FROM "Academia Forca&Fitness"."Mercado_Pago" mp
+            LEFT JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Pago" = mp."Id_Pago"
+            LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+            WHERE mp."Mp_Payment_Id" = $1
         `, [String(paymentId)]);
         return result.rows[0] || null;
     }
@@ -378,6 +417,24 @@ class PagosRepository {
         const result = await client.query(query, [estado_matricula, id_matricula]);
 
         return result.rows[0];
+    }
+
+    async esMatriculaPeriodoFuturo(idMatricula, client = db) {
+        const query = `
+            SELECT 1
+            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+            WHERE dm."Id_Matricula" = $1
+              AND (
+                  EXTRACT(YEAR FROM dm."Fecha_Inicio") > EXTRACT(YEAR FROM CURRENT_DATE)
+                  OR (
+                      EXTRACT(YEAR FROM dm."Fecha_Inicio") = EXTRACT(YEAR FROM CURRENT_DATE)
+                      AND EXTRACT(MONTH FROM dm."Fecha_Inicio") > EXTRACT(MONTH FROM CURRENT_DATE)
+                  )
+              )
+            LIMIT 1
+        `;
+        const result = await client.query(query, [idMatricula]);
+        return result.rows.length > 0;
     }
 
 

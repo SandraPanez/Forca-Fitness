@@ -13,16 +13,19 @@ async function obtenerDatosAlumno(idUsuario) {
       p."Genero"               AS genero,
       p."Direccion"            AS direccion,
       p."Numero_Documento"     AS numero_documento,
-      COALESCE((SELECT mc."Contacto"
-       FROM ${SCHEMA}."Metodo_Contacto" mc
-       WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CORREO'
-       ORDER BY (mc."Tipo_Contacto" = 'CORREO') DESC, mc."Id_contacto"
-       LIMIT 1), u."Correo") AS correo_electronico,
-      (SELECT mc."Contacto"
+      COALESCE(
+        NULLIF(TRIM((SELECT mc."Contacto"
+         FROM ${SCHEMA}."Metodo_Contacto" mc
+         WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CORREO'
+         ORDER BY (mc."Tipo_Contacto" = 'CORREO') DESC, mc."Id_contacto"
+         LIMIT 1)), ''),
+        u."Correo"
+      ) AS correo_electronico,
+      NULLIF(TRIM((SELECT mc."Contacto"
        FROM ${SCHEMA}."Metodo_Contacto" mc
        WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CELULAR'
        ORDER BY (mc."Tipo_Contacto" = 'CELULAR') DESC, mc."Id_contacto"
-       LIMIT 1) AS numero_celular
+       LIMIT 1)), '') AS numero_celular
     FROM ${SCHEMA}."Alumno" a
     JOIN ${SCHEMA}."Persona" p ON p."Id_Persona" = a."Id_Persona"
     JOIN ${SCHEMA}."Usuario" u ON u."Id_Persona" = p."Id_Persona"
@@ -44,7 +47,7 @@ async function actualizarDatosAlumno(idUsuario, datos) {
        FOR UPDATE OF a`,
       [idUsuario]
     );
-    if (!alumno.rows[0]) throw new Error('Alumno no encontrado');
+    if (!alumno.rows[0]) throw new Error("Alumno no encontrado");
     const idPersona = alumno.rows[0].Id_Persona;
     const [nombre, ...otrosNombres] = datos.nombre.trim().split(/\s+/);
 
@@ -61,6 +64,13 @@ async function actualizarDatosAlumno(idUsuario, datos) {
       [nombre, otrosNombres.join(' ') || null, datos.apellido_paterno, datos.apellido_materno,
        datos.fecha_nacimiento, datos.genero, datos.direccion, idPersona]
     );
+
+    if (datos.correo_electronico !== undefined) {
+      await client.query(
+        `UPDATE ${SCHEMA}."Usuario" SET "Correo" = $1 WHERE "Id_Usuario" = $2`,
+        [datos.correo_electronico, idUsuario]
+      );
+    }
 
     for (const [tipo, valor] of [
       ['CORREO', datos.correo_electronico],

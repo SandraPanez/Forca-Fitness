@@ -15,12 +15,44 @@ class MatriculasController {
   async getHorariosPorDisciplina(req, res) {
     try {
       const { id } = req.params;
-      const horarios = await matriculasService.getHorariosPorDisciplina(id);
-      return successResponse(res, 200, horarios, 'Horarios obtenidos correctamente');
+      const { periodo } = req.query;
+      const resultado = await matriculasService.getHorariosPorDisciplina(id, periodo);
+      return successResponse(res, 200, resultado, 'Horarios obtenidos correctamente');
     } catch (error) {
       console.error('Error en getHorariosPorDisciplina:', error);
-      const isUserError = error.message.includes('obligatorio');
+      const isUserError = error.message.includes('obligatorio') || error.message.includes('periodo');
       return errorResponse(res, isUserError ? 400 : 500, error.message || 'Error al obtener los horarios');
+    }
+  }
+
+  async validarReserva(req, res) {
+    try {
+      const { disciplina, periodo } = req.query;
+      if (!disciplina) {
+        return errorResponse(res, 400, 'El ID de la disciplina es obligatorio para validar la reserva.');
+      }
+      const resultado = await matriculasService.validarTopeCuposReserva(disciplina, periodo);
+      return successResponse(res, 200, resultado, 'Validación de reserva completada');
+    } catch (error) {
+      console.error('Error en validarReserva:', error);
+      return errorResponse(res, 400, error.message || 'Error al validar la reserva');
+    }
+  }
+
+  async crearReserva(req, res) {
+    try {
+      const { id_disciplina, id_disc_horario, periodo } = req.body;
+      const id_usuario = req.user.id;
+      const resultado = await matriculasService.crearReservaCupo({
+        id_usuario,
+        id_disciplina,
+        id_disc_horario,
+        periodo
+      });
+      return successResponse(res, 201, resultado, 'Reserva de cupo creada exitosamente');
+    } catch (error) {
+      console.error('Error en crearReserva:', error);
+      return errorResponse(res, 400, error.message || 'Error al crear la reserva de cupo');
     }
   }
 

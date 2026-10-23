@@ -17,7 +17,8 @@ class AlumnosService {
       const diffTime = fechaVencimiento ? fechaVencimiento - hoy : 0;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      const estado_matricula = diffDays > 0 ? 'Activa' : 'Vencida';
+      const esReservada = al.estado === 'Reservada';
+      const estado_matricula = esReservada ? 'Reservada' : (diffDays > 0 ? 'Activa' : 'Vencida');
       const nombres = al.nombres || '';
       const apellidoPaterno = al.apellido_paterno || '';
       
@@ -50,11 +51,14 @@ class AlumnosService {
     const diffTime = fechaVencimiento ? fechaVencimiento - hoy : 0;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    const estado = diffDays > 0 ? 'Activa' : 'Vencida';
-    const dias_restantes_texto = diffDays > 0 
-      ? `Activa - ${diffDays} días restantes` 
-      : `Vencida hace ${Math.abs(diffDays)} días`;
-    const estado_alumno = diffDays > 0 ? 'Habilitado' : 'Inhabilitado';
+    const esReservada = record.estado_matricula === 'Reservada';
+    const estado = esReservada ? 'Reservada' : (diffDays > 0 ? 'Activa' : 'Vencida');
+    const dias_restantes_texto = esReservada
+      ? 'Reservada - Inicia próximo periodo'
+      : (diffDays > 0 
+        ? `Activa - ${diffDays} días restantes` 
+        : `Vencida hace ${Math.abs(diffDays)} días`);
+    const estado_alumno = (esReservada || diffDays > 0) ? 'Habilitado' : 'Inhabilitado';
 
     const formatoFecha = fecha => {
       if (!fecha) return 'No registrada';

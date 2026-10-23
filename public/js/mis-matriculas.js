@@ -83,6 +83,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             tbody.innerHTML = '';
 
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('reserva') === 'exitosa' || urlParams.get('reserva') === '1') {
+                const banner = document.getElementById('reserva-banner');
+                if (banner) {
+                    banner.style.display = 'flex';
+                }
+            }
+
             matriculas.forEach(matricula => {
                 const fila = document.createElement('tr');
 
@@ -102,7 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const diasTexto = obtenerTextoDias(
                     estado,
-                    matricula.dias_restantes
+                    matricula.dias_restantes,
+                    matricula
                 );
 
                 const renovacion = matricula.puede_renovar && matricula.id_detalle
@@ -159,6 +168,10 @@ function formatearFecha(fecha) {
 
 
 function obtenerClaseEstado(estado) {
+    if (estado === 'Reservada') {
+        return 'badge-reservada';
+    }
+
     if (estado === 'Activa') {
         return 'badge-activa';
     }
@@ -181,7 +194,17 @@ function obtenerClaseEstado(estado) {
 }
 
 
-function obtenerTextoDias(estado, diasRestantes) {
+function obtenerTextoDias(estado, diasRestantes, matricula) {
+    if (estado === 'Reservada') {
+        const tarifa = matricula?.tarifa_congelada ? ` • Tarifa congelada: S/ ${Number(matricula.tarifa_congelada).toFixed(2)}` : '';
+        return `
+            <div class="dias-reserva">
+                <span class="dias-reserva-check">✓ Cupo reservado correctamente</span>
+                <span class="dias-reserva-sub">Inicio próximo periodo${tarifa}</span>
+            </div>
+        `;
+    }
+
     if (diasRestantes === null || diasRestantes === undefined) {
         return '';
     }

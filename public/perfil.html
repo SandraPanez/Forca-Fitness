@@ -36,21 +36,25 @@
     <script>
         async function cargarPerfil() {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) { window.location.href = '/login.html'; return; }
+                if (!verificarSesion()) return;
 
                 const res = await authFetch('/api/perfil');
-
                 if (res.status === 401 || res.status === 403) {
-                    window.location.href = '/login.html'; return;
+                    window.location.href = '/login.html';
+                    return;
                 }
 
                 const json = await res.json();
-                if (!res.ok || !json.success) throw new Error(json.message || 'No se pudo cargar el perfil.');
+                if (!res.ok || !json.success || !json.data) {
+                    throw new Error(json.message || 'Error al cargar los datos del perfil.');
+                }
+
                 const d = json.data;
                 const generoTexto = d.genero === 'M' ? 'Masculino' : d.genero === 'F' ? 'Femenino' : d.genero || '—';
                 const nombreCompleto = [d.nombre, d.apellido_paterno, d.apellido_materno].filter(Boolean).join(' ');
-                document.querySelector('.app-usuario-nombre').textContent = nombreCompleto;
+                const userEl = document.querySelector('.app-usuario-nombre');
+                if (userEl) userEl.textContent = nombreCompleto;
+
                 const campos = [
                     ['Nombre completo', nombreCompleto],
                     ['Fecha de nacimiento', d.fecha_nacimiento?.substring(0, 10)],
@@ -77,7 +81,7 @@
                 });
                 document.getElementById('datos-perfil').replaceChildren(tabla);
             } catch (e) {
-                document.getElementById('datos-perfil').textContent = 'Error al cargar perfil. Recarga la página para reintentar.';
+                document.getElementById('datos-perfil').innerHTML = `<p style="color:red;">${e.message || 'Error al cargar perfil.'}</p>`;
             }
         }
 

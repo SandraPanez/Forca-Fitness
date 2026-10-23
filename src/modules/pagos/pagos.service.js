@@ -45,6 +45,7 @@ class PagosService {
                 failure: `${appUrl}/api/pagos/failure`,
                 pending: `${appUrl}/api/pagos/pending`
             },
+            auto_return: 'approved',
             external_reference: datosMatricula.id_matricula,
             ...(isPublicUrl ? { notification_url: `${appUrl}/api/pagos/webhook` } : {})
         };
@@ -132,6 +133,7 @@ class PagosService {
             return {
                 duplicado: true,
                 estadoPago,
+                estadoMatricula: transaccionExistente.Estado_Matricula,
                 mensaje: 'El pago ya fue procesado anteriormente.'
             };
         }
@@ -142,13 +144,13 @@ class PagosService {
         );
 
 
-        const estadoMatricula =
-            estadoMP === 'approved'
-                ? 'Activa'
-                : estadoMP === 'rejected'
-                    ? 'Inactiva'
-                    : 'Pendiente';
-
+        let estadoMatricula = 'Pendiente';
+        if (estadoMP === 'approved') {
+            const esFutura = await pagosRepository.esMatriculaPeriodoFuturo(idMatricula);
+            estadoMatricula = esFutura ? 'Reservada' : 'Activa';
+        } else if (estadoMP === 'rejected') {
+            estadoMatricula = 'Inactiva';
+        }
 
         // Actualizar matrícula
         await pagosRepository.actualizarEstadoMatricula(
@@ -215,6 +217,10 @@ class PagosService {
 
     async anularSolicitudesEfectivoVencidas() {
         return pagosRepository.anularSolicitudesEfectivoVencidas();
+    }
+
+    async activarReservasIniciadas() {
+        return pagosRepository.activarReservasIniciadas();
     }
 }
 

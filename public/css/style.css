@@ -31,6 +31,7 @@ body {
     object-fit: contain;
 }
 
+
 /* Main Container */
 .container {
     max-width: 1000px;
@@ -740,6 +741,25 @@ body {
     opacity: 1;
 }
 
+.password-feedback {
+    display: block;
+    font-size: 0.82rem;
+    margin-top: 0.35rem;
+    font-weight: 500;
+}
+.password-feedback.match {
+    color: #2e7d32;
+}
+.password-feedback.mismatch {
+    color: #d32f2f;
+}
+.input-success {
+    border-color: #2e7d32 !important;
+}
+.input-error {
+    border-color: #d32f2f !important;
+}
+
 /* ========================================================
    ESTILOS PARA HU-2: LISTA DE ALUMNOS Y SIDE PANEL
    ======================================================== */
@@ -898,10 +918,76 @@ body {
     color: #c62828;
 }
 
+.badge-reservada {
+    background-color: #ede7f6;
+    color: #4527a0;
+    border: 1px solid #d1c4e9;
+    font-weight: 700;
+}
+
 .dias-text {
     font-size: 0.85rem;
     color: var(--text-muted);
     margin-left: 0.5rem;
+}
+
+.dias-reserva {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.35rem;
+    gap: 0.15rem;
+}
+
+.dias-reserva-check {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #4527a0;
+}
+
+.dias-reserva-sub {
+    font-size: 0.775rem;
+    color: var(--text-muted);
+}
+
+.reserva-alert {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background: #ede7f6;
+    border: 1px solid #d1c4e9;
+    border-left: 5px solid #5e35b1;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #311b92;
+    box-shadow: 0 2px 6px rgba(94, 53, 177, 0.08);
+}
+
+.reserva-alert-icon {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #5e35b1;
+    background: #ffffff;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reserva-alert-content strong {
+    font-size: 1.05rem;
+    color: #311b92;
+}
+
+.reserva-alert-content p {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: #4527a0;
+    line-height: 1.4;
 }
 
 /* ========================================================
@@ -1116,8 +1202,11 @@ body {
 }
 
 .horario-estado {
-    width: 120px;
+    width: auto;
+    min-width: 140px;
     text-align: right;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .badge-disponible {
@@ -1127,6 +1216,7 @@ body {
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .badge-ultimos {
@@ -1198,4 +1288,234 @@ body {
     .horario-estado {
         text-align: left;
     }
+
+    .horario-accion {
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .msg-sin-cupos {
+        text-align: left;
+    }
 }
+
+/* ========================================================
+   ESTILOS PARA HU-09: RESERVAR CUPO Y CONSULTA DE HORARIOS
+   ======================================================== */
+.filtros-controles {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.periodo-selector {
+    min-width: 280px;
+}
+
+.disciplina-resumen-banner {
+    background: linear-gradient(135deg, rgba(26, 79, 139, 0.06) 0%, rgba(26, 79, 139, 0.02) 100%);
+    border: 1px solid rgba(26, 79, 139, 0.18);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.disciplina-resumen-info h4 {
+    margin: 0 0 0.35rem 0;
+    color: var(--primary-color);
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.disciplina-resumen-info p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.disciplina-resumen-metrics {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.tarifa-box {
+    text-align: right;
+}
+
+.tarifa-box .tarifa-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.tarifa-box .tarifa-valor {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.tarifa-congelada-tag {
+    display: inline-block;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    margin-top: 0.25rem;
+}
+
+.reserva-cupos-badge {
+    background-color: #ede7f6;
+    color: #4527a0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.horario-accion {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.6rem;
+    min-width: 180px;
+}
+
+.btn-reservar {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-reservar:hover:not(:disabled) {
+    background-color: #133b68;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.btn-reservar:disabled,
+.btn-reservar.btn-disabled {
+    background-color: #e0e0e0;
+    color: #9e9e9e;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.msg-sin-cupos {
+    color: #c62828;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+.cupos-reserva-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4527a0;
+}
+
+/* Modal Confirmar Reserva (PSW-201) */
+.modal-reserva {
+    max-width: 520px;
+    text-align: left;
+    padding: 2rem 2.25rem;
+}
+
+.modal-reserva h3 {
+    margin-bottom: 0.35rem;
+    color: var(--primary-color);
+    font-size: 1.3rem;
+}
+
+.modal-reserva .modal-subtitle {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.reserva-detalle-card {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.reserva-detalle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #e0e0e0;
+    padding-bottom: 0.5rem;
+}
+
+.reserva-detalle-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.reserva-detalle-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.reserva-detalle-valor {
+    font-size: 0.95rem;
+    color: var(--text-main);
+    font-weight: 600;
+    text-align: right;
+}
+
+.reserva-condiciones-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.condicion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.condicion-item span {
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.condicion-item p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
