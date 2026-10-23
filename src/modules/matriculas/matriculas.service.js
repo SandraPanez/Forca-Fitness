@@ -98,6 +98,8 @@ class MatriculasService {
       throw new Error('El ID de la disciplina es obligatorio.');
     }
 
+    await matriculasRepository.activarReservasIniciadas();
+
     const reg = this.validarReglasReserva({ periodo });
     const { anio, mes, es_periodo_futuro, fechaInicioStr, fechaFinStr } = reg;
     periodo = reg.periodo;
@@ -171,6 +173,8 @@ class MatriculasService {
     if (!idUsuario) {
       throw new Error('El ID del usuario es obligatorio.');
     }
+
+    await matriculasRepository.activarReservasIniciadas();
 
     const matriculas = await matriculasRepository.getMatriculasPorUsuario(
       idUsuario

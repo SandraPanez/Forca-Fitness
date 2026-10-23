@@ -85,7 +85,7 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
 const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
-const expirationCheck = setInterval(async () => {
+async function ejecutarTareasPeriodicas() {
   try {
     const expired = await require('./src/modules/pagos/pagos.service')
       .anularSolicitudesEfectivoVencidas();
@@ -100,9 +100,12 @@ const expirationCheck = setInterval(async () => {
   } catch (error) {
     console.error('Error al procesar tareas periódicas de pagos/reservas:', error);
   }
-}, EXPIRATION_CHECK_INTERVAL);
+}
+
+const expirationCheck = setInterval(ejecutarTareasPeriodicas, EXPIRATION_CHECK_INTERVAL);
 expirationCheck.unref();
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
+  ejecutarTareasPeriodicas();
 });

@@ -219,16 +219,31 @@ class PagosRepository {
 
     async activarReservasIniciadas() {
         const result = await db.query(`
-            UPDATE "Academia Forca&Fitness"."Matricula" m
-            SET "Estado_Matricula" = 'Activa'
-            WHERE m."Estado_Matricula" = 'Reservada'
-              AND EXISTS (
-                  SELECT 1 FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
-                  WHERE dm."Id_Matricula" = m."Id_Matricula"
-                    AND dm."Fecha_Inicio" <= CURRENT_DATE
-              )
-            RETURNING m."Id_Matricula"
+            WITH activadas AS (
+                UPDATE "Academia Forca&Fitness"."Matricula" m
+                SET "Estado_Matricula" = 'Activa'
+                WHERE m."Estado_Matricula" = 'Reservada'
+                  AND EXISTS (
+                      SELECT 1 FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                      WHERE dm."Id_Matricula" = m."Id_Matricula"
+                        AND dm."Fecha_Inicio" <= CURRENT_DATE
+                  )
+                RETURNING m."Id_Matricula", m."Id_alumno"
+            )
+            SELECT * FROM activadas
         `);
+
+        if (result.rows.length > 0) {
+            for (const row of result.rows) {
+                await db.query(`
+                    UPDATE "Academia Forca&Fitness"."Usuario" u
+                    SET "Estado_Usuario" = 'ACTIVO'
+                    FROM "Academia Forca&Fitness"."Alumno" a
+                    WHERE a."Id_alumno" = $1 AND u."Id_Persona" = a."Id_Persona"
+                `, [row.Id_alumno]);
+            }
+        }
+
         return result.rows.length;
     }
 
