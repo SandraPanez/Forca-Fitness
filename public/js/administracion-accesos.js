@@ -153,5 +153,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Ventana "Agregar personal"
+    const registroModal = document.getElementById('registroModal');
+    const registroForm = document.getElementById('registroForm');
+
+    function abrirRegistro() {
+        registroModal.style.display = 'flex';
+        registroForm.elements.nombres.focus();
+    }
+
+    function cerrarRegistro() {
+        registroModal.style.display = 'none';
+        registroForm.reset();
+    }
+
+    document.getElementById('btn-agregar-personal').addEventListener('click', abrirRegistro);
+    document.getElementById('btn-cancelar-registro').addEventListener('click', cerrarRegistro);
+    registroModal.addEventListener('click', event => {
+        if (event.target === registroModal) {
+            cerrarRegistro();
+        }
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && registroModal.style.display === 'flex') {
+            cerrarRegistro();
+        }
+    });
+    // El envío del formulario se implementa en T-52 y T-53
+    registroForm.addEventListener('submit', event => event.preventDefault());
+
     cargarPersonal();
 });
