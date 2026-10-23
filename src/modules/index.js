@@ -5,6 +5,7 @@ const pagosRoutes = require('./pagos/pagos.routes');
 const comprobantesRoutes = require('./comprobantes/comprobantes.routes');
 const profesoresRoutes = require('./profesores/profesores.routes');
 const perfilRoutes = require('./perfil/perfil.routes');
+const horariosRoutes = require('./horarios/horarios.routes');
 
 module.exports = {
   alumnosRoutes,
@@ -13,5 +14,6 @@ module.exports = {
   authRoutes,
   pagosRoutes,
   comprobantesRoutes,
-  perfilRoutes
+  perfilRoutes,
+  horariosRoutes
 };

@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Gestión de Horarios | Forca & Fitness</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+    <link rel="stylesheet" href="/css/horarios.css">
+</head>
+
+<body data-menu="/horarios.html">
+
+    <!-- Encabezado compartido del sistema -->
+    <header id="app-header"></header>
+
+    <main class="container" id="horarios-app">
+
+        <!-- Título -->
+        <section class="page-header">
+            <p class="subtitle">
+                Panel del Director
+            </p>
+
+            <h2 class="title">
+                Gestión de horarios
+            </h2>
+
+            <p class="description">
+                Consulta y modifica los días y horarios de las clases.
+            </p>
+        </section>
+
+        <!-- Mensajes generales -->
+        <div
+            id="mensaje-horarios"
+            role="status"
+            aria-live="polite"
+        ></div>
+
+        <div class="horarios-layout">
+
+            <!-- Lista de clases -->
+            <section class="form-card horarios-listado">
+
+                <div class="horarios-seccion-encabezado">
+                    <h3>Clases registradas</h3>
+
+                    <p>
+                        Selecciona una clase para modificar
+                        su horario.
+                    </p>
+                </div>
+
+                <!-- Las clases reales se cargarán con JavaScript -->
+                <div id="lista-clases" class="horarios-lista">
+                    <p>Cargando clases...</p>
+                </div>
+
+            </section>
+
+            <!-- Panel de edición -->
+            <section class="form-card horarios-editor">
+
+                <div class="horarios-seccion-encabezado">
+                    <h3>Modificar horario</h3>
+
+                    <p>
+                        Selecciona los días y las nuevas horas.
+                    </p>
+                </div>
+
+                <form id="form-horario">
+
+                    <!-- Identificador interno de la clase -->
+                    <input
+                        type="hidden"
+                        id="id-disc-horario"
+                    >
+
+                    <!-- Clase seleccionada -->
+                    <div class="form-group">
+                        <label for="clase-seleccionada">
+                            Clase seleccionada
+                        </label>
+
+                        <input
+                            type="text"
+                            id="clase-seleccionada"
+                            placeholder="Selecciona una clase"
+                            readonly
+                        >
+                    </div>
+
+                    <!-- Datos del profesor -->
+                    <div class="form-group">
+                        <label for="profesor-seleccionado">
+                            Profesor
+                        </label>
+
+                        <input
+                            type="text"
+                            id="profesor-seleccionado"
+                            readonly
+                        >
+                    </div>
+
+                    <!-- Horario original -->
+                    <div
+                        id="horario-actual"
+                        class="horario-actual"
+                    >
+                        <h4>Horario actual</h4>
+
+                        <p>
+                            Selecciona una clase para consultar
+                            su horario.
+                        </p>
+                    </div>
+
+                    <!-- Selección de días -->
+                    <fieldset class="horarios-dias">
+
+                        <legend>
+                            Días de la semana
+                        </legend>
+
+                        <div class="dias-grid">
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Lunes"
+                                >
+                                Lunes
+                            </label>
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Martes"
+                                >
+                                Martes
+                            </label>
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Miercoles"
+                                >
+                                Miércoles
+                            </label>
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Jueves"
+                                >
+                                Jueves
+                            </label>
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Viernes"
+                                >
+                                Viernes
+                            </label>
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Sabado"
+                                >
+                                Sábado
+                            </label>
+
+                            <label class="dia-opcion">
+                                <input
+                                    type="checkbox"
+                                    name="dias"
+                                    value="Domingo"
+                                >
+                                Domingo
+                            </label>
+
+                        </div>
+
+                    </fieldset>
+
+                    <!-- Selección de horas -->
+                    <div class="horarios-horas">
+
+                        <div class="form-group">
+                            <label for="hora-inicio">
+                                Hora de inicio
+                            </label>
+
+                            <input
+                                type="time"
+                                id="hora-inicio"
+                                step="900"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hora-fin">
+                                Hora de fin
+                            </label>
+
+                            <input
+                                type="time"
+                                id="hora-fin"
+                                step="900"
+                                required
+                            >
+                        </div>
+
+                    </div>
+
+                    <p class="horarios-ayuda">
+                        Las horas deben utilizar intervalos
+                        de 15 minutos. La hora de fin debe
+                        ser posterior a la de inicio.
+                    </p>
+
+                    <button
+                        type="submit"
+                        id="btn-previsualizar"
+                        class="btn-horarios-principal"
+                        disabled
+                    >
+                        Ver vista previa
+                    </button>
+
+                </form>
+
+                <!-- Vista previa de los cambios -->
+                <section
+                    id="vista-previa"
+                    class="vista-previa"
+                    hidden
+                >
+
+                    <h3>Vista previa de los cambios</h3>
+
+                    <p>
+                        Revisa los cambios antes de confirmarlos.
+                    </p>
+
+                    <!-- Resumen de la propuesta -->
+                    <div id="resumen-cambio"></div>
+
+                    <!-- Advertencia de alumnos activos -->
+                    <div
+                        id="aviso-alumnos"
+                        class="aviso-alumnos"
+                        hidden
+                    ></div>
+
+                    <!-- Conflictos del mismo profesor -->
+                    <div
+                        id="conflictos-horario"
+                        class="conflictos-horario"
+                        hidden
+                    ></div>
+
+                    <!-- Coincidencias con otros profesores -->
+                    <div
+                        id="advertencias-horario"
+                        class="advertencias-horario"
+                        hidden
+                    ></div>
+
+                    <!-- Botones -->
+                    <div class="horarios-acciones">
+
+                        <button
+                            type="button"
+                            id="btn-volver"
+                            class="btn-horarios-secundario"
+                        >
+                            Volver
+                        </button>
+
+                        <button
+                            type="button"
+                            id="btn-confirmar"
+                            class="btn-horarios-principal"
+                            disabled
+                        >
+                            Confirmar cambios
+                        </button>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Sesión y encabezado -->
+    <script src="/js/auth.js"></script>
+
+    <!-- Lógica de gestión de horarios -->
+    <script src="/js/horarios.js"></script>
+
+</body>
+</html>

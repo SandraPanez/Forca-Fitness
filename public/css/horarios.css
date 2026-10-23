@@ -1,0 +1,408 @@
+
+/* ==========================================
+   HU-22 - Gestion de horarios
+   Forca & Fitness
+   ========================================== */
+
+#horarios-app {
+    padding-bottom: 48px;
+}
+
+#horarios-app * {
+    box-sizing: border-box;
+}
+
+/* Distribucion principal */
+
+#horarios-app .horarios-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(340px, 1.4fr);
+    gap: 24px;
+    align-items: start;
+}
+
+#horarios-app .horarios-listado,
+#horarios-app .horarios-editor {
+    min-width: 0;
+}
+
+#horarios-app .horarios-seccion-encabezado {
+    margin-bottom: 22px;
+}
+
+#horarios-app .horarios-seccion-encabezado h3 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+#horarios-app .horarios-seccion-encabezado p {
+    margin: 0;
+    color: var(--text-muted, #64748b);
+    font-size: 0.9rem;
+}
+
+/* Lista de clases */
+
+#horarios-app .horarios-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#horarios-app .clase-horario {
+    --disciplina-color: #64748b;
+    --disciplina-fondo: #f1f5f9;
+    --disciplina-texto: #334155;
+
+    display: block;
+    width: 100%;
+    padding: 16px 18px;
+    border: 1px solid #dfe3e8;
+    border-left: 5px solid var(--disciplina-color);
+    border-radius: 12px;
+    background: #fff;
+    color: #1f2937;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s,
+                transform 0.2s;
+}
+
+#horarios-app .clase-horario:hover {
+    border-color: var(--disciplina-color);
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+#horarios-app .clase-horario.is-selected {
+    border-color: var(--disciplina-color);
+    background: var(--disciplina-fondo);
+    box-shadow: 0 0 0 2px var(--disciplina-color);
+}
+
+#horarios-app .clase-disciplina {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+#horarios-app .clase-profesor,
+#horarios-app .clase-dias,
+#horarios-app .clase-horas {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+#horarios-app .clase-profesor {
+    color: #64748b;
+}
+
+#horarios-app .clase-etiqueta {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--disciplina-fondo);
+    color: var(--disciplina-texto);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Colores por disciplina */
+
+#horarios-app .disciplina-capoeira {
+    --disciplina-color: #2563eb;
+    --disciplina-fondo: #eff6ff;
+    --disciplina-texto: #1d4ed8;
+}
+
+#horarios-app .disciplina-capoeira-kids {
+    --disciplina-color: #7dd3fc;
+    --disciplina-fondo: #e0f7ff;
+    --disciplina-texto: #075985;
+}
+
+#horarios-app .disciplina-boxeo {
+    --disciplina-color: #171717;
+    --disciplina-fondo: #f3f4f6;
+    --disciplina-texto: #171717;
+}
+
+#horarios-app .disciplina-mma {
+    --disciplina-color: #dc2626;
+    --disciplina-fondo: #fef2f2;
+    --disciplina-texto: #b91c1c;
+}
+
+#horarios-app .disciplina-jiu-jitsu {
+    --disciplina-color: #15803d;
+    --disciplina-fondo: #f0fdf4;
+    --disciplina-texto: #166534;
+}
+
+#horarios-app .disciplina-jiu-jitsu-kids {
+    --disciplina-color: #86efac;
+    --disciplina-fondo: #f0fdf4;
+    --disciplina-texto: #166534;
+}
+
+#horarios-app .disciplina-cross-training {
+    --disciplina-color: #9333ea;
+    --disciplina-fondo: #faf5ff;
+    --disciplina-texto: #7e22ce;
+}
+
+/* Formulario de edicion */
+
+#horarios-app .form-group {
+    margin-bottom: 18px;
+}
+
+#horarios-app .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+#horarios-app .form-group input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #fff;
+    color: #1e293b;
+    font: inherit;
+}
+
+#horarios-app .form-group input[readonly] {
+    background: #f8fafc;
+    color: #475569;
+}
+
+#horarios-app .horario-actual {
+    margin-bottom: 20px;
+    padding: 16px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+#horarios-app .horario-actual h4 {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+}
+
+#horarios-app .horario-actual p {
+    margin: 5px 0;
+    color: #475569;
+}
+
+/* Seleccion de dias */
+
+#horarios-app .horarios-dias {
+    margin: 0 0 20px;
+    padding: 0;
+    border: 0;
+}
+
+#horarios-app .horarios-dias legend {
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+#horarios-app .dias-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#horarios-app .dia-opcion {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #f8fafc;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+#horarios-app .dia-opcion:has(input:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+#horarios-app .dia-opcion input {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    accent-color: #2563eb;
+}
+
+/* Seleccion de horas */
+
+#horarios-app .horarios-horas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+#horarios-app .horarios-ayuda {
+    margin: 0 0 20px;
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+/* Botones */
+
+#horarios-app .btn-horarios-principal,
+#horarios-app .btn-horarios-secundario {
+    min-height: 44px;
+    padding: 11px 18px;
+    border-radius: 9px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+#horarios-app .btn-horarios-principal {
+    border: 1px solid #111827;
+    background: #111827;
+    color: #fff;
+}
+
+#horarios-app .btn-horarios-principal:hover:not(:disabled) {
+    background: #374151;
+}
+
+#horarios-app .btn-horarios-secundario {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #334155;
+}
+
+#horarios-app button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#horarios-app button:focus-visible,
+#horarios-app input:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+/* Vista previa */
+
+#horarios-app .vista-previa {
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid #e2e8f0;
+}
+
+#horarios-app .vista-previa h3 {
+    margin: 0 0 8px;
+}
+
+#horarios-app #resumen-cambio {
+    margin: 16px 0;
+    padding: 16px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    line-height: 1.7;
+}
+
+#horarios-app .aviso-alumnos,
+#horarios-app .advertencias-horario {
+    margin: 12px 0;
+    padding: 15px;
+    border-radius: 10px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    line-height: 1.6;
+}
+
+#horarios-app .conflictos-horario {
+    margin: 12px 0;
+    padding: 15px;
+    border-radius: 10px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    line-height: 1.6;
+}
+
+#horarios-app .horarios-acciones {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+#horarios-app .horarios-acciones button {
+    flex: 1;
+}
+
+/* Mensajes generales */
+
+#horarios-app #mensaje-horarios:not(:empty) {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+#horarios-app #mensaje-horarios.mensaje-error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+#horarios-app #mensaje-horarios.mensaje-exito {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+
+/* Respetar elementos ocultos */
+
+#horarios-app [hidden] {
+    display: none !important;
+}
+
+/* Adaptacion a celulares y tablets */
+
+@media (max-width: 900px) {
+    #horarios-app .horarios-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    #horarios-app .dias-grid,
+    #horarios-app .horarios-horas {
+        grid-template-columns: 1fr;
+    }
+
+    #horarios-app .horarios-acciones {
+        flex-direction: column;
+    }
+
+    #horarios-app .horarios-acciones button {
+        width: 100%;
+    }
+}
