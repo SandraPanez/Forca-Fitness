@@ -6,9 +6,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const apellidos = document.getElementById('trabajador-apellidos');
     const documento = document.getElementById('trabajador-documento');
     const rolesContainer = document.getElementById('acceso-roles');
+    const rolesMensaje = document.getElementById('acceso-roles-mensaje');
     const permisosContainer = document.getElementById('acceso-permisos');
 
-    function crearOpcion(etiqueta, valor, grupo) {
+    function crearOpcion(etiqueta, valor, grupo, opciones = {}) {
         const label = document.createElement('label');
         const input = document.createElement('input');
         const texto = document.createElement('span');
@@ -16,7 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         label.className = grupo === 'rol' ? 'access-role-option' : 'access-permission-option';
         input.type = 'checkbox';
         input.checked = valor;
-        input.disabled = true;
+        input.disabled = opciones.deshabilitado ?? true;
+        if (opciones.valor) {
+            input.value = opciones.valor;
+        }
         input.setAttribute('aria-label', etiqueta);
         texto.textContent = etiqueta;
         label.append(input, texto);
@@ -30,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         apellidos.value = '';
         documento.value = '';
         rolesContainer.replaceChildren(crearMensaje(mensaje));
+        rolesMensaje.textContent = '';
         permisosContainer.replaceChildren(crearMensaje(mensaje));
     }
 
@@ -57,6 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!trabajador || !Array.isArray(trabajador.roles) || !Array.isArray(trabajador.permisos)) {
             throw new Error('La información del trabajador tiene un formato inválido.');
         }
+        if (trabajador.roles.length === 0) {
+            throw new Error('El trabajador debe tener al menos un rol operativo asignado.');
+        }
 
         const nombresPersona = [trabajador.nombres, trabajador.segundo_nombre].filter(Boolean).join(' ');
         const apellidosPersona = [
@@ -74,9 +82,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         documento.labels[0].textContent = trabajador.tipo_documento || 'Documento';
 
         rolesContainer.replaceChildren(
-            crearOpcion('Profesor', trabajador.roles.includes('PROFESOR'), 'rol'),
-            crearOpcion('Tesorero', trabajador.roles.includes('TESORERO'), 'rol')
+            crearOpcion('Profesor', trabajador.roles.includes('PROFESOR'), 'rol', {
+                deshabilitado: false,
+                valor: 'PROFESOR'
+            }),
+            crearOpcion('Tesorero', trabajador.roles.includes('TESORERO'), 'rol', {
+                deshabilitado: false,
+                valor: 'TESORERO'
+            })
         );
+
+        const rolesSeleccionados = new Set(trabajador.roles);
+        const controlesRoles = rolesContainer.querySelectorAll('input[type="checkbox"]');
+
+        function actualizarControlesRoles() {
+            controlesRoles.forEach(control => {
+                control.disabled = rolesSeleccionados.size === 1 &&
+                    rolesSeleccionados.has(control.value);
+            });
+        }
+
+        controlesRoles.forEach(control => {
+            control.addEventListener('change', () => {
+                if (control.checked) {
+                    rolesSeleccionados.add(control.value);
+                } else {
+                    rolesSeleccionados.delete(control.value);
+                }
+
+                if (rolesSeleccionados.size === 0) {
+                    rolesSeleccionados.add(control.value);
+                    control.checked = true;
+                    rolesMensaje.textContent = 'El trabajador debe mantener al menos un rol asignado.';
+                    actualizarControlesRoles();
+                    return;
+                }
+
+                rolesMensaje.textContent = '';
+                roles.textContent = [...rolesSeleccionados]
+                    .map(rol => NOMBRE_ROL[rol] || rol)
+                    .join(' y ');
+                actualizarControlesRoles();
+            });
+        });
+        actualizarControlesRoles();
 
         const nombresPermisos = {
             VER_TODOS_ALUMNOS: 'Ver todos los alumnos',
