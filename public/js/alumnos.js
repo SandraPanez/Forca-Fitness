@@ -20,48 +20,156 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 
+
     const renderTable = (alumnos) => {
         tbody.innerHTML = '';
+
         if (!alumnos.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay alumnos registrados.</td></tr>';
+            const mensaje = filterSelect.value === 'PorVencer'
+                ? 'No hay matrículas activas que venzan en los próximos 3 días.'
+                : 'No se encontraron alumnos.';
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        ${escapeHtml(mensaje)}
+                    </td>
+                </tr>
+            `;
             return;
         }
 
         alumnos.forEach((alumno) => {
-            const activa = alumno.estado_matricula === 'Activa';
-            const estado = activa ? 'Activa' : 'Vencida';
-            const dias = Number(alumno.dias_restantes) || 0;
+            const estado = ['Activa', 'Vencida', 'Inhabilitada']
+                .includes(alumno.estado_matricula)
+                ? alumno.estado_matricula
+                : 'Inhabilitada';
+
+            const activa = estado === 'Activa';
+
+            const dias = alumno.dias_restantes == null
+                ? null
+                : Number(alumno.dias_restantes);
+
+            let textoVencimiento = 'Matrícula no vigente';
+
+            if (activa && Number.isFinite(dias)) {
+                textoVencimiento = dias === 0
+                    ? 'Vence hoy'
+                    : `${dias} días restantes`;
+            } else if (
+                estado === 'Vencida' &&
+                Number.isFinite(dias)
+            ) {
+                textoVencimiento = dias === -1
+                    ? 'Venció hace 1 día'
+                    : `Venció hace ${Math.abs(dias)} días`;
+            }
+
+            const fechaFin = typeof alumno.fecha_fin === 'string' &&
+                /^\d{4}-\d{2}-\d{2}$/.test(alumno.fecha_fin)
+                ? alumno.fecha_fin.split('-').reverse().join('/')
+                : 'No registrada';
+
             const tr = document.createElement('tr');
+
             tr.innerHTML = `
                 <td>
                     <div class="alumno-row">
-                        <div class="avatar-circle">${escapeHtml(alumno.iniciales)}</div>
-                        <span class="font-medium">${escapeHtml(alumno.nombres)} ${escapeHtml(alumno.apellido_paterno)} ${escapeHtml(alumno.apellido_materno)}</span>
+                        <div class="avatar-circle">
+                            ${escapeHtml(alumno.iniciales)}
+                        </div>
+                        <span class="font-medium">
+                            ${escapeHtml(alumno.nombres)}
+                            ${escapeHtml(alumno.apellido_paterno)}
+                            ${escapeHtml(alumno.apellido_materno)}
+                        </span>
                     </div>
                 </td>
-                <td><span class="badge-status ${activa ? 'badge-activa' : 'badge-vencida'}">${estado}</span>
-                    <span class="dias-text">${activa ? `${dias} días restantes` : `Venció hace ${Math.abs(dias)} días`}</span>
+                <td>
+                    <span class="badge-status ${activa ? 'badge-activa' : 'badge-vencida'}">
+                        ${escapeHtml(estado)}
+                    </span>
+                    <span class="dias-text">
+                        ${escapeHtml(textoVencimiento)}
+                    </span>
+                    <div class="text-muted">
+                        Fecha de vencimiento: ${escapeHtml(fechaFin)}
+                    </div>
                 </td>
-                <td class="text-right"><button class="btn-link" data-id="${escapeHtml(alumno.id)}">Ver detalle</button></td>
+                <td class="text-right">
+                    <button class="btn-link" data-id="${escapeHtml(alumno.id)}">
+                        Ver detalle
+                    </button>
+                </td>
             `;
+
             tbody.appendChild(tr);
         });
 
         tbody.querySelectorAll('.btn-link').forEach((button) => {
-            button.addEventListener('click', () => loadStudentDetails(button.dataset.id));
+            button.addEventListener('click', () => {
+                loadStudentDetails(button.dataset.id);
+            });
         });
     };
 
+
     const filterAlumnos = () => {
         const search = searchInput.value.trim().toLowerCase();
-        const status = filterSelect.value.toLowerCase();
-        renderTable(alumnosCache.filter((alumno) => {
-            const name = `${alumno.nombres} ${alumno.apellido_paterno} ${alumno.apellido_materno}`.toLowerCase();
+        const status = filterSelect.value;
+
+        const alumnosFiltrados = alumnosCache.filter((alumno) => {
+            const name = [
+                alumno.nombres,
+                alumno.apellido_paterno,
+                alumno.apellido_materno
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
             const matchesSearch = !search || name.includes(search);
-            const matchesStatus = status === 'todos' || (status === 'activo' && alumno.estado_matricula === 'Activa') ||
-                (status === 'inactivo' && alumno.estado_matricula !== 'Activa');
+
+            const estado = alumno.estado_matricula;
+            const diasRestantes = alumno.dias_restantes;
+
+            const porVencer =
+                estado === 'Activa' &&
+                diasRestantes !== null &&
+                diasRestantes !== undefined &&
+                Number(diasRestantes) >= 0 &&
+                Number(diasRestantes) <= 3;
+
+            let matchesStatus = false;
+
+            switch (status) {
+                case 'Activa':
+                    matchesStatus = estado === 'Activa';
+                    break;
+
+                case 'Vencida':
+                    matchesStatus = estado === 'Vencida';
+                    break;
+
+                case 'Inhabilitada':
+                    matchesStatus = estado === 'Inhabilitada';
+                    break;
+
+                case 'PorVencer':
+                    matchesStatus = porVencer;
+                    break;
+
+                case 'Todos':
+                default:
+                    matchesStatus = true;
+                    break;
+            }
+
             return matchesSearch && matchesStatus;
-        }));
+        });
+
+        renderTable(alumnosFiltrados);
     };
 
     const loadAlumnos = async () => {
@@ -130,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="info-grid">
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Disciplina(s)</span><span class="info-value">${escapeHtml(detalle.disciplinas)}</span></div>
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Fecha de inscripción</span><span class="info-value">${escapeHtml(detalle.fecha_inscripcion)}</span></div>
+                    <div class="info-item" style="grid-column: span 2;"><span class="info-label">Fecha de vencimiento</span><span class="info-value">${escapeHtml(detalle.fecha_vencimiento || 'No registrada')}</span></div>
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Estado de matrícula</span><span class="info-value font-medium">${escapeHtml(detalle.dias_restantes_texto)}</span></div>
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Estado del alumno</span><span class="info-value">${escapeHtml(detalle.estado_alumno)}</span></div>
                 </div>
@@ -146,7 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClosePanel.addEventListener('click', closePanel);
     overlay.addEventListener('click', closePanel);
     searchInput.addEventListener('input', filterAlumnos);
-    filterSelect.addEventListener('change', filterAlumnos);
+    filterSelect.addEventListener('change', () => {
+        if (filterSelect.value === 'Todos') {
+            searchInput.value = '';
+        }
+        filterAlumnos();
+    });
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closePanel();
     });
