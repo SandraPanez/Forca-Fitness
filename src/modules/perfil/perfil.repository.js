@@ -12,21 +12,23 @@ async function obtenerDatosAlumno(idUsuario) {
       p."Genero"               AS genero,
       p."Direccion"            AS direccion,
       p."Numero_Documento"     AS numero_documento,
-      (SELECT mc."Contacto"
+      COALESCE(
+        NULLIF(TRIM((SELECT mc."Contacto"
+         FROM ${SCHEMA}."Metodo_Contacto" mc
+         WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CORREO'
+         LIMIT 1)), ''),
+        u."Correo"
+      ) AS correo_electronico,
+      NULLIF(TRIM((SELECT mc."Contacto"
        FROM ${SCHEMA}."Metodo_Contacto" mc
-       WHERE mc."Id_Persona" = p."Id_Persona" AND mc."Tipo_Contacto" = 'Correo'
-       LIMIT 1) AS correo_electronico,
-      (SELECT mc."Contacto"
-       FROM ${SCHEMA}."Metodo_Contacto" mc
-       WHERE mc."Id_Persona" = p."Id_Persona" AND mc."Tipo_Contacto" = 'Celular'
-       LIMIT 1) AS numero_celular
+       WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CELULAR'
+       LIMIT 1)), '') AS numero_celular
     FROM ${SCHEMA}."Alumno" a
     JOIN ${SCHEMA}."Persona" p ON p."Id_Persona" = a."Id_Persona"
     JOIN ${SCHEMA}."Usuario" u ON u."Id_Persona" = p."Id_Persona"
     WHERE u."Id_Usuario" = $1
   `;
   const result = await pool.query(query, [idUsuario]);
-  console.log('Query result rows:', result.rows.length, 'idUsuario:', idUsuario);
   return result.rows[0] || null;
 }
 
@@ -41,6 +43,7 @@ async function actualizarDatosAlumno(idUsuario, datos) {
        WHERE u."Id_Usuario" = $1`,
       [idUsuario]
     );
+    if (!alumno.rows[0]) throw new Error("Perfil de alumno no encontrado");
     const idPersona = alumno.rows[0].Id_Persona;
 
     await client.query(
@@ -57,23 +60,31 @@ async function actualizarDatosAlumno(idUsuario, datos) {
     );
 
     if (datos.correo_electronico !== undefined) {
+      await client.query(
+        `UPDATE ${SCHEMA}."Usuario" SET "Correo" = $1 WHERE "Id_Usuario" = $2`,
+        [datos.correo_electronico, idUsuario]
+      );
+
       const existe = await client.query(
         `SELECT "Id_contacto" FROM ${SCHEMA}."Metodo_Contacto"
-         WHERE "Id_Persona" = $1 AND "Tipo_Contacto" = 'Correo'`,
+         WHERE "Id_Persona" = $1 AND UPPER("Tipo_Contacto") = 'CORREO'`,
         [idPersona]
       );
       if (existe.rows.length > 0) {
         await client.query(
           `UPDATE ${SCHEMA}."Metodo_Contacto" SET "Contacto" = $1
-           WHERE "Id_Persona" = $2 AND "Tipo_Contacto" = 'Correo'`,
+           WHERE "Id_Persona" = $2 AND UPPER("Tipo_Contacto") = 'CORREO'`,
           [datos.correo_electronico, idPersona]
         );
       } else {
-        const count = await client.query(`SELECT COUNT(*) FROM ${SCHEMA}."Metodo_Contacto"`);
-        const nuevoId = `MC${String(parseInt(count.rows[0].count) + 1).padStart(2, "0")}`;
+        const idRes = await client.query(
+          `SELECT COALESCE(MAX(SUBSTRING("Id_contacto" FROM '[0-9]+')::int), 0) + 1 AS next_id
+           FROM ${SCHEMA}."Metodo_Contacto"`
+        );
+        const nuevoId = `CON${String(idRes.rows[0].next_id).padStart(2, "0")}`;
         await client.query(
           `INSERT INTO ${SCHEMA}."Metodo_Contacto" ("Id_contacto","Tipo_Contacto","Contacto","Id_Persona")
-           VALUES ($1, 'Correo', $2, $3)`,
+           VALUES ($1, 'CORREO', $2, $3)`,
           [nuevoId, datos.correo_electronico, idPersona]
         );
       }
@@ -82,21 +93,24 @@ async function actualizarDatosAlumno(idUsuario, datos) {
     if (datos.numero_celular !== undefined) {
       const existe = await client.query(
         `SELECT "Id_contacto" FROM ${SCHEMA}."Metodo_Contacto"
-         WHERE "Id_Persona" = $1 AND "Tipo_Contacto" = 'Celular'`,
+         WHERE "Id_Persona" = $1 AND UPPER("Tipo_Contacto") = 'CELULAR'`,
         [idPersona]
       );
       if (existe.rows.length > 0) {
         await client.query(
           `UPDATE ${SCHEMA}."Metodo_Contacto" SET "Contacto" = $1
-           WHERE "Id_Persona" = $2 AND "Tipo_Contacto" = 'Celular'`,
+           WHERE "Id_Persona" = $2 AND UPPER("Tipo_Contacto") = 'CELULAR'`,
           [datos.numero_celular, idPersona]
         );
       } else {
-        const count = await client.query(`SELECT COUNT(*) FROM ${SCHEMA}."Metodo_Contacto"`);
-        const nuevoId = `MC${String(parseInt(count.rows[0].count) + 2).padStart(2, "0")}`;
+        const idRes = await client.query(
+          `SELECT COALESCE(MAX(SUBSTRING("Id_contacto" FROM '[0-9]+')::int), 0) + 1 AS next_id
+           FROM ${SCHEMA}."Metodo_Contacto"`
+        );
+        const nuevoId = `CON${String(idRes.rows[0].next_id).padStart(2, "0")}`;
         await client.query(
           `INSERT INTO ${SCHEMA}."Metodo_Contacto" ("Id_contacto","Tipo_Contacto","Contacto","Id_Persona")
-           VALUES ($1, 'Celular', $2, $3)`,
+           VALUES ($1, 'CELULAR', $2, $3)`,
           [nuevoId, datos.numero_celular, idPersona]
         );
       }

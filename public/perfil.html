@@ -53,18 +53,19 @@
     <script>
         async function cargarPerfil() {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) { window.location.href = '/login.html'; return; }
+                if (!verificarSesion()) return;
 
-                const res = await fetch('/api/perfil', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
+                const res = await authFetch('/api/perfil');
                 if (res.status === 401 || res.status === 403) {
-                    window.location.href = '/login.html'; return;
+                    window.location.href = '/login.html';
+                    return;
                 }
 
                 const json = await res.json();
+                if (!res.ok || !json.success || !json.data) {
+                    throw new Error(json.message || 'Error al cargar los datos del perfil.');
+                }
+
                 const d = json.data;
                 const generoTexto = d.genero === 'M' ? 'Masculino' : d.genero === 'F' ? 'Femenino' : d.genero || '—';
 
@@ -101,7 +102,7 @@
                     </table>
                 `;
             } catch (e) {
-                document.getElementById('datos-perfil').innerHTML = '<p style="color:red;">Error al cargar perfil.</p>';
+                document.getElementById('datos-perfil').innerHTML = `<p style="color:red;">${e.message || 'Error al cargar perfil.'}</p>`;
             }
         }
 

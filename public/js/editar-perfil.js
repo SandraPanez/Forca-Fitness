@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = json.data;
 
             // Mostrar nombre en header
-            userName.textContent = `${d.nombre} ${d.apellido_paterno}`;
-            userRole.textContent = 'Alumno';
+            if (userName) userName.textContent = `${d.nombre} ${d.apellido_paterno}`;
+            if (userRole) userRole.textContent = 'Cliente';
 
             // T-04: Precargar formulario
             document.getElementById('nombre').value            = d.nombre            ?? '';
@@ -193,6 +193,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!res.ok || !json.success) {
                 throw new Error(json.message || 'Error al guardar los datos.');
+            }
+
+            // Actualizar usuario en localStorage y navbar
+            const userStored = localStorage.getItem('usuario');
+            if (userStored) {
+                try {
+                    const u = JSON.parse(userStored);
+                    u.nombre = `${payload.nombre} ${payload.apellido_paterno}`;
+                    if (payload.correo_electronico) u.correo = payload.correo_electronico;
+                    localStorage.setItem('usuario', JSON.stringify(u));
+                    if (typeof renderNavbar === 'function') renderNavbar();
+                } catch (e) {}
             }
 
             // T-06: Mostrar mensaje de éxito
