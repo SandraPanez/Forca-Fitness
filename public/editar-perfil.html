@@ -17,17 +17,16 @@
             <h1>Portal Forca&Fitness</h1>
         </div>
         <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
-            <nav class="top-nav">
-                <a href="/mis-matriculas.html">Mis matrículas</a>
-                <a href="/perfil.html">Mi Perfil</a>
-                <a href="/index.html">Nueva matrícula</a>
-            </nav>
-        <div class="user-info">
-            <div class="user-details">
-                <span class="user-name" id="user-name">Cargando...</span>
-                <span class="user-role" id="user-role">Alumno</span>
+            <nav class="top-nav" id="top-nav"></nav>
+            <div class="user-info" id="user-info">
+                <div class="user-details">
+                    <span class="user-name" id="user-name">Usuario</span>
+                    <span class="user-role" id="user-role">Cliente</span>
+                </div>
+                <a href="#" class="logout-btn" id="btn-logout">Cerrar sesión</a>
             </div>
-            <a href="#" class="logout-btn" id="btn-logout">Cerrar sesión</a>
+            <div id="guest-nav" style="display: none;">
+                <a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>
             </div>
         </div>
     </header>

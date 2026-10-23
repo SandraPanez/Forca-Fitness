@@ -77,68 +77,138 @@ async function authFetch(url, options = {}) {
     return response;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (!verificarSesion()) {
-        return;
+function renderNavbar() {
+    const usuario = obtenerUsuario();
+    const roles = usuario ? obtenerRolesUsuario(usuario) : [];
+
+    const nav = document.getElementById('top-nav') || document.querySelector('.top-nav');
+    const userInfo = document.getElementById('user-info') || document.querySelector('.user-info');
+    let guestNav = document.getElementById('guest-nav');
+
+    const header = document.querySelector('.header');
+    if (!header && !nav) return;
+
+    let headerRight = document.querySelector('.header-right');
+    if (!headerRight && header) {
+        headerRight = document.createElement('div');
+        headerRight.className = 'header-right';
+        headerRight.style.cssText = 'display: flex; align-items: center; gap: 2.5rem;';
+        if (nav) headerRight.appendChild(nav);
+        if (userInfo) headerRight.appendChild(userInfo);
+        header.appendChild(headerRight);
     }
 
-    const usuario = obtenerUsuario();
+    if (headerRight && !guestNav) {
+        guestNav = document.createElement('div');
+        guestNav.id = 'guest-nav';
+        guestNav.style.display = 'none';
+        guestNav.innerHTML = '<a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>';
+        headerRight.appendChild(guestNav);
+    }
 
-    const topNav = document.getElementById('top-nav');
-    const userInfo = document.getElementById('user-info');
-    const guestNav = document.getElementById('guest-nav');
+    const path = window.location.pathname.toLowerCase();
+
+    const esTesoreroOAdmin = roles.includes('TESORERO') || roles.includes('ADMIN');
+    const esProfesor = roles.includes('PROFESOR');
+    const esAlumno = roles.includes('ALUMNO') || (!esTesoreroOAdmin && !esProfesor && Boolean(usuario));
+
+    let items = [];
 
     if (usuario) {
-        if (topNav) topNav.style.display = 'flex';
-        if (userInfo) userInfo.style.display = 'flex';
-        if (guestNav) guestNav.style.display = 'none';
-
-        const roles = obtenerRolesUsuario(usuario);
-
-        document.querySelectorAll('.user-role').forEach(element => {
-            if (roles.includes('ALUMNO')) {
-                element.textContent = 'Cliente';
-            } else if (roles.length > 0) {
-                element.textContent = roles.join(' / ');
-            } else {
-                element.textContent = 'Cliente';
-            }
-        });
-
-        document.querySelectorAll('.user-name').forEach(element => {
-            element.textContent = usuario.nombre || usuario.correo;
-        });
+        if (esTesoreroOAdmin) {
+            items = [
+                { href: '/alumnos.html', label: 'Alumnos', match: ['/alumnos.html'] },
+                { href: '/index.html', label: 'Matrículas', match: ['/index.html', '/'] },
+                { href: '/tesoreria.html', label: 'Tesorería', match: ['/tesoreria.html'] },
+                { href: '/pagos.html', label: 'Pagos', match: ['/pagos.html'] }
+            ];
+        } else if (esProfesor) {
+            items = [
+                { href: '/control_acceso.html', label: 'Control de acceso', match: ['/control_acceso.html'] },
+                { href: '/alumnos.html', label: 'Alumnos', match: ['/alumnos.html'] }
+            ];
+        } else {
+            // Cliente / Alumno
+            items = [
+                { href: '/mis-matriculas.html', label: 'Mis matrículas', match: ['/mis-matriculas.html'] },
+                { href: '/disciplinas.html', label: 'Reservar cupo', match: ['/disciplinas.html'] },
+                { href: '/perfil.html', label: 'Mi Perfil', match: ['/perfil.html', '/editar-perfil.html'] },
+                { href: '/index.html', label: 'Nueva matrícula', match: ['/index.html'] }
+            ];
+        }
     } else {
-        if (topNav) topNav.style.display = 'none';
+        // Invitado / Sin sesión
+        items = [
+            { href: '/disciplinas.html', label: 'Disciplinas', match: ['/disciplinas.html'] },
+            { href: '/index.html', label: 'Nueva matrícula', match: ['/index.html', '/'] }
+        ];
+    }
+
+    if (nav) {
+        nav.innerHTML = items.map(item => {
+            const isActive = item.match.some(m => path === m || (m !== '/' && path.endsWith(m)));
+            return `<a href="${item.href}" class="${isActive ? 'active' : ''}">${item.label}</a>`;
+        }).join('\n');
+        nav.style.display = 'flex';
+    }
+
+    if (usuario) {
+        if (userInfo) {
+            userInfo.style.display = 'flex';
+            const nameEl = userInfo.querySelector('.user-name');
+            const roleEl = userInfo.querySelector('.user-role');
+            if (nameEl) nameEl.textContent = usuario.nombre || usuario.correo;
+            if (roleEl) {
+                if (esAlumno) {
+                    roleEl.textContent = 'Cliente';
+                } else {
+                    roleEl.textContent = roles.length > 0 ? roles.join(' / ') : 'Cliente';
+                }
+            }
+        }
+        if (guestNav) guestNav.style.display = 'none';
+    } else {
         if (userInfo) userInfo.style.display = 'none';
         if (guestNav) guestNav.style.display = 'block';
     }
 
     document.querySelectorAll('.logout-btn:not([data-no-logout])').forEach(button => {
-        button.addEventListener('click', async event => {
-            event.preventDefault();
+        if (!button.dataset.hasLogoutListener) {
+            button.dataset.hasLogoutListener = 'true';
+            button.addEventListener('click', async event => {
+                event.preventDefault();
 
-            const token = obtenerToken();
+                const token = obtenerToken();
 
-            try {
-                if (token) {
-                    await fetch('/api/auth/logout', {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
+                try {
+                    if (token) {
+                        await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error al cerrar sesión:', error);
+                } finally {
+                    limpiarSesion();
+                    window.location.href = '/login.html';
                 }
-            } catch (error) {
-                console.error('Error al cerrar sesión:', error);
-            } finally {
-                limpiarSesion();
-                window.location.href = '/login.html';
-            }
-        });
+            });
+        }
     });
+}
 
-    // Mostrar/ocultar elementos según rol
+document.addEventListener('DOMContentLoaded', () => {
+    if (!verificarSesion()) {
+        return;
+    }
+
+    renderNavbar();
+
+    // Mostrar/ocultar elementos según rol con data-rol
+    const usuario = obtenerUsuario();
     const roles = usuario ? obtenerRolesUsuario(usuario) : [];
     document.querySelectorAll('[data-rol]').forEach(el => {
         const rolesPermitidos = el.dataset.rol.split(',').map(r => r.trim());

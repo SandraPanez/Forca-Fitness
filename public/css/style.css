@@ -54,6 +54,12 @@ body {
     font-weight: 700;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+}
+
 .user-info {
     display: flex;
     align-items: center;

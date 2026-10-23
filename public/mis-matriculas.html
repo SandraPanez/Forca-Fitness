@@ -21,21 +21,18 @@
         </div>
 
         <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
+            <nav class="top-nav" id="top-nav"></nav>
 
-            <nav class="top-nav">
-                <a href="/mis-matriculas.html" class="active">Mis matrículas</a>
-                <a href="/disciplinas.html">Reservar cupo</a>
-                <a href="/perfil.html" data-rol="ALUMNO">Mi Perfil</a>
-                <a href="/index.html">Nueva matrícula</a>
-            </nav>
-
-            <div class="user-info">
+            <div class="user-info" id="user-info">
                 <div class="user-details">
                     <span class="user-name">Usuario</span>
-                    <span class="user-role">Alumno</span>
+                    <span class="user-role">Cliente</span>
                 </div>
-
                 <a href="#" class="logout-btn">Cerrar sesión</a>
+            </div>
+
+            <div id="guest-nav" style="display: none;">
+                <a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>
             </div>
         </div>
     </header>
