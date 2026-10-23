@@ -59,8 +59,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const trabajador = result.data;
-        if (!trabajador || !Array.isArray(trabajador.roles) || !Array.isArray(trabajador.permisos)) {
-            throw new Error('La información del trabajador tiene un formato inválido.');
+        if (!trabajador || !Array.isArray(trabajador.roles)) {
+            throw new Error('El servidor no devolvió los roles del trabajador.');
+        }
+        if (!Array.isArray(trabajador.permisos)) {
+            throw new Error('El servidor no devolvió los permisos efectivos. Reinicia el backend y vuelve a cargar.');
         }
         if (trabajador.roles.length === 0) {
             throw new Error('El trabajador debe tener al menos un rol operativo asignado.');
@@ -92,26 +95,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
         );
 
-        const rolesSeleccionados = new Set(trabajador.roles);
+        const estadoEdicion = {
+            roles: new Set(trabajador.roles),
+            permisos: new Set(trabajador.permisos)
+        };
         const controlesRoles = rolesContainer.querySelectorAll('input[type="checkbox"]');
 
         function actualizarControlesRoles() {
             controlesRoles.forEach(control => {
-                control.disabled = rolesSeleccionados.size === 1 &&
-                    rolesSeleccionados.has(control.value);
+                control.disabled = estadoEdicion.roles.size === 1 &&
+                    estadoEdicion.roles.has(control.value);
             });
         }
 
         controlesRoles.forEach(control => {
             control.addEventListener('change', () => {
                 if (control.checked) {
-                    rolesSeleccionados.add(control.value);
+                    estadoEdicion.roles.add(control.value);
                 } else {
-                    rolesSeleccionados.delete(control.value);
+                    estadoEdicion.roles.delete(control.value);
                 }
 
-                if (rolesSeleccionados.size === 0) {
-                    rolesSeleccionados.add(control.value);
+                if (estadoEdicion.roles.size === 0) {
+                    estadoEdicion.roles.add(control.value);
                     control.checked = true;
                     rolesMensaje.textContent = 'El trabajador debe mantener al menos un rol asignado.';
                     actualizarControlesRoles();
@@ -119,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 rolesMensaje.textContent = '';
-                roles.textContent = [...rolesSeleccionados]
+                roles.textContent = [...estadoEdicion.roles]
                     .map(rol => NOMBRE_ROL[rol] || rol)
                     .join(' y ');
                 actualizarControlesRoles();
@@ -144,16 +150,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         const permisosDisponibles = trabajador.permisosDisponibles;
 
         if (!Array.isArray(permisosDisponibles)) {
-            throw new Error('No se pudieron cargar los permisos configurados.');
+            throw new Error('El servidor no devolvió la lista de permisos configurados. Reinicia el backend y vuelve a cargar.');
         }
 
         permisosContainer.replaceChildren(
             ...permisosDisponibles.map(permiso => crearOpcion(
                 nombresPermisos[permiso] || permiso,
-                permisos.includes(permiso),
-                'permiso'
+                estadoEdicion.permisos.has(permiso),
+                'permiso',
+                {
+                    deshabilitado: false,
+                    valor: permiso
+                }
             ))
         );
+
+        permisosContainer.querySelectorAll('input[type="checkbox"]').forEach(control => {
+            control.addEventListener('change', () => {
+                if (control.checked) {
+                    estadoEdicion.permisos.add(control.value);
+                } else {
+                    estadoEdicion.permisos.delete(control.value);
+                }
+            });
+        });
     } catch (error) {
         limpiarCampos(error.message);
     }
