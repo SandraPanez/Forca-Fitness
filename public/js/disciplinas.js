@@ -87,54 +87,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             if (result.success && result.data) {
-                selectDisciplina.innerHTML = '<option value="">Seleccione...</option>';
+                // Opción por defecto: Todas las disciplinas (muestra todos los horarios)
+                selectDisciplina.innerHTML = '<option value="todas">Todas las disciplinas</option>';
                 
-                result.data.forEach(disc => {
+                // Ordenar alfabéticamente por nombre
+                const disciplinasOrdenadas = [...result.data].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+                disciplinasOrdenadas.forEach(disc => {
                     const option = document.createElement('option');
                     option.value = disc.id;
                     option.textContent = disc.nombre;
                     selectDisciplina.appendChild(option);
                 });
 
-                if (disciplinaInicial) {
+                if (disciplinaInicial && selectDisciplina.querySelector(`option[value="${disciplinaInicial}"]`)) {
                     selectDisciplina.value = disciplinaInicial;
-                    if (selectDisciplina.value === disciplinaInicial) {
-                        await loadHorarios(disciplinaInicial);
-                    }
-                } else if (result.data.length > 0) {
-                    const defaultDisc = result.data.find(d => d.nombre === 'MMA') || result.data[0];
-                    selectDisciplina.value = defaultDisc.id;
-                    await loadHorarios(defaultDisc.id);
+                    await loadHorarios(disciplinaInicial);
+                } else {
+                    selectDisciplina.value = 'todas';
+                    await loadHorarios('todas');
                 }
             }
         } catch (error) {
             console.error('Error cargando disciplinas:', error);
-            selectDisciplina.innerHTML = '<option value="">Error al cargar disciplinas</option>';
+            selectDisciplina.innerHTML = '<option value="todas">Todas las disciplinas</option>';
         }
     }
 
     // 3. Cargar los horarios cuando el usuario elige una disciplina o periodo
-    async function loadHorarios(idDisciplina) {
+    async function loadHorarios(idDisciplina = selectDisciplina.value) {
         if (!idDisciplina) {
-            horariosGrid.innerHTML = '';
-            if (resumenContainer) resumenContainer.innerHTML = '';
-            currentData = null;
-            return;
+            idDisciplina = 'todas';
         }
 
         const periodo = selectPeriodo ? selectPeriodo.value : '';
         horariosGrid.innerHTML = '<div class="text-muted" style="text-align: center; padding: 2rem;">Cargando horarios...</div>';
 
         try {
-            const url = `/api/matriculas/disciplinas/${idDisciplina}/horarios${periodo ? `?periodo=${encodeURIComponent(periodo)}` : ''}`;
+            const endpointId = (idDisciplina === 'todas' || idDisciplina === 'todos') ? 'todas' : idDisciplina;
+            const url = `/api/matriculas/disciplinas/${endpointId}/horarios${periodo ? `?periodo=${encodeURIComponent(periodo)}` : ''}`;
             const response = await fetch(url);
             const result = await response.json();
 
             if (result.success && result.data) {
                 currentData = result.data;
-                const horarios = Array.isArray(currentData) ? currentData : (currentData.horarios || []);
-                renderResumenDisciplina(currentData);
-                renderHorarios(horarios, currentData);
+                if (currentData.todas) {
+                    renderTodasLasDisciplinas(currentData);
+                } else {
+                    const horarios = Array.isArray(currentData) ? currentData : (currentData.horarios || []);
+                    renderResumenDisciplina(currentData);
+                    renderHorarios(horarios, currentData);
+                }
             } else {
                 currentData = null;
                 if (resumenContainer) resumenContainer.innerHTML = '';
@@ -148,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. Renderizar banner resumen de disciplina y periodo de reserva
+    // 4. Renderizar banner resumen de disciplina y periodo de reserva para una sola disciplina
     function renderResumenDisciplina(data) {
         if (!resumenContainer) return;
 
@@ -193,13 +196,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. Modal Confirmar Reserva (PSW-201)
-    function abrirModalConfirmacion(horario) {
+    function abrirModalConfirmacion(horario, discParam, metaParam) {
         if (!modalConfirmar) return;
 
-        const disc = currentData?.disciplina || {};
+        const disc = discParam || currentData?.disciplina || {};
+        const meta = metaParam || currentData || {};
         const discNombre = disc.nombre || 'Disciplina';
         const horarioTexto = `${formatDias(horario.dias)} — ${formatHora12(horario.hora_inicio)} a ${formatHora12(horario.hora_fin)}`;
-        const periodoTexto = `${currentData?.mes_nombre || ''} ${currentData?.anio || ''}`;
+        const periodoTexto = `${meta.mes_nombre || ''} ${meta.anio || ''}`;
         const tarifa = Number(horario.tarifa || disc.tarifa || 0);
 
         if (modalReservaDisciplina) modalReservaDisciplina.textContent = discNombre;
@@ -210,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedReservation = {
             horario,
             disciplina: disc,
-            periodo: currentData?.periodo,
+            periodo: meta.periodo,
             tarifa
         };
 
@@ -223,7 +227,164 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 6. Renderizar las tarjetas de horarios en el HTML
+    // Crear elemento tarjeta de horario reutilizable
+    function crearTarjetaHorario(horario, disc, dataCompleta) {
+        const card = document.createElement('div');
+        card.className = 'horario-card';
+
+        const cuposDisponiblesHorario = horario.cupos_disponibles !== undefined ? horario.cupos_disponibles : horario.capacidad_max;
+        const capacidad = horario.capacidad_max || 0;
+        const esFuturo = Boolean(dataCompleta?.es_periodo_futuro);
+
+        if (esFuturo) {
+            const puedeReservar = Boolean(horario.puede_reservar);
+            const cuposReserva = horario.cupos_reserva_disponibles !== undefined
+                ? horario.cupos_reserva_disponibles
+                : 0;
+
+            let badgeClass = 'badge-disponible';
+            let badgeText = 'Disponible';
+
+            if (!puedeReservar) {
+                card.classList.add('agotado');
+                badgeClass = 'badge-agotado';
+                badgeText = 'Agotado';
+            }
+
+            card.innerHTML = `
+                <div class="horario-info">
+                    <span class="horario-dias">${formatDias(horario.dias)}</span>
+                    <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
+                </div>
+                
+                <div class="horario-capacidad">
+                    <span class="cupos-text" style="${puedeReservar ? '' : 'color: var(--danger-color);'}">
+                        ${puedeReservar ? `${cuposReserva} cupo${cuposReserva > 1 ? 's' : ''} para reserva` : '0 cupos para reserva'}
+                    </span>
+                    <span class="capacidad-text">Aforo horario: ${cuposDisponiblesHorario}/${capacidad}</span>
+                </div>
+                
+                <div class="horario-estado">
+                    <span class="${badgeClass}">${badgeText}</span>
+                </div>
+
+                <div class="horario-accion">
+                    ${puedeReservar
+                        ? `<button type="button" class="btn-reservar" data-horario="${horario.id_disc_horario}">Reservar cupo</button>`
+                        : `<button type="button" class="btn-reservar btn-disabled" disabled title="No hay cupos disponibles para reserva">Reservar cupo</button>
+                           <span class="msg-sin-cupos">No hay cupos disponibles para reserva</span>`
+                    }
+                </div>
+            `;
+
+            if (puedeReservar) {
+                const btnRes = card.querySelector('.btn-reservar:not(:disabled)');
+                if (btnRes) {
+                    btnRes.addEventListener('click', () => abrirModalConfirmacion(horario, disc, dataCompleta));
+                }
+            }
+        } else {
+            let badgeClass = 'badge-disponible';
+            let badgeText = 'Disponible';
+            let cuposStyle = '';
+
+            if (cuposDisponiblesHorario <= 0) { 
+                badgeClass = 'badge-agotado';
+                badgeText = 'Agotado';
+                card.classList.add('agotado');
+            } else if (cuposDisponiblesHorario <= 2) {
+                badgeClass = 'badge-ultimos';
+                badgeText = 'Últimos cupos';
+                cuposStyle = 'color: var(--danger-color)';
+            }
+
+            card.innerHTML = `
+                <div class="horario-info">
+                    <span class="horario-dias">${formatDias(horario.dias)}</span>
+                    <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
+                </div>
+                
+                <div class="horario-capacidad">
+                    <span class="cupos-text" style="${cuposStyle}">${cuposDisponiblesHorario} cupos disponibles</span>
+                    <span class="capacidad-text">Capacidad total: ${capacidad}</span>
+                </div>
+                
+                <div class="horario-estado">
+                    <span class="${badgeClass}">${badgeText}</span>
+                </div>
+            `;
+        }
+
+        return card;
+    }
+
+    // 6. Renderizar todas las disciplinas ordenadas con sus horarios
+    function renderTodasLasDisciplinas(dataCompleta) {
+        if (resumenContainer) resumenContainer.innerHTML = '';
+        horariosGrid.innerHTML = '';
+
+        const lista = dataCompleta.disciplinas || [];
+        if (lista.length === 0) {
+            horariosGrid.innerHTML = '<div class="text-muted" style="text-align: center; padding: 2rem;">No se encontraron disciplinas disponibles.</div>';
+            return;
+        }
+
+        const esFuturo = Boolean(dataCompleta.es_periodo_futuro);
+
+        lista.forEach(item => {
+            const disc = item.disciplina;
+            const horarios = item.horarios || [];
+            const cuposRestantes = item.cupos_reserva_disciplina_restantes !== undefined
+                ? item.cupos_reserva_disciplina_restantes
+                : (dataCompleta.max_cupos_reserva || 4);
+            const maxCupos = dataCompleta.max_cupos_reserva || 4;
+
+            const badgeStyle = cuposRestantes > 0
+                ? 'background-color: #ede7f6; color: #4527a0;'
+                : 'background-color: #ffebee; color: #c62828;';
+            const badgeTexto = cuposRestantes > 0
+                ? `${cuposRestantes} de ${maxCupos} cupos de reserva disponibles`
+                : `0 de ${maxCupos} cupos disponibles (Agotado para este periodo)`;
+
+            const bloque = document.createElement('div');
+            bloque.className = 'disciplina-bloque';
+
+            bloque.innerHTML = `
+                <div class="disciplina-bloque-header">
+                    <div class="disciplina-bloque-info">
+                        <h3>
+                            ${escapeHtml(disc.nombre)}
+                            ${esFuturo ? `<span class="reserva-cupos-badge" style="${badgeStyle}">${badgeTexto}</span>` : ''}
+                        </h3>
+                        <p>${escapeHtml(disc.descripcion || 'Entrenamiento especializado')}</p>
+                    </div>
+                    <div class="disciplina-bloque-meta">
+                        <div class="tarifa-box">
+                            <span class="tarifa-label">Tarifa mensual</span>
+                            <span class="tarifa-valor">S/ ${Number(disc.tarifa || 0).toFixed(2)}</span>
+                            ${esFuturo ? '<span class="tarifa-congelada-tag">Tarifa congelada</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="horarios-grid lista-horarios-disciplina"></div>
+            `;
+
+            const listaHorariosEl = bloque.querySelector('.lista-horarios-disciplina');
+
+            if (horarios.length === 0) {
+                listaHorariosEl.innerHTML = '<div class="text-muted" style="padding: 0.75rem 0.25rem;">No hay horarios registrados para esta disciplina.</div>';
+            } else {
+                horarios.forEach(horario => {
+                    const card = crearTarjetaHorario(horario, disc, dataCompleta);
+                    listaHorariosEl.appendChild(card);
+                });
+            }
+
+            horariosGrid.appendChild(bloque);
+        });
+    }
+
+    // 7. Renderizar una sola disciplina seleccionada
     function renderHorarios(horarios, dataCompleta) {
         if (!horarios || horarios.length === 0) {
             horariosGrid.innerHTML = '<div class="text-muted" style="text-align: center; padding: 2rem;">No se encontraron horarios disponibles para la disciplina seleccionada</div>';
@@ -231,96 +392,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         horariosGrid.innerHTML = '';
-        const esFuturo = Boolean(dataCompleta?.es_periodo_futuro);
+        const disc = dataCompleta.disciplina || {};
 
         horarios.forEach(horario => {
-            const card = document.createElement('div');
-            card.className = 'horario-card';
-
-            const cuposDisponiblesHorario = horario.cupos_disponibles !== undefined ? horario.cupos_disponibles : horario.capacidad_max;
-            const capacidad = horario.capacidad_max || 0;
-
-            if (esFuturo) {
-                // Periodo de reserva anticipada (HU-09)
-                const puedeReservar = Boolean(horario.puede_reservar);
-                const cuposReserva = horario.cupos_reserva_disponibles !== undefined
-                    ? horario.cupos_reserva_disponibles
-                    : 0;
-
-                let badgeClass = 'badge-disponible';
-                let badgeText = 'Disponible';
-
-                if (!puedeReservar) {
-                    card.classList.add('agotado');
-                    badgeClass = 'badge-agotado';
-                    badgeText = 'Agotado';
-                }
-
-                card.innerHTML = `
-                    <div class="horario-info">
-                        <span class="horario-dias">${formatDias(horario.dias)}</span>
-                        <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text" style="${puedeReservar ? '' : 'color: var(--danger-color);'}">
-                            ${puedeReservar ? `${cuposReserva} cupo${cuposReserva > 1 ? 's' : ''} para reserva` : '0 cupos para reserva'}
-                        </span>
-                        <span class="capacidad-text">Aforo horario: ${cuposDisponiblesHorario}/${capacidad}</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="${badgeClass}">${badgeText}</span>
-                    </div>
-
-                    <div class="horario-accion">
-                        ${puedeReservar
-                            ? `<button type="button" class="btn-reservar" data-horario="${horario.id_disc_horario}">Reservar cupo</button>`
-                            : `<button type="button" class="btn-reservar btn-disabled" disabled title="No hay cupos disponibles para reserva">Reservar cupo</button>
-                               <span class="msg-sin-cupos">No hay cupos disponibles para reserva</span>`
-                        }
-                    </div>
-                `;
-
-                if (puedeReservar) {
-                    const btnRes = card.querySelector('.btn-reservar:not(:disabled)');
-                    if (btnRes) {
-                        btnRes.addEventListener('click', () => abrirModalConfirmacion(horario));
-                    }
-                }
-            } else {
-                // Periodo corriente (sprint anterior)
-                let badgeClass = 'badge-disponible';
-                let badgeText = 'Disponible';
-                let cuposStyle = '';
-
-                if (cuposDisponiblesHorario <= 0) { 
-                    badgeClass = 'badge-agotado';
-                    badgeText = 'Agotado';
-                    card.classList.add('agotado');
-                } else if (cuposDisponiblesHorario <= 2) {
-                    badgeClass = 'badge-ultimos';
-                    badgeText = 'Últimos cupos';
-                    cuposStyle = 'color: var(--danger-color)';
-                }
-
-                card.innerHTML = `
-                    <div class="horario-info">
-                        <span class="horario-dias">${formatDias(horario.dias)}</span>
-                        <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text" style="${cuposStyle}">${cuposDisponiblesHorario} cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: ${capacidad}</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="${badgeClass}">${badgeText}</span>
-                    </div>
-                `;
-            }
-
+            const card = crearTarjetaHorario(horario, disc, dataCompleta);
             horariosGrid.appendChild(card);
         });
     }

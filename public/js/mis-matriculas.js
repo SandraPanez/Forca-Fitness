@@ -90,6 +90,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     banner.style.display = 'flex';
                 }
             }
+            if (urlParams.get('pago') === 'pendiente') {
+                const bannerEfectivo = document.getElementById('pago-pendiente-banner');
+                if (bannerEfectivo) {
+                    bannerEfectivo.style.display = 'flex';
+                }
+            }
 
             matriculas.forEach(matricula => {
                 const fila = document.createElement('tr');

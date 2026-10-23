@@ -117,7 +117,7 @@ const MENU_POR_ROL = {
         ['Alumnos', '/control-acceso#vista-alumnos', 'students']
     ],
     ALUMNO: [
-        ['Nueva matrícula', '/index.html'],
+        ['Nueva matrícula', '/index.html?modo=nueva_matricula'],
         ['Disciplinas', '/disciplinas.html'],
         ['Renovar', '/mis-matriculas.html#renovar'],
         ['Mis matrículas', '/mis-matriculas.html'],
