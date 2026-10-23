@@ -3,6 +3,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectPeriodo = document.getElementById('periodo-select');
     const horariosGrid = document.getElementById('horarios-grid');
     const resumenContainer = document.getElementById('resumen-disciplina-container');
+
+    // Elementos del Modal Confirmar Reserva (PSW-201)
+    const modalConfirmar = document.getElementById('modal-confirmar-reserva');
+    const btnCancelarReserva = document.getElementById('btn-cancelar-reserva');
+    const btnContinuarPago = document.getElementById('btn-continuar-pago');
+    const modalReservaDisciplina = document.getElementById('modal-reserva-disciplina');
+    const modalReservaHorario = document.getElementById('modal-reserva-horario');
+    const modalReservaPeriodo = document.getElementById('modal-reserva-periodo');
+    const modalReservaTarifa = document.getElementById('modal-reserva-tarifa');
+
+    let currentData = null;
+    let selectedReservation = null;
+
     const params = new URLSearchParams(window.location.search);
     const disciplinaInicial = params.get('disciplina');
     const periodoInicial = params.get('periodo');
@@ -105,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!idDisciplina) {
             horariosGrid.innerHTML = '';
             if (resumenContainer) resumenContainer.innerHTML = '';
+            currentData = null;
             return;
         }
 
@@ -117,15 +131,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success && result.data) {
-                const data = result.data;
-                const horarios = Array.isArray(data) ? data : (data.horarios || []);
-                renderResumenDisciplina(data);
-                renderHorarios(horarios, data);
+                currentData = result.data;
+                const horarios = Array.isArray(currentData) ? currentData : (currentData.horarios || []);
+                renderResumenDisciplina(currentData);
+                renderHorarios(horarios, currentData);
             } else {
+                currentData = null;
                 if (resumenContainer) resumenContainer.innerHTML = '';
                 horariosGrid.innerHTML = `<div class="error-message">${escapeHtml(result.message || 'Error cargando horarios.')}</div>`;
             }
         } catch (error) {
+            currentData = null;
             console.error('Error obteniendo horarios:', error);
             if (resumenContainer) resumenContainer.innerHTML = '';
             horariosGrid.innerHTML = '<div class="error-message">Hubo un problema de conexión.</div>';
@@ -176,7 +192,38 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // 5. Renderizar las tarjetas de horarios en el HTML
+    // 5. Modal Confirmar Reserva (PSW-201)
+    function abrirModalConfirmacion(horario) {
+        if (!modalConfirmar) return;
+
+        const disc = currentData?.disciplina || {};
+        const discNombre = disc.nombre || 'Disciplina';
+        const horarioTexto = `${formatDias(horario.dias)} — ${formatHora12(horario.hora_inicio)} a ${formatHora12(horario.hora_fin)}`;
+        const periodoTexto = `${currentData?.mes_nombre || ''} ${currentData?.anio || ''}`;
+        const tarifa = Number(horario.tarifa || disc.tarifa || 0);
+
+        if (modalReservaDisciplina) modalReservaDisciplina.textContent = discNombre;
+        if (modalReservaHorario) modalReservaHorario.textContent = horarioTexto;
+        if (modalReservaPeriodo) modalReservaPeriodo.textContent = periodoTexto;
+        if (modalReservaTarifa) modalReservaTarifa.textContent = `S/ ${tarifa.toFixed(2)}`;
+
+        selectedReservation = {
+            horario,
+            disciplina: disc,
+            periodo: currentData?.periodo,
+            tarifa
+        };
+
+        modalConfirmar.style.display = 'flex';
+    }
+
+    function cerrarModalConfirmacion() {
+        if (modalConfirmar) {
+            modalConfirmar.style.display = 'none';
+        }
+    }
+
+    // 6. Renderizar las tarjetas de horarios en el HTML
     function renderHorarios(horarios, dataCompleta) {
         if (!horarios || horarios.length === 0) {
             horariosGrid.innerHTML = '<div class="text-muted" style="text-align: center; padding: 2rem;">No se encontraron horarios disponibles para la disciplina seleccionada</div>';
@@ -234,6 +281,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     </div>
                 `;
+
+                if (puedeReservar) {
+                    const btnRes = card.querySelector('.btn-reservar:not(:disabled)');
+                    if (btnRes) {
+                        btnRes.addEventListener('click', () => abrirModalConfirmacion(horario));
+                    }
+                }
             } else {
                 // Periodo corriente (sprint anterior)
                 let badgeClass = 'badge-disponible';
@@ -271,7 +325,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 6. Escuchar eventos de cambio en disciplina y periodo
+    // 7. Event listeners de modal de confirmación
+    if (btnCancelarReserva) {
+        btnCancelarReserva.addEventListener('click', cerrarModalConfirmacion);
+    }
+
+    if (modalConfirmar) {
+        modalConfirmar.addEventListener('click', (e) => {
+            if (e.target === modalConfirmar) {
+                cerrarModalConfirmacion();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalConfirmar && modalConfirmar.style.display === 'flex') {
+            cerrarModalConfirmacion();
+        }
+    });
+
+    // 8. Escuchar eventos de cambio en disciplina y periodo
     selectDisciplina.addEventListener('change', (e) => {
         loadHorarios(e.target.value);
     });

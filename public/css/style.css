@@ -1463,3 +1463,88 @@ body {
     color: #4527a0;
 }
 
+/* Modal Confirmar Reserva (PSW-201) */
+.modal-reserva {
+    max-width: 520px;
+    text-align: left;
+    padding: 2rem 2.25rem;
+}
+
+.modal-reserva h3 {
+    margin-bottom: 0.35rem;
+    color: var(--primary-color);
+    font-size: 1.3rem;
+}
+
+.modal-reserva .modal-subtitle {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.reserva-detalle-card {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.reserva-detalle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #e0e0e0;
+    padding-bottom: 0.5rem;
+}
+
+.reserva-detalle-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.reserva-detalle-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.reserva-detalle-valor {
+    font-size: 0.95rem;
+    color: var(--text-main);
+    font-weight: 600;
+    text-align: right;
+}
+
+.reserva-condiciones-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.condicion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.condicion-item span {
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.condicion-item p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
