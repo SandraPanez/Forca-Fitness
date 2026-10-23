@@ -1,5 +1,6 @@
 const personalRepository = require('./personal.repository');
 const ROLES = require('../../shared/constants/roles');
+const { PERMISOS, PERMISOS_POR_ROL } = require('../../shared/constants/permisos');
 
 // Tesoreros primero y, dentro de cada grupo, orden alfabético por el nombre que se muestra.
 // Se ordena aquí y no en SQL para que las tildes y mayúsculas no alteren el orden.
@@ -34,6 +35,8 @@ async function obtenerDetalle(idUsuario) {
   return {
     ...persona,
     nombre: persona.nombre || 'Sin nombre registrado',
+    permisos: [...new Set(persona.roles.flatMap(rol => PERMISOS_POR_ROL[rol] || []))],
+    permisosDisponibles: Object.values(PERMISOS),
     disciplinas: persona.roles.includes(ROLES.PROFESOR) ? persona.disciplinas : []
   };
 }

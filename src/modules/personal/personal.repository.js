@@ -49,6 +49,10 @@ async function obtenerDetallePersonal(idUsuario) {
         NULLIF(BTRIM(pe."Apellido_Paterno"), ''),
         NULLIF(BTRIM(pe."Apellido_Materno"), '')
       )) AS nombre,
+      NULLIF(BTRIM(pe."Nombre"), '') AS nombres,
+      NULLIF(BTRIM(pe."Segundo_Nombre"), '') AS segundo_nombre,
+      NULLIF(BTRIM(pe."Apellido_Paterno"), '') AS apellido_paterno,
+      NULLIF(BTRIM(pe."Apellido_Materno"), '') AS apellido_materno,
       ARRAY(
         SELECT DISTINCT UPPER(r."Rol_Cargo")
         FROM ${SCHEMA}."Usuario_Rol" ur

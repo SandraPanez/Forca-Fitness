@@ -26,10 +26,25 @@ const { tienePermiso, PERMISOS } = require(path.join(repo, 'src/shared/constants
     'Tesoreros primero y profesores alfabéticos sin importar tildes ni mayúsculas.');
   assert.equal(lista.at(-1).nombre, 'Sin nombre registrado', 'Una cuenta sin persona no debe romper la lista.');
 
-  detalle = { id: 'U6', nombre: 'Zoila Vega Soto', roles: ['PROFESOR', 'TESORERO'], disciplinas: ['MMA'] };
-  assert.deepEqual((await obtenerDetalle('U6')).disciplinas, ['MMA'], 'El profesor muestra sus disciplinas.');
+  detalle = {
+    id: 'U6',
+    nombre: 'Zoila Vega Soto',
+    roles: ['PROFESOR', 'TESORERO'],
+    disciplinas: ['MMA']
+  };
+  const detalleMixto = await obtenerDetalle('U6');
+  assert.deepEqual(detalleMixto.disciplinas, ['MMA'], 'El profesor muestra sus disciplinas.');
+  assert(detalleMixto.permisos.includes(PERMISOS.GESTIONAR_PAGOS),
+    'Los permisos efectivos del tesorero se derivan de la configuración de roles.');
+  assert(detalleMixto.permisos.includes(PERMISOS.VER_ALUMNOS_DISCIPLINAS),
+    'Los permisos efectivos del profesor se derivan de la configuración de roles.');
+  assert.deepEqual(detalleMixto.permisosDisponibles, Object.values(PERMISOS),
+    'La vista recibe la lista de permisos configurados, sin inventar permisos.');
   detalle = { id: 'U2', nombre: 'Paul Rafael Yepez', roles: ['TESORERO'], disciplinas: ['MMA'] };
-  assert.deepEqual((await obtenerDetalle('U2')).disciplinas, [], 'El tesorero no muestra disciplinas.');
+  const detalleTesorero = await obtenerDetalle('U2');
+  assert.deepEqual(detalleTesorero.disciplinas, [], 'El tesorero no muestra disciplinas.');
+  assert(!detalleTesorero.permisos.includes(PERMISOS.VER_ALUMNOS_DISCIPLINAS),
+    'Un tesorero no recibe permisos configurados solo para profesor.');
   detalle = null;
   assert.equal(await obtenerDetalle('NOEXISTE'), null, 'Una cuenta fuera del personal operativo no se detalla.');
 
