@@ -120,6 +120,7 @@ class MatriculasRepository {
       WHERE dm."Id_DiscHorario" = $1
         AND dm."Fecha_Inicio" <= $3::date
         AND dm."Fecha_Fin" >= $2::date
+        AND m."Estado_Matricula" != 'Anulada'
         AND (
           m."Estado_Matricula" IN ('Activa', 'Reservada')
           OR p."Estado_Pago" = 'APROBADO'
@@ -139,9 +140,14 @@ class MatriculasRepository {
       WHERE dh."Id_Disciplina" = $1
         AND dm."Fecha_Inicio" <= $3::date
         AND dm."Fecha_Fin" >= $2::date
+        AND m."Estado_Matricula" != 'Anulada'
         AND (
           m."Estado_Matricula" = 'Reservada'
-          OR (p."Estado_Pago" = 'APROBADO' AND m."Fecha_Inscripcion" < dm."Fecha_Inicio")
+          OR (p."Estado_Pago" = 'APROBADO' AND (
+            m."Fecha_Inscripcion" < dm."Fecha_Inicio"
+            OR EXTRACT(MONTH FROM dm."Fecha_Inicio") > EXTRACT(MONTH FROM m."Fecha_Inscripcion")
+            OR EXTRACT(YEAR FROM dm."Fecha_Inicio") > EXTRACT(YEAR FROM m."Fecha_Inscripcion")
+          ))
         )
     `;
     const result = await db.query(query, [id_disciplina, fechaInicioStr, fechaFinStr]);
@@ -625,7 +631,8 @@ class MatriculasRepository {
         d."Id_Disciplinas" AS id_disciplina,
         d."Nombre_Disciplina" AS disciplina,
         dm."Fecha_Inicio" AS fecha_inicio,
-        dm."Fecha_Fin" AS fecha_fin
+        dm."Fecha_Fin" AS fecha_fin,
+        p."Monto" AS tarifa_congelada
 
       FROM ${SCHEMA}."Usuario" u
 
@@ -643,6 +650,9 @@ class MatriculasRepository {
 
       LEFT JOIN ${SCHEMA}."Disciplina" d
         ON d."Id_Disciplinas" = dh."Id_Disciplina"
+
+      LEFT JOIN ${SCHEMA}."Pago" p
+        ON p."Id_Matricula" = m."Id_Matricula"
 
       WHERE u."Id_Usuario" = $1
 

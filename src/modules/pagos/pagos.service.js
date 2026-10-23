@@ -133,6 +133,7 @@ class PagosService {
             return {
                 duplicado: true,
                 estadoPago,
+                estadoMatricula: transaccionExistente.Estado_Matricula,
                 mensaje: 'El pago ya fue procesado anteriormente.'
             };
         }

@@ -288,9 +288,11 @@ class PagosRepository {
 
     async obtenerTransaccionPorPaymentId(paymentId) {
         const result = await db.query(`
-            SELECT "Id_Mp_Transaccion", "Id_Pago"
-            FROM "Academia Forca&Fitness"."Mercado_Pago"
-            WHERE "Mp_Payment_Id" = $1
+            SELECT mp."Id_Mp_Transaccion", mp."Id_Pago", m."Estado_Matricula"
+            FROM "Academia Forca&Fitness"."Mercado_Pago" mp
+            LEFT JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Pago" = mp."Id_Pago"
+            LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+            WHERE mp."Mp_Payment_Id" = $1
         `, [String(paymentId)]);
         return result.rows[0] || null;
     }
