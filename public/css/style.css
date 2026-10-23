@@ -1317,6 +1317,15 @@ body {
     .horario-estado {
         text-align: left;
     }
+
+    .horario-accion {
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .msg-sin-cupos {
+        text-align: left;
+    }
 }
 
 /* ========================================================
