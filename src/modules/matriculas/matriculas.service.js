@@ -183,7 +183,7 @@ class MatriculasService {
     const MILISEGUNDOS_POR_DIA = 1000 * 60 * 60 * 24;
 
     return matriculas.map(matricula => {
-      const aprobada = ['ACTIVA', 'ACTIVO', 'VENCIDA'].includes(String(matricula.estado_matricula).toUpperCase());
+      const aprobada = ['ACTIVA', 'ACTIVO', 'VENCIDA', 'RESERVADA'].includes(String(matricula.estado_matricula).toUpperCase());
       if (!aprobada) {
         return { ...matricula, estado_vigencia: String(matricula.estado_matricula).toUpperCase().startsWith('PENDIENTE')
           ? 'Pendiente de pago' : matricula.estado_matricula, dias_restantes: null, vigente: false, puede_renovar: false };
