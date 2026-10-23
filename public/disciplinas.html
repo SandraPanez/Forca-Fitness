@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="/css/header.css">
 </head>
-<body data-allow-guest="true">
+<body data-allow-guest="true" data-menu="/disciplinas.html">
 
     <!-- Header -->
     <header id="app-header"></header>
@@ -31,29 +31,18 @@
             <div class="filtros-header">
                 <div class="filtros-texto">
                     <h3>Disponibilidad por disciplina</h3>
-                    <p>Selecciona una disciplina y periodo para ver sus horarios.</p>
+                    <p>Selecciona una disciplina para consultar sus horarios y cupos actuales.</p>
                 </div>
                 
-                <div class="filtros-controles">
-                    <div class="disciplina-selector form-group">
-                        <label for="disciplina-select">Disciplina</label>
-                        <select id="disciplina-select">
-                            <option value="">Seleccione...</option>
-                        </select>
-                    </div>
-
-                    <div class="periodo-selector form-group">
-                        <label for="periodo-select">Periodo de matrícula</label>
-                        <select id="periodo-select">
-                        </select>
-                    </div>
+                <div class="disciplina-selector form-group">
+                    <label for="disciplina-select">Disciplina</label>
+                    <select id="disciplina-select">
+                        <option value="">Seleccione...</option>
+                    </select>
                 </div>
             </div>
 
             <hr class="divider">
-
-            <!-- Banner Resumen de Disciplina y Periodo (HU-09) -->
-            <div id="resumen-disciplina-container"></div>
 
             <!-- Grilla de Horarios -->
             <div id="horarios-grid" class="horarios-grid">
@@ -62,58 +51,6 @@
             
         </div>
     </main>
-
-    <!-- Modal Confirmar Reserva (PSW-201) -->
-    <div class="modal-overlay" id="modal-confirmar-reserva">
-        <div class="modal modal-reserva">
-            <h3>Confirmar reserva de cupo</h3>
-            <p class="modal-subtitle">Revisa los datos de tu reserva antes de continuar al pago.</p>
-
-            <div class="reserva-detalle-card">
-                <div class="reserva-detalle-row">
-                    <span class="reserva-detalle-label">Disciplina</span>
-                    <span class="reserva-detalle-valor" id="modal-reserva-disciplina">—</span>
-                </div>
-                <div class="reserva-detalle-row">
-                    <span class="reserva-detalle-label">Horario</span>
-                    <span class="reserva-detalle-valor" id="modal-reserva-horario">—</span>
-                </div>
-                <div class="reserva-detalle-row">
-                    <span class="reserva-detalle-label">Periodo contratado</span>
-                    <span class="reserva-detalle-valor">
-                        <span class="badge-status badge-reservada" id="modal-reserva-periodo">—</span>
-                    </span>
-                </div>
-                <div class="reserva-detalle-row">
-                    <span class="reserva-detalle-label">Tarifa mensual vigente</span>
-                    <div style="text-align: right;">
-                        <span class="reserva-detalle-valor" id="modal-reserva-tarifa" style="color: var(--primary-color); font-size: 1.15rem;">S/ —</span>
-                        <span class="tarifa-congelada-tag" style="display: block; margin-top: 0.2rem;">Tarifa congelada</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="reserva-condiciones-box">
-                <div class="condicion-item">
-                    <span>🔒</span>
-                    <p><strong>Tarifa congelada:</strong> Aseguras la tarifa actual. No aplicarán posteriores variaciones ni promociones de precio.</p>
-                </div>
-                <div class="condicion-item">
-                    <span>📅</span>
-                    <p><strong>Estado "Reservada":</strong> Tu matrícula figurará como Reservada y se activará automáticamente el primer día del periodo.</p>
-                </div>
-                <div class="condicion-item">
-                    <span>💳</span>
-                    <p><strong>Garantía de vacante:</strong> El cupo queda asegurado y descontado del aforo en cuanto se procese el pago.</p>
-                </div>
-            </div>
-
-            <div class="modal-actions" style="justify-content: flex-end; gap: 1rem;">
-                <button type="button" class="btn-cancel" id="btn-cancelar-reserva">Cancelar</button>
-                <button type="button" class="btn-submit" id="btn-continuar-pago">Continuar al pago</button>
-            </div>
-        </div>
-    </div>
 
     <script src="/js/auth.js"></script>
     <script src="/js/disciplinas.js"></script>

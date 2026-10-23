@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renovación y Reserva | Forca & Fitness</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+
+<body data-menu="/renovar.html">
+
+    <!-- Header dinámico unificado -->
+    <header id="app-header"></header>
+
+    <!-- Main Container -->
+    <main class="container" style="max-width: 1000px;">
+
+        <!-- Page Header -->
+        <section class="page-header">
+            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">RENOVACIÓN Y RESERVA</p>
+            <h2 class="title">Renovar matrícula o reservar cupo</h2>
+            <p class="description">Renueva tu matrícula actual conservando tu horario o asegura tu vacante para los próximos meses con tarifa congelada.</p>
+        </section>
+
+        <p id="renovacion-mensaje" role="status" tabindex="-1"></p>
+
+        <!-- Form Card con Tabs -->
+        <div class="form-card">
+            
+            <!-- Selector interactivo de tipo de trámite (Card Selection) -->
+            <div class="tramite-cards-grid">
+                
+                <div class="tramite-card active" id="card-tipo-renovar" role="button" tabindex="0">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(229, 57, 53, 0.1); color: var(--primary-color, #e53935); display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            🔄
+                        </div>
+                        <span class="tramite-badge" style="background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; text-transform: uppercase;">
+                            Matrícula actual
+                        </span>
+                    </div>
+                    <h3 style="font-size: 1.15rem; margin: 0 0 0.35rem 0; color: var(--text-main, #222);">Renovar mi matrícula</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted, #666); margin: 0; line-height: 1.4;">
+                        Conserva tu disciplina y horario habitual. La renovación se activa automáticamente con la confirmación del pago.
+                    </p>
+                    <div class="tramite-check-indicator" style="position: absolute; top: 1rem; right: 1rem; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-color, #e53935); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">
+                        ✓
+                    </div>
+                </div>
+
+                <div class="tramite-card" id="card-tipo-reservar" role="button" tabindex="0">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(26, 79, 139, 0.1); color: #1a4f8b; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            🔒
+                        </div>
+                        <span class="tramite-badge" style="background: #ede7f6; color: #4527a0; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; text-transform: uppercase;">
+                            Tarifa congelada
+                        </span>
+                    </div>
+                    <h3 style="font-size: 1.15rem; margin: 0 0 0.35rem 0; color: var(--text-main, #222);">Reservar cupo por adelantado</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted, #666); margin: 0; line-height: 1.4;">
+                        Asegura tu vacante para los próximos dos meses con aforo garantizado y congelando el precio actual.
+                    </p>
+                    <div class="tramite-check-indicator" style="position: absolute; top: 1rem; right: 1rem; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-color, #e53935); color: #fff; display: none; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">
+                        ✓
+                    </div>
+                </div>
+
+            </div>
+
+            <hr class="divider" style="margin-bottom: 1.5rem;">
+
+            <!-- Panel 1: Renovar matrícula actual (HU-08) -->
+            <div id="panel-renovar-actual">
+                <h3 id="renovacion-titulo" style="font-size: 1.15rem; margin-bottom: 0.35rem;">Renovar matrícula existente</h3>
+                <p class="description">Se conserva tu disciplina y horario. La renovación se activa cuando se confirme el pago.</p>
+                
+                <div id="sin-renovacion-box" style="display: none; padding: 1.5rem; background-color: var(--secondary-color); border-radius: 8px; text-align: center; margin-top: 1rem;">
+                    <p style="margin: 0 0 1rem 0; color: var(--text-muted);">No tienes matrículas vencidas o próximas a vencer disponibles para renovar.</p>
+                    <button type="button" class="btn-submit" id="btn-ir-a-reservar" style="font-size: 0.9rem;">
+                        Reservar cupo para próximos meses →
+                    </button>
+                </div>
+
+                <form id="renovacion-form" style="margin-top: 1rem;">
+                    <div class="form-group" id="selector-matricula-group" style="display: none; margin-bottom: 1rem;">
+                        <label for="select-matricula-renovar">Seleccionar matrícula a renovar</label>
+                        <select id="select-matricula-renovar">
+                        </select>
+                    </div>
+
+                    <div class="grid-2-cols">
+                        <div class="form-group"><label for="renovacion-disciplina">Disciplina</label><input id="renovacion-disciplina" readonly></div>
+                        <div class="form-group"><label for="renovacion-horario">Horario actual</label><input id="renovacion-horario" readonly></div>
+                        <div class="form-group"><label for="renovacion-periodo">Periodo de renovación estimado (30 días)</label><input id="renovacion-periodo" readonly></div>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Si pagas después del vencimiento, el periodo comenzará el día que se confirme el pago.</p>
+                    <div class="form-actions" style="margin-top: 1.5rem;">
+                        <a href="/mis-matriculas.html" class="btn-cancel">Ver mis matrículas</a>
+                        <button type="submit" class="btn-submit" id="renovacion-continuar">Continuar al pago</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Panel 2: Reservar cupo para próximos 2 meses (HU-09) -->
+            <div id="panel-reservar-cupo" style="display: none;">
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem;">Reservar cupo para una disciplina</h3>
+                <p class="description">Selecciona una disciplina con cupos disponibles y un periodo dentro de los próximos dos meses para asegurar tu vacante con tarifa congelada.</p>
+
+                <div class="filtros-header" style="margin-top: 1.25rem;">
+                    <div class="filtros-texto">
+                        <h4 style="margin: 0; font-size: 1rem;">Disponibilidad de reservas</h4>
+                        <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Elige la disciplina y el periodo futuro (hasta 2 meses por adelantado).</p>
+                    </div>
+                    
+                    <div class="filtros-controles" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div class="disciplina-selector form-group">
+                            <label for="reserva-disciplina-select">Disciplina</label>
+                            <select id="reserva-disciplina-select">
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
+
+                        <div class="periodo-selector form-group">
+                            <label for="reserva-periodo-select">Periodo de reserva</label>
+                            <select id="reserva-periodo-select">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <!-- Resumen de Disciplina y Periodo (HU-09) -->
+                <div id="resumen-disciplina-container"></div>
+
+                <!-- Grilla de Horarios para Reserva -->
+                <div id="reserva-horarios-grid" class="horarios-grid">
+                    <div class="text-muted" style="text-align: center; padding: 2rem;">Cargando horarios para reserva...</div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <a href="/mis-matriculas.html" class="btn-cancel">Ver mis matrículas</a>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <!-- Modal Confirmar Reserva (PSW-201 / CA 1) -->
+    <div class="modal-overlay" id="modal-confirmar-reserva">
+        <div class="modal modal-reserva">
+            <h3>Confirmar reserva de cupo</h3>
+            <p class="modal-subtitle">Revisa los datos de tu reserva antes de continuar al pago.</p>
+
+            <div class="reserva-detalle-card">
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Disciplina</span>
+                    <span class="reserva-detalle-valor" id="modal-reserva-disciplina">—</span>
+                </div>
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Horario</span>
+                    <span class="reserva-detalle-valor" id="modal-reserva-horario">—</span>
+                </div>
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Periodo contratado</span>
+                    <span class="reserva-detalle-valor">
+                        <span class="badge-status badge-reservada" id="modal-reserva-periodo">—</span>
+                    </span>
+                </div>
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Tarifa mensual vigente</span>
+                    <div style="text-align: right;">
+                        <span class="reserva-detalle-valor" id="modal-reserva-tarifa" style="color: var(--primary-color); font-size: 1.15rem;">S/ —</span>
+                        <span class="tarifa-congelada-tag" style="display: block; margin-top: 0.2rem;">Tarifa congelada</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reserva-condiciones-box">
+                <div class="condicion-item">
+                    <span>🔒</span>
+                    <p><strong>Tarifa congelada:</strong> Aseguras la tarifa actual. No aplicarán posteriores variaciones ni promociones de precio.</p>
+                </div>
+                <div class="condicion-item">
+                    <span>📅</span>
+                    <p><strong>Estado "Reservada":</strong> Tu matrícula figurará como Reservada y se activará automáticamente el primer día del periodo.</p>
+                </div>
+                <div class="condicion-item">
+                    <span>💳</span>
+                    <p><strong>Garantía de vacante:</strong> El cupo queda asegurado y descontado del aforo en cuanto se procese el pago.</p>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-cancel" id="btn-cancelar-reserva">Cancelar</button>
+                <button type="button" class="btn-submit" id="btn-continuar-pago">Continuar al pago</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/renovar.js"></script>
+</body>
+</html>

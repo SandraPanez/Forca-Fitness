@@ -1519,3 +1519,40 @@ body {
     line-height: 1.4;
 }
 
+/* Card Selection interactivo para Renovar y Reservar */
+.tramite-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.tramite-card {
+    background: #ffffff;
+    border: 2px solid var(--border-color, #e0e0e0);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.tramite-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.tramite-card.active {
+    border-color: var(--primary-color, #e53935) !important;
+    box-shadow: 0 4px 18px rgba(229, 57, 53, 0.16) !important;
+}
+
+.tramite-card.active .tramite-check-indicator {
+    display: flex !important;
+}
+
+.tramite-card:not(.active) .tramite-check-indicator {
+    display: none !important;
+}
+
