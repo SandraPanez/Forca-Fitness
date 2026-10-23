@@ -27,4 +27,11 @@ router.post('/', matriculasController.registrarMatricula);
 // POST /api/matriculas/reservar - Crear reserva de cupo para alumno autenticado (PSW-202)
 router.post('/reservar', autenticar, matriculasController.crearReserva);
 
+router.post(
+  '/mis-matriculas/:idDetalle/renovar',
+  autenticar,
+  autorizar(PERMISOS.REGISTRAR_MATRICULA),
+  matriculasController.renovarMatricula
+);
+
 module.exports = router;

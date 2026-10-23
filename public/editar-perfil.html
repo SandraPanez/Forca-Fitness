@@ -8,28 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
 </head>
-<body>
+<body data-menu="/perfil.html">
 
-    <header class="header">
-        <div class="logo">
-            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img">
-            <h1>Portal Forca&Fitness</h1>
-        </div>
-        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
-            <nav class="top-nav" id="top-nav"></nav>
-            <div class="user-info" id="user-info">
-                <div class="user-details">
-                    <span class="user-name" id="user-name">Usuario</span>
-                    <span class="user-role" id="user-role">Cliente</span>
-                </div>
-                <a href="#" class="logout-btn" id="btn-logout">Cerrar sesión</a>
-            </div>
-            <div id="guest-nav" style="display: none;">
-                <a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>
-            </div>
-        </div>
-    </header>
+    <header id="app-header"></header>
 
     <main class="container">
 
@@ -86,16 +69,17 @@
                         <div class="form-group">
                             <label for="fecha_nacimiento">Fecha de nacimiento <span class="asterisk">*</span></label>
                             <input type="date" id="fecha_nacimiento" name="fecha_nacimiento"
-                                   min="1930-01-01" max="2022-12-31" required>
+                                   min="1930-01-01" required>
                             <span class="error-message" id="error-fecha_nacimiento" style="display:none">La fecha de nacimiento es obligatoria.</span>
                         </div>
 
                         <div class="form-group">
                             <label for="genero">Género <span class="asterisk">*</span></label>
-                            <select id="genero" name="genero">
+                            <select id="genero" name="genero" required>
                                 <option value="">Seleccionar</option>
                                 <option value="M">Masculino</option>
                                 <option value="F">Femenino</option>
+                                <option value="OTRO">Otro</option>
                             </select>
                             <span class="error-message" id="error-genero" style="display:none">Debes seleccionar un género.</span>
                         </div>

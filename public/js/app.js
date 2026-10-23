@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
         year: 'numeric'
     });
 
+    // Fecha de nacimiento sin edad mínima (también se matriculan niños), pero no puede ser futura
+    document.getElementById('fecha_nacimiento').max = today.toLocaleDateString('en-CA');
+
     // 2. Manejo de formulario (Validaciones básicas para T_01/T_06)
     const form = document.getElementById('matriculaForm');
     const errorDiv = document.getElementById('disciplinas-error');
@@ -264,15 +267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnYesCancel.addEventListener('click', () => {
-        // Descartar datos ingresados y regresar a Mis matrículas (o login si es invitado)
+        // Descartar datos ingresados y volver a la pantalla principal (Criterio de Aceptación 2)
         form.reset();
         modal.style.display = 'none';
-        const usuario = typeof obtenerUsuario === 'function' ? obtenerUsuario() : null;
-        if (usuario) {
-            window.location.href = '/mis-matriculas.html';
-        } else {
-            window.location.href = '/login.html';
-        }
+        window.location.href = typeof paginaDeInicio === 'function' ? paginaDeInicio() : '/';
     });
 
     // Precargar datos del alumno autenticado si ya tiene sesión

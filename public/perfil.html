@@ -8,28 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
 </head>
 <body>
 
-    <header class="header">
-        <div class="logo">
-            <img src="/images/logo.png" alt="Forca & Fitness Logo" class="logo-img">
-            <h1>Portal Forca&Fitness</h1>
-        </div>
-        <div class="header-right" style="display: flex; align-items: center; gap: 2.5rem;">
-            <nav class="top-nav" id="top-nav"></nav>
-            <div class="user-info" id="user-info">
-                <div class="user-details">
-                    <span class="user-name">Usuario</span>
-                    <span class="user-role">Cliente</span>
-                </div>
-                <a href="#" class="logout-btn">Cerrar sesión</a>
-            </div>
-            <div id="guest-nav" style="display: none;">
-                <a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>
-            </div>
-        </div>
-    </header>
+    <header id="app-header"></header>
 
     <main class="container" style="max-width: 700px;">
 
@@ -68,39 +51,35 @@
 
                 const d = json.data;
                 const generoTexto = d.genero === 'M' ? 'Masculino' : d.genero === 'F' ? 'Femenino' : d.genero || '—';
+                const nombreCompleto = [d.nombre, d.apellido_paterno, d.apellido_materno].filter(Boolean).join(' ');
+                const userEl = document.querySelector('.app-usuario-nombre');
+                if (userEl) userEl.textContent = nombreCompleto;
 
-                document.getElementById('datos-perfil').innerHTML = `
-                    <table style="width:100%; border-collapse:collapse;">
-                        <tr>
-                            <td style="padding:0.6rem; color:#666; width:40%;">Nombre completo</td>
-                            <td style="padding:0.6rem; font-weight:600;">${d.nombre || '—'} ${d.apellido_paterno || ''} ${d.apellido_materno || ''}</td>
-                        </tr>
-                        <tr style="background:#f9f9f9;">
-                            <td style="padding:0.6rem; color:#666;">Fecha de nacimiento</td>
-                            <td style="padding:0.6rem;">${d.fecha_nacimiento ? d.fecha_nacimiento.substring(0,10) : '—'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:0.6rem; color:#666;">Género</td>
-                            <td style="padding:0.6rem;">${generoTexto}</td>
-                        </tr>
-                        <tr style="background:#f9f9f9;">
-                            <td style="padding:0.6rem; color:#666;">Dirección</td>
-                            <td style="padding:0.6rem;">${d.direccion || '—'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:0.6rem; color:#666;">N° Documento</td>
-                            <td style="padding:0.6rem;">${d.numero_documento || '—'}</td>
-                        </tr>
-                        <tr style="background:#f9f9f9;">
-                            <td style="padding:0.6rem; color:#666;">Correo electrónico</td>
-                            <td style="padding:0.6rem;">${d.correo_electronico || '—'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:0.6rem; color:#666;">Celular</td>
-                            <td style="padding:0.6rem;">${d.numero_celular || '—'}</td>
-                        </tr>
-                    </table>
-                `;
+                const campos = [
+                    ['Nombre completo', nombreCompleto],
+                    ['Fecha de nacimiento', d.fecha_nacimiento?.substring(0, 10)],
+                    ['Género', generoTexto],
+                    ['Dirección', d.direccion],
+                    ['N° Documento', d.numero_documento],
+                    ['Correo electrónico', d.correo_electronico],
+                    ['Celular', d.numero_celular]
+                ];
+                const tabla = document.createElement('table');
+                tabla.style.cssText = 'width:100%; border-collapse:collapse;';
+                campos.forEach(([etiqueta, valor], index) => {
+                    const fila = document.createElement('tr');
+                    if (index % 2) fila.style.background = '#f9f9f9';
+                    const titulo = document.createElement('th');
+                    titulo.scope = 'row';
+                    titulo.style.cssText = 'padding:0.6rem; color:#666; width:40%; text-align:left; font-weight:400;';
+                    titulo.textContent = etiqueta;
+                    const dato = document.createElement('td');
+                    dato.style.padding = '0.6rem';
+                    dato.textContent = valor || '—';
+                    fila.append(titulo, dato);
+                    tabla.append(fila);
+                });
+                document.getElementById('datos-perfil').replaceChildren(tabla);
             } catch (e) {
                 document.getElementById('datos-perfil').innerHTML = `<p style="color:red;">${e.message || 'Error al cargar perfil.'}</p>`;
             }

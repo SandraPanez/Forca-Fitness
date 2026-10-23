@@ -52,6 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Efectivo pendiente: se confirma. Pago aprobado: se puede ver su comprobante (HU-12).
+  function accionDeCobro(cobro) {
+    if (cobro.estado_pago === 'PENDIENTE' && cobro.medio_pago === 'EFECTIVO') {
+      return `<button class="btn-confirm-cash" data-matricula="${escapeHtml(cobro.id_matricula)}">Confirmar</button>`;
+    }
+    if (cobro.estado_pago === 'APROBADO') {
+      return `<a class="btn-link" href="/comprobante.html?pago=${encodeURIComponent(cobro.id_pago)}">Ver comprobante</a>`;
+    }
+    return '<span class="treasury-muted">Sin acción</span>';
+  }
+
   function renderCobros(cobros) {
     if (!cobros.length) {
       tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cobros para los filtros seleccionados.</td></tr>';
@@ -69,9 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${escapeHtml(cobro.medio_pago)}</td>
         <td><span class="status-pill">${escapeHtml(cobro.estado_pago)}</span></td>
         <td>${formatDate(cobro.fecha_vencimiento)}</td>
-        <td>${cobro.estado_pago === 'PENDIENTE' && cobro.medio_pago === 'EFECTIVO'
-          ? `<button class="btn-confirm-cash" data-matricula="${escapeHtml(cobro.id_matricula)}">Confirmar</button>`
-          : '<span class="treasury-muted">Sin acción</span>'}</td>
+        <td>${accionDeCobro(cobro)}</td>
       </tr>
     `).join('');
     tbody.querySelectorAll('.btn-confirm-cash').forEach(button => {
@@ -94,8 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'No se pudo confirmar el pago.');
-      showMessage(result.message || 'Pago en efectivo confirmado correctamente.', 'success');
-      await cargarCobros();
+      // Al confirmar el cobro se muestra su comprobante (criterio 1 de la HU-12)
+      window.location.href = `/comprobante.html?pago=${encodeURIComponent(result.data.Id_Pago)}`;
     } catch (error) {
       showMessage(error.message, 'error');
       button.disabled = false;

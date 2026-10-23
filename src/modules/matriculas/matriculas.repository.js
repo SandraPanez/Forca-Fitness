@@ -23,7 +23,7 @@ class MatriculasRepository {
     return result.rows;
   }
 
-  async getResumenMatricula(id_matricula) {
+  async getResumenMatricula(id_matricula, client = db) {
     const query = `
       SELECT
         COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
@@ -35,7 +35,7 @@ class MatriculasRepository {
         ON d."Id_Disciplinas" = dh."Id_Disciplina"
       WHERE dm."Id_Matricula" = $1
     `;
-    const result = await db.query(query, [id_matricula]);
+    const result = await client.query(query, [id_matricula]);
     return result.rows[0];
   }
 
@@ -44,7 +44,7 @@ class MatriculasRepository {
       SELECT m."Id_Matricula" AS matricula
       FROM ${SCHEMA}."Matricula" m
       WHERE m."Id_alumno" = $1
-        AND m."Estado_Matricula" IN ('PENDIENTE', 'Pendiente de confirmación')
+        AND UPPER(m."Estado_Matricula") IN ('PENDIENTE', 'PENDIENTE DE CONFIRMACIÓN')
         AND NOT EXISTS (
           SELECT 1
           FROM ${SCHEMA}."Pago" p
@@ -84,15 +84,18 @@ class MatriculasRepository {
     return result.rows;
   }
 
-  async countInscritosPorHorario(id_disc_horario) {
+  async countInscritosPorHorario(id_disc_horario, client = db, excluirAlumno = null) {
     const query = `
-      SELECT COUNT(*) AS total
-      FROM ${SCHEMA}."Detalles_Matricula"
-      WHERE "Id_DiscHorario" = $1
-        AND "Fecha_Fin" >= CURRENT_DATE
+      SELECT COUNT(DISTINCT m."Id_alumno") AS total
+      FROM ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Matricula" m ON m."Id_Matricula" = dm."Id_Matricula"
+      WHERE dm."Id_DiscHorario" = $1
+        AND dm."Fecha_Fin" >= CURRENT_DATE
+        AND UPPER(m."Estado_Matricula") IN ('ACTIVA', 'ACTIVO', 'PENDIENTE', 'PENDIENTE DE CONFIRMACIÓN')
+        AND ($2::VARCHAR IS NULL OR m."Id_alumno" <> $2)
     `;
 
-    const result = await db.query(query, [id_disc_horario]);
+    const result = await client.query(query, [id_disc_horario, excluirAlumno]);
 
     return parseInt(result.rows[0].total, 10);
   }
@@ -628,11 +631,17 @@ class MatriculasRepository {
         a."Id_alumno" AS id_alumno,
 
         dm."Id_DetMatricula" AS id_detalle,
+        dh."Id_DiscHorario" AS id_disc_horario,
+        h."Dias" AS dias,
+        h."Hora_Inicio" AS hora_inicio,
+        h."Hora_Fin" AS hora_fin,
         d."Id_Disciplinas" AS id_disciplina,
         d."Nombre_Disciplina" AS disciplina,
         dm."Fecha_Inicio" AS fecha_inicio,
         dm."Fecha_Fin" AS fecha_fin,
-        p."Monto" AS tarifa_congelada
+        p."Monto" AS tarifa_congelada,
+        MAX(CASE WHEN UPPER(m."Estado_Matricula") IN ('ACTIVA', 'ACTIVO', 'VENCIDA') THEN dm."Fecha_Fin" END)
+          OVER (PARTITION BY a."Id_alumno", dh."Id_DiscHorario") AS fecha_fin_actual
 
       FROM ${SCHEMA}."Usuario" u
 
@@ -653,6 +662,9 @@ class MatriculasRepository {
 
       LEFT JOIN ${SCHEMA}."Pago" p
         ON p."Id_Matricula" = m."Id_Matricula"
+
+      LEFT JOIN ${SCHEMA}."Horarios" h
+        ON h."Id_Horario" = dh."Id_Horario"
 
       WHERE u."Id_Usuario" = $1
 
@@ -686,6 +698,45 @@ class MatriculasRepository {
   // =========================================================
   // DETALLES DE MATRÍCULA
   // =========================================================
+
+  async getDetalleParaRenovar(idUsuario, idDetalle, client) {
+    const result = await client.query(`
+      SELECT a."Id_alumno" AS id_alumno, dh."Id_DiscHorario" AS id_disc_horario,
+        d."Nombre_Disciplina" AS disciplina, u."Correo" AS correo,
+        TRIM(CONCAT_WS(' ', pe."Nombre", pe."Segundo_Nombre", pe."Apellido_Paterno", pe."Apellido_Materno")) AS nombre,
+        vigencia.fecha_fin <= CURRENT_DATE + 3 AS puede_renovar,
+        TO_CHAR(GREATEST(CURRENT_DATE, vigencia.fecha_fin + 1), 'YYYY-MM-DD') AS fecha_inicio,
+        TO_CHAR(GREATEST(CURRENT_DATE, vigencia.fecha_fin + 1) + 29, 'YYYY-MM-DD') AS fecha_fin
+      FROM ${SCHEMA}."Usuario" u
+      JOIN ${SCHEMA}."Alumno" a ON a."Id_Persona" = u."Id_Persona"
+      JOIN ${SCHEMA}."Persona" pe ON pe."Id_Persona" = a."Id_Persona"
+      JOIN ${SCHEMA}."Matricula" m ON m."Id_alumno" = a."Id_alumno"
+      JOIN ${SCHEMA}."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      JOIN ${SCHEMA}."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      JOIN ${SCHEMA}."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+      JOIN LATERAL (
+        SELECT MAX(anterior."Fecha_Fin") AS fecha_fin
+        FROM ${SCHEMA}."Detalles_Matricula" anterior
+        JOIN ${SCHEMA}."Matricula" ma ON ma."Id_Matricula" = anterior."Id_Matricula"
+        WHERE ma."Id_alumno" = a."Id_alumno" AND anterior."Id_DiscHorario" = dh."Id_DiscHorario"
+          AND UPPER(ma."Estado_Matricula") IN ('ACTIVA', 'ACTIVO', 'VENCIDA')
+      ) vigencia ON TRUE
+      WHERE u."Id_Usuario" = $1 AND dm."Id_DetMatricula" = $2
+        AND UPPER(u."Estado_Usuario") = 'ACTIVO'
+        AND UPPER(m."Estado_Matricula") IN ('ACTIVA', 'ACTIVO', 'VENCIDA')
+      FOR UPDATE OF a
+    `, [idUsuario, idDetalle]);
+    return result.rows[0] || null;
+  }
+
+  async addDetalleRenovacion(idMatricula, info, client) {
+    const idDetalle = await this.generateId(client, 'Detalles_Matricula', 'Id_DetMatricula', 'DET');
+    await client.query(`
+      INSERT INTO ${SCHEMA}."Detalles_Matricula"
+        ("Id_DetMatricula", "Id_Matricula", "Fecha_Inicio", "Fecha_Fin", "Id_DiscHorario")
+      VALUES ($1, $2, $3::DATE, $4::DATE, $5)
+    `, [idDetalle, idMatricula, info.fecha_inicio, info.fecha_fin, info.id_disc_horario]);
+  }
 
   async addDisciplinasAMatricula(
     matricula_id,

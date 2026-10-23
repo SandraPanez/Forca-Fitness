@@ -83,6 +83,16 @@ class MatriculasController {
     }
   }
 
+  async renovarMatricula(req, res) {
+    try {
+      const resultado = await matriculasService.renovarMatricula(req.user.id, req.params.idDetalle);
+      return successResponse(res, 201, resultado, 'Renovación preparada. Falta confirmar el pago.');
+    } catch (error) {
+      console.error('Error al preparar renovación:', error);
+      return errorResponse(res, error.status || 500, error.status ? error.message : 'No se pudo preparar la renovación.');
+    }
+  }
+
   async registrarMatricula(req, res) {
     try {
       const datosMatricula = req.body;

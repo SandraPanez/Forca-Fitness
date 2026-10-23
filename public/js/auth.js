@@ -41,11 +41,13 @@ function verificarSesion() {
     const token = obtenerToken();
 
     if (!token) {
+        // Páginas que también puede abrir alguien sin sesión
+        const paginaPublica = document.body?.dataset.public === 'true' || document.body?.dataset.allowGuest === 'true';
         const previewEnabled =
             document.body?.dataset.previewAuth === 'true' &&
             new URLSearchParams(window.location.search).get('preview') === '1';
 
-        if (previewEnabled || document.body?.dataset.allowGuest === 'true') {
+        if (paginaPublica || previewEnabled) {
             return true;
         }
 
@@ -77,135 +79,166 @@ async function authFetch(url, options = {}) {
     return response;
 }
 
-function renderNavbar() {
-    const usuario = obtenerUsuario();
-    const roles = usuario ? obtenerRolesUsuario(usuario) : [];
+async function cerrarSesion(event) {
+    if (event) event.preventDefault();
 
-    const nav = document.getElementById('top-nav') || document.querySelector('.top-nav');
-    const userInfo = document.getElementById('user-info') || document.querySelector('.user-info');
-    let guestNav = document.getElementById('guest-nav');
+    const token = obtenerToken();
 
-    const header = document.querySelector('.header');
-    if (!header && !nav) return;
-
-    let headerRight = document.querySelector('.header-right');
-    if (!headerRight && header) {
-        headerRight = document.createElement('div');
-        headerRight.className = 'header-right';
-        headerRight.style.cssText = 'display: flex; align-items: center; gap: 2.5rem;';
-        if (nav) headerRight.appendChild(nav);
-        if (userInfo) headerRight.appendChild(userInfo);
-        header.appendChild(headerRight);
-    }
-
-    if (headerRight && !guestNav) {
-        guestNav = document.createElement('div');
-        guestNav.id = 'guest-nav';
-        guestNav.style.display = 'none';
-        guestNav.innerHTML = '<a href="/login.html" class="logout-btn" data-no-logout="true" style="border-left: none; padding-left: 0;">Iniciar sesión</a>';
-        headerRight.appendChild(guestNav);
-    }
-
-    const path = window.location.pathname.toLowerCase();
-
-    const esTesoreroOAdmin = roles.includes('TESORERO') || roles.includes('ADMIN');
-    const esProfesor = roles.includes('PROFESOR');
-    const esAlumno = roles.includes('ALUMNO') || (!esTesoreroOAdmin && !esProfesor && Boolean(usuario));
-
-    let items = [];
-
-    if (usuario) {
-        if (esTesoreroOAdmin) {
-            items = [
-                { href: '/alumnos.html', label: 'Alumnos', match: ['/alumnos.html'] },
-                { href: '/index.html', label: 'Matrículas', match: ['/index.html', '/'] },
-                { href: '/tesoreria.html', label: 'Tesorería', match: ['/tesoreria.html'] },
-                { href: '/pagos.html', label: 'Pagos', match: ['/pagos.html'] }
-            ];
-        } else if (esProfesor) {
-            items = [
-                { href: '/control_acceso.html', label: 'Control de acceso', match: ['/control_acceso.html'] },
-                { href: '/alumnos.html', label: 'Alumnos', match: ['/alumnos.html'] }
-            ];
-        } else {
-            // Cliente / Alumno
-            items = [
-                { href: '/mis-matriculas.html', label: 'Mis matrículas', match: ['/mis-matriculas.html'] },
-                { href: '/disciplinas.html', label: 'Reservar cupo', match: ['/disciplinas.html'] },
-                { href: '/perfil.html', label: 'Mi Perfil', match: ['/perfil.html', '/editar-perfil.html'] },
-                { href: '/index.html', label: 'Nueva matrícula', match: ['/index.html'] }
-            ];
-        }
-    } else {
-        // Invitado / Sin sesión
-        items = [
-            { href: '/disciplinas.html', label: 'Disciplinas', match: ['/disciplinas.html'] },
-            { href: '/index.html', label: 'Nueva matrícula', match: ['/index.html', '/'] }
-        ];
-    }
-
-    if (nav) {
-        nav.innerHTML = items.map(item => {
-            const isActive = item.match.some(m => path === m || (m !== '/' && path.endsWith(m)));
-            return `<a href="${item.href}" class="${isActive ? 'active' : ''}">${item.label}</a>`;
-        }).join('\n');
-        nav.style.display = 'flex';
-    }
-
-    if (usuario) {
-        if (userInfo) {
-            userInfo.style.display = 'flex';
-            const nameEl = userInfo.querySelector('.user-name');
-            const roleEl = userInfo.querySelector('.user-role');
-            if (nameEl) nameEl.textContent = usuario.nombre || usuario.correo;
-            if (roleEl) {
-                if (esAlumno) {
-                    roleEl.textContent = 'Cliente';
-                } else {
-                    roleEl.textContent = roles.length > 0 ? roles.join(' / ') : 'Cliente';
-                }
-            }
-        }
-        if (guestNav) guestNav.style.display = 'none';
-    } else {
-        if (userInfo) userInfo.style.display = 'none';
-        if (guestNav) guestNav.style.display = 'block';
-    }
-
-    document.querySelectorAll('.logout-btn:not([data-no-logout])').forEach(button => {
-        if (!button.dataset.hasLogoutListener) {
-            button.dataset.hasLogoutListener = 'true';
-            button.addEventListener('click', async event => {
-                event.preventDefault();
-
-                const token = obtenerToken();
-
-                try {
-                    if (token) {
-                        await fetch('/api/auth/logout', {
-                            method: 'POST',
-                            headers: {
-                                Authorization: `Bearer ${token}`
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error al cerrar sesión:', error);
-                } finally {
-                    limpiarSesion();
-                    window.location.href = '/login.html';
+    try {
+        if (token) {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
                 }
             });
         }
-    });
+    } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+    } finally {
+        limpiarSesion();
+        window.location.href = '/login.html';
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (!verificarSesion()) {
+// Menú de cada rol, según los prototipos de las historias de usuario.
+// Cada opción: [texto, enlace, vista de la página de control de acceso (opcional)]
+const MENU_POR_ROL = {
+    DIRECTOR: [
+        ['Alumnos', '/alumnos.html'],
+        ['Control de acceso', '/control-acceso']
+    ],
+    TESORERO: [
+        ['Alumnos', '/alumnos.html'],
+        ['Pagos', '/tesoreria.html']
+    ],
+    PROFESOR: [
+        ['Control de acceso', '/control-acceso#vista-control', 'access'],
+        ['Alumnos', '/control-acceso#vista-alumnos', 'students']
+    ],
+    ALUMNO: [
+        ['Nueva matrícula', '/index.html'],
+        ['Disciplinas', '/disciplinas.html'],
+        ['Renovar', '/mis-matriculas.html#renovar'],
+        ['Mis matrículas', '/mis-matriculas.html'],
+        ['Mi perfil', '/perfil.html']
+    ]
+};
+
+const NOMBRE_ROL = {
+    DIRECTOR: 'Director',
+    TESORERO: 'Tesorero',
+    PROFESOR: 'Profesor',
+    ALUMNO: 'Cliente'
+};
+
+// La misma página a la que lleva el login según el rol
+const INICIO_POR_ROL = {
+    DIRECTOR: '/alumnos.html',
+    TESORERO: '/tesoreria.html',
+    PROFESOR: '/control-acceso',
+    ALUMNO: '/mis-matriculas.html'
+};
+
+// Pantalla principal de quien usa el sistema (sin sesión, el login)
+function paginaDeInicio() {
+    const roles = obtenerToken() ? obtenerRolesUsuario() : [];
+    const rol = Object.keys(INICIO_POR_ROL).find(rolInicio => roles.includes(rolInicio));
+    return INICIO_POR_ROL[rol] || '/';
+}
+
+// Opción del menú que corresponde a la página actual.
+// Una página puede indicar a qué opción pertenece con data-menu (ej. el comprobante es parte de Pagos).
+function opcionActiva(opciones) {
+    const pagina = document.body.dataset.menu || window.location.pathname;
+    const actual = pagina + window.location.hash;
+
+    return opciones.find(([, href]) => href === actual)
+        || opciones.find(([, href]) => !href.includes('#') && href === pagina)
+        || opciones.find(([, href]) => href.split('#')[0] === pagina);
+}
+
+// Arma el encabezado común dentro de <header id="app-header">
+function pintarEncabezado() {
+    const header = document.getElementById('app-header');
+
+    if (!header) {
         return;
     }
 
-    renderNavbar();
+    const usuario = obtenerToken() ? obtenerUsuario() : null;
+    const roles = obtenerRolesUsuario(usuario);
+    const rolesConMenu = Object.keys(MENU_POR_ROL).filter(rol => roles.includes(rol));
+
+    header.className = 'app-header';
+    header.innerHTML = `
+        <a class="app-marca" href="${paginaDeInicio()}">
+            <img class="app-logo" src="/images/logo.png" alt="">
+            <span>Portal Forca &amp; Fitness</span>
+        </a>
+    `;
+
+    if (!usuario) {
+        header.insertAdjacentHTML(
+            'beforeend',
+            '<div class="app-usuario"><a class="app-salir" href="/login.html">Iniciar sesión</a></div>'
+        );
+        return;
+    }
+
+    // Las opciones de todos los roles del usuario, sin repetir
+    const textos = new Set();
+    const opciones = rolesConMenu
+        .flatMap(rol => MENU_POR_ROL[rol])
+        .filter(([texto]) => !textos.has(texto) && textos.add(texto));
+    const activa = opcionActiva(opciones);
+
+    const nav = document.createElement('nav');
+    nav.className = 'app-nav';
+    nav.setAttribute('aria-label', 'Menú principal');
+
+    for (const opcion of opciones) {
+        const [texto, href, vista] = opcion;
+        const enlace = document.createElement('a');
+        enlace.href = href;
+        enlace.textContent = texto;
+
+        if (vista) {
+            enlace.dataset.view = vista;
+        }
+
+        if (opcion === activa) {
+            enlace.setAttribute('aria-current', 'page');
+        }
+
+        nav.append(enlace);
+    }
+
+    const cuenta = document.createElement('div');
+    cuenta.className = 'app-usuario';
+    cuenta.innerHTML = `
+        <div class="app-usuario-datos">
+            <span class="app-usuario-nombre"></span>
+            <span class="app-usuario-rol"></span>
+        </div>
+        <a class="app-salir" href="/login.html">Cerrar sesión</a>
+    `;
+    cuenta.querySelector('.app-usuario-nombre').textContent = usuario.nombre || usuario.correo;
+    cuenta.querySelector('.app-usuario-rol').textContent =
+        rolesConMenu.map(rol => NOMBRE_ROL[rol]).join(' / ') || 'Sin rol';
+    cuenta.querySelector('.app-salir').addEventListener('click', cerrarSesion);
+
+    header.append(nav, cuenta);
+}
+
+const renderNavbar = pintarEncabezado;
+
+// Se arma apenas carga el script (va al final de cada página), antes que los scripts propios
+// de la página, porque control de acceso usa los enlaces del menú para cambiar de vista.
+pintarEncabezado();
+
+document.addEventListener('DOMContentLoaded', () => {
+    verificarSesion();
 
     // Mostrar/ocultar elementos según rol con data-rol
     const usuario = obtenerUsuario();
