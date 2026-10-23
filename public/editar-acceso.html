@@ -60,20 +60,34 @@
 
         <section class="access-section" aria-labelledby="permisos-individuales-titulo">
             <h3 class="access-section-title" id="permisos-individuales-titulo">III. PERMISOS INDIVIDUALES</h3>
-            <p class="access-permissions-note">Estado efectivo según los roles actuales. El sistema todavía no almacena permisos individuales.</p>
+            <p class="access-permissions-note">Los permisos seleccionados se guardan para este trabajador y prevalecen sobre los derivados de sus roles.</p>
             <div class="access-permission-list" id="acceso-permisos" aria-live="polite">
                 <span class="access-loading">Cargando permisos...</span>
             </div>
         </section>
 
+        <p class="access-save-message" id="acceso-guardado-mensaje" role="status" aria-live="polite"></p>
+
         <div class="access-form-footer">
             <a class="btn-link" href="/administracion-accesos.html">Volver a Administración de accesos</a>
             <div class="access-form-actions">
                 <a class="btn-secondary" href="/administracion-accesos.html">Cancelar</a>
-                <button class="btn-primary" type="button" disabled>Guardar Cambios</button>
+                <button class="btn-primary" id="guardar-accesos" type="button" disabled>Guardar Cambios</button>
             </div>
         </div>
     </main>
+
+    <dialog class="access-confirm-dialog" id="confirmar-guardado" aria-labelledby="confirmar-guardado-titulo">
+        <div class="access-confirm-content">
+            <h2 id="confirmar-guardado-titulo">Confirmar cambios</h2>
+            <p>¿Deseas guardar los roles y permisos seleccionados para este trabajador?</p>
+            <p class="access-confirm-error" id="confirmar-guardado-error" role="alert"></p>
+            <div class="access-form-actions">
+                <button class="btn-secondary" id="cancelar-confirmacion" type="button">Volver a editar</button>
+                <button class="btn-primary" id="confirmar-guardado-boton" type="button">Confirmar y guardar</button>
+            </div>
+        </div>
+    </dialog>
 
     <script src="/js/auth.js"></script>
     <script src="/js/editar-acceso.js"></script>

@@ -1,4 +1,5 @@
 const db = require('../../shared/config/database');
+const { PERMISOS } = require('../../shared/constants/permisos');
 
 const SCHEMA = '"Academia Forca&Fitness"';
 
@@ -110,7 +111,89 @@ async function obtenerDetallePersonal(idUsuario) {
   return result.rows[0] || null;
 }
 
+async function guardarAccesos(idUsuario, roles, permisosActivos) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const usuario = await client.query(
+      `SELECT u."Id_Usuario"
+       FROM ${SCHEMA}."Usuario" u
+       WHERE u."Id_Usuario" = $1
+         AND UPPER(u."Estado_Usuario") = 'ACTIVO'
+         AND EXISTS (
+           SELECT 1
+           FROM ${SCHEMA}."Usuario_Rol" ur
+           INNER JOIN ${SCHEMA}."Rol" r ON r."Id_Rol" = ur."Id_Rol"
+           WHERE ur."Id_Usuario" = u."Id_Usuario"
+             AND UPPER(r."Rol_Cargo") IN ('TESORERO', 'PROFESOR')
+         )
+       FOR UPDATE OF u`,
+      [idUsuario]
+    );
+
+    if (!usuario.rows[0]) {
+      const error = new Error('Trabajador no encontrado en el personal operativo.');
+      error.status = 404;
+      throw error;
+    }
+
+    const rolesCatalogo = await client.query(
+      `SELECT "Id_Rol", UPPER("Rol_Cargo") AS rol
+       FROM ${SCHEMA}."Rol"
+       WHERE UPPER("Rol_Cargo") = ANY($1::text[])`,
+      [roles]
+    );
+
+    if (rolesCatalogo.rows.length !== roles.length) {
+      throw new Error('No se encontraron todos los roles solicitados en el catálogo.');
+    }
+
+    await client.query(
+      `DELETE FROM ${SCHEMA}."Usuario_Rol" ur
+       USING ${SCHEMA}."Rol" r
+       WHERE ur."Id_Usuario" = $1
+         AND ur."Id_Rol" = r."Id_Rol"
+         AND UPPER(r."Rol_Cargo") IN ('TESORERO', 'PROFESOR')`,
+      [idUsuario]
+    );
+
+    for (const rol of rolesCatalogo.rows) {
+      await client.query(
+        `INSERT INTO ${SCHEMA}."Usuario_Rol" ("Id_Usuario", "Id_Rol")
+         VALUES ($1, $2)`,
+        [idUsuario, rol.Id_Rol]
+      );
+    }
+
+    const permisosSeleccionados = new Set(permisosActivos);
+    for (const permiso of Object.values(PERMISOS)) {
+      await client.query(
+        `INSERT INTO ${SCHEMA}."Usuario_Permiso" ("Id_Usuario", "Permiso", "Habilitado")
+         VALUES ($1, $2, $3)
+         ON CONFLICT ("Id_Usuario", "Permiso")
+         DO UPDATE SET "Habilitado" = EXCLUDED."Habilitado"`,
+        [idUsuario, permiso, permisosSeleccionados.has(permiso)]
+      );
+    }
+
+    await client.query('COMMIT');
+    return true;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error('Error al revertir la actualización de accesos:', rollbackError);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   listarPersonalOperativo,
-  obtenerDetallePersonal
+  obtenerDetallePersonal,
+  guardarAccesos
 };

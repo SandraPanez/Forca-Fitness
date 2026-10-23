@@ -20,4 +20,11 @@ router.get(
   personalController.obtenerDetalle
 );
 
+router.put(
+  '/:id',
+  autenticar,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  personalController.actualizarAccesos
+);
+
 module.exports = router;

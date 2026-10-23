@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const permisosRepositoryPath = require.resolve('../src/shared/repositories/permisos.repository');
+require.cache[permisosRepositoryPath] = {
+  id: permisosRepositoryPath,
+  filename: permisosRepositoryPath,
+  loaded: true,
+  exports: { obtenerSobrescritura: async () => null }
+};
 const { autorizar } = require('../src/shared/middleware/permisos.middleware');
 const { PERMISOS } = require('../src/shared/constants/permisos');
 const html = fs.readFileSync(path.join(__dirname, '../public/control_acceso.html'), 'utf8');
@@ -63,7 +70,7 @@ async function check(roles, options = {}) {
         const general = url.startsWith('/api/alumnos');
         let allowed = false;
         const res = { status(code) { status = code; return this; }, json() {} };
-        autorizar(general ? PERMISOS.VER_TODOS_ALUMNOS : PERMISOS.VER_ALUMNOS_DISCIPLINAS)(
+        await autorizar(general ? PERMISOS.VER_TODOS_ALUMNOS : PERMISOS.VER_ALUMNOS_DISCIPLINAS)(
           { user: { roles: serverRoles } }, res, () => { allowed = true; }
         );
         if (allowed) {

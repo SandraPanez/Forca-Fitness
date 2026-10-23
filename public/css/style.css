@@ -1219,6 +1219,49 @@ body {
     opacity: 0.6;
 }
 
+.access-save-message {
+    min-height: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--danger-color);
+}
+
+.access-save-message.is-success {
+    color: #237a3b;
+}
+
+.access-confirm-dialog {
+    width: min(480px, calc(100% - 2rem));
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-main);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.access-confirm-dialog::backdrop {
+    background: rgba(17, 24, 39, 0.55);
+}
+
+.access-confirm-content {
+    display: grid;
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.access-confirm-content h2 {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+}
+
+.access-confirm-error {
+    color: var(--danger-color);
+}
+
+.access-confirm-content .access-form-actions {
+    flex-wrap: wrap;
+}
+
 .btn-primary {
     padding: 0.65rem 1rem;
     border: 1px solid var(--primary-color);
@@ -1262,6 +1305,10 @@ body {
     .access-form-actions {
         width: 100%;
         justify-content: flex-end;
+    }
+
+    .access-confirm-content .access-form-actions {
+        width: 100%;
     }
 
 }

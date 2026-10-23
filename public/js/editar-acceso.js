@@ -8,6 +8,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rolesContainer = document.getElementById('acceso-roles');
     const rolesMensaje = document.getElementById('acceso-roles-mensaje');
     const permisosContainer = document.getElementById('acceso-permisos');
+    const guardarButton = document.getElementById('guardar-accesos');
+    const guardarMensaje = document.getElementById('acceso-guardado-mensaje');
+    const dialogoConfirmacion = document.getElementById('confirmar-guardado');
+    const errorConfirmacion = document.getElementById('confirmar-guardado-error');
+    const confirmarButton = document.getElementById('confirmar-guardado-boton');
+    let estadoEdicion = null;
+
+    function limpiarMensajeGuardado() {
+        guardarMensaje.textContent = '';
+        guardarMensaje.classList.remove('is-success');
+    }
 
     function crearOpcion(etiqueta, valor, grupo, opciones = {}) {
         const label = document.createElement('label');
@@ -95,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
         );
 
-        const estadoEdicion = {
+        estadoEdicion = {
             roles: new Set(trabajador.roles),
             permisos: new Set(trabajador.permisos)
         };
@@ -115,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     estadoEdicion.roles.delete(control.value);
                 }
+                limpiarMensajeGuardado();
 
                 if (estadoEdicion.roles.size === 0) {
                     estadoEdicion.roles.add(control.value);
@@ -172,9 +184,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     estadoEdicion.permisos.delete(control.value);
                 }
+                limpiarMensajeGuardado();
             });
         });
+
+        guardarButton.disabled = false;
     } catch (error) {
         limpiarCampos(error.message);
     }
+
+    guardarButton.addEventListener('click', () => {
+        if (!estadoEdicion) {
+            return;
+        }
+
+        errorConfirmacion.textContent = '';
+        dialogoConfirmacion.showModal();
+    });
+
+    document.getElementById('cancelar-confirmacion').addEventListener('click', () => {
+        dialogoConfirmacion.close();
+    });
+
+    confirmarButton.addEventListener('click', async () => {
+        if (!estadoEdicion || !id) {
+            return;
+        }
+
+        confirmarButton.disabled = true;
+        errorConfirmacion.textContent = '';
+
+        try {
+            const response = await authFetch(`/api/personal/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    roles: [...estadoEdicion.roles],
+                    permisos: [...estadoEdicion.permisos]
+                })
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'No se pudieron guardar los cambios.');
+            }
+
+            dialogoConfirmacion.close();
+            guardarMensaje.textContent = result.message || 'Roles y permisos guardados correctamente.';
+            guardarMensaje.classList.add('is-success');
+        } catch (error) {
+            errorConfirmacion.textContent = error.message;
+        } finally {
+            confirmarButton.disabled = false;
+        }
+    });
 });
