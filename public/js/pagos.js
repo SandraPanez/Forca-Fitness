@@ -28,11 +28,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const cash = document.querySelector('input[name="method"]:checked').value === 'efectivo';
     document.getElementById('summary-method').textContent = cash ? 'Efectivo' : 'Mercado Pago';
     document.getElementById('cash-notice').hidden = !cash;
+    if (cash && tipo === 'reserva') {
+      document.getElementById('cash-notice').innerHTML =
+        'Al elegir efectivo, la reserva quedará <strong>Pendiente de confirmación</strong> hasta que el tesorero registre el pago en recepción. Recuerda que el cupo se asegura tras la confirmación.';
+    }
   };
   methodInputs.forEach(input => input.addEventListener('change', updateSummary));
 
   const result = params.get('resultado');
   const tipo = params.get('tipo');
+
+  if (tipo === 'reserva') {
+    const pageSubtitle = document.querySelector('.page-header .subtitle');
+    const pageTitle = document.querySelector('.page-header .title');
+    const pageDesc = document.querySelector('.page-header .description');
+    const btnCancel = document.querySelector('.form-actions .btn-cancel');
+
+    if (pageSubtitle) pageSubtitle.textContent = 'PAGO DE RESERVA';
+    if (pageTitle) pageTitle.textContent = 'Pago de reserva de cupo';
+    if (pageDesc) pageDesc.textContent = 'Asegura tu cupo con tarifa congelada procesando el pago de tu reserva.';
+    if (btnCancel) btnCancel.href = '/disciplinas.html';
+  }
   const steps = document.querySelectorAll('.payment-step');
   if (result === 'exitoso') {
     const successMsg = tipo === 'reserva'
@@ -84,7 +100,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const resultData = await response.json();
       if (!response.ok || !resultData.success) throw new Error(resultData.message || 'No se pudo registrar el pago.');
       if (cash) {
-        showMessage('Solicitud creada. Acércate a la academia antes de 48 horas para confirmar el pago.', 'success');
+        const cashMsg = tipo === 'reserva'
+          ? 'Solicitud de reserva en efectivo registrada. Acércate a recepción en las próximas 48 horas para asegurar tu cupo.'
+          : 'Solicitud creada. Acércate a la academia antes de 48 horas para confirmar el pago.';
+        showMessage(cashMsg, 'success');
         button.textContent = 'Solicitud registrada';
       } else {
         window.location.href = resultData.init_point;

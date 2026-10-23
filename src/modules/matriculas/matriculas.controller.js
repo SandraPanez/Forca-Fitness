@@ -39,6 +39,23 @@ class MatriculasController {
     }
   }
 
+  async crearReserva(req, res) {
+    try {
+      const { id_disciplina, id_disc_horario, periodo } = req.body;
+      const id_usuario = req.user.id;
+      const resultado = await matriculasService.crearReservaCupo({
+        id_usuario,
+        id_disciplina,
+        id_disc_horario,
+        periodo
+      });
+      return successResponse(res, 201, resultado, 'Reserva de cupo creada exitosamente');
+    } catch (error) {
+      console.error('Error en crearReserva:', error);
+      return errorResponse(res, 400, error.message || 'Error al crear la reserva de cupo');
+    }
+  }
+
   async getMisMatriculas(req, res) {
     try {
       const idUsuario = req.user.id;

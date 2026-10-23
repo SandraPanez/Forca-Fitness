@@ -342,6 +342,108 @@ class MatriculasService {
       client.release();
     }
   }
+
+  async crearReservaCupo({ id_usuario, id_disciplina, id_disc_horario, periodo }) {
+    if (!id_usuario) {
+      throw new Error('Debe iniciar sesión para reservar un cupo.');
+    }
+    if (!id_disciplina) {
+      throw new Error('Debe seleccionar una disciplina.');
+    }
+
+    const reg = this.validarReglasReserva({ periodo });
+    if (!reg.es_periodo_futuro) {
+      throw new Error('La reserva anticipada solo aplica para periodos futuros.');
+    }
+
+    // Validar tope máximo de 4 cupos para la disciplina
+    const cuposInfo = await this.validarTopeCuposReserva(id_disciplina, reg.periodo);
+    if (!cuposInfo.puede_reservar) {
+      throw new Error(`No hay cupos disponibles para reserva en esta disciplina. Se agotaron los 4 cupos para el periodo ${reg.periodo}.`);
+    }
+
+    const alumno = await matriculasRepository.getAlumnoPorUsuario(id_usuario);
+    if (!alumno) {
+      throw new Error('No se encontró un perfil de alumno asociado a este usuario.');
+    }
+
+    const disciplina = await matriculasRepository.getDisciplinaById(id_disciplina);
+    if (!disciplina) {
+      throw new Error('La disciplina seleccionada no existe.');
+    }
+
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const idMatricula = await matriculasRepository.createMatricula(
+        alumno.id_alumno,
+        `Reserva anticipada periodo ${reg.periodo}`,
+        client
+      );
+
+      let horarioFinal = id_disc_horario;
+      if (!horarioFinal) {
+        const hRes = await client.query(
+          `SELECT "Id_DiscHorario" FROM "Academia Forca&Fitness"."Disciplina_Horario" WHERE "Id_Disciplina" = $1 LIMIT 1`,
+          [id_disciplina]
+        );
+        horarioFinal = hRes.rows[0]?.Id_DiscHorario;
+      }
+
+      if (!horarioFinal) {
+        throw new Error('No hay horarios disponibles configurados para esta disciplina.');
+      }
+
+      const idDetalle = await matriculasRepository.generateId(
+        client,
+        'Detalles_Matricula',
+        'Id_DetMatricula',
+        'DET'
+      );
+
+      await client.query(
+        `
+          INSERT INTO "Academia Forca&Fitness"."Detalles_Matricula" (
+            "Id_DetMatricula",
+            "Id_Matricula",
+            "Fecha_Inicio",
+            "Fecha_Fin",
+            "Id_DiscHorario"
+          )
+          VALUES ($1, $2, $3::date, $4::date, $5)
+        `,
+        [
+          idDetalle,
+          idMatricula,
+          reg.fechaInicioStr,
+          reg.fechaFinStr,
+          horarioFinal
+        ]
+      );
+
+      await client.query('COMMIT');
+
+      const monto = Number(disciplina.tarifa || 0);
+      const concepto = `Reserva - ${disciplina.nombre} (${reg.mes_nombre} ${reg.anio})`;
+
+      return {
+        matriculaId: idMatricula,
+        nombre: alumno.nombre_completo,
+        correo: alumno.correo,
+        disciplina: disciplina.nombre,
+        monto,
+        periodo: reg.periodo,
+        concepto
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error al crear reserva de cupo:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = new MatriculasService();

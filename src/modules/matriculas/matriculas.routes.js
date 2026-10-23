@@ -24,4 +24,7 @@ router.get(
 // POST /api/matriculas - Guardar los datos de matrícula en la BD (T_08)
 router.post('/', matriculasController.registrarMatricula);
 
+// POST /api/matriculas/reservar - Crear reserva de cupo para alumno autenticado (PSW-202)
+router.post('/reservar', autenticar, matriculasController.crearReserva);
+
 module.exports = router;

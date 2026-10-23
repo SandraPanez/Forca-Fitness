@@ -657,6 +657,21 @@ class MatriculasRepository {
     return result.rows;
   }
 
+  async getAlumnoPorUsuario(idUsuario, client = db) {
+    const query = `
+      SELECT
+        a."Id_alumno" AS id_alumno,
+        u."Correo" AS correo,
+        TRIM(p."Nombre" || ' ' || p."Apellido_Paterno" || ' ' || COALESCE(p."Apellido_Materno", '')) AS nombre_completo
+      FROM ${SCHEMA}."Usuario" u
+      JOIN ${SCHEMA}."Alumno" a ON a."Id_Persona" = u."Id_Persona"
+      JOIN ${SCHEMA}."Persona" p ON p."Id_Persona" = u."Id_Persona"
+      WHERE u."Id_Usuario" = $1
+    `;
+    const result = await client.query(query, [idUsuario]);
+    return result.rows[0] || null;
+  }
+
 
   // =========================================================
   // DETALLES DE MATRÍCULA

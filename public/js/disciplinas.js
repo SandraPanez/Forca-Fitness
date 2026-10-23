@@ -325,7 +325,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 7. Event listeners de modal de confirmación
+    // 7. Event listeners de modal de confirmación y botón Continuar al pago (PSW-202)
+    if (btnContinuarPago) {
+        btnContinuarPago.addEventListener('click', async () => {
+            if (!selectedReservation) return;
+
+            const token = obtenerToken();
+            if (!token) {
+                const targetUrl = `/disciplinas.html?disciplina=${encodeURIComponent(selectedReservation.disciplina.id)}&periodo=${encodeURIComponent(selectedReservation.periodo)}`;
+                window.location.href = `/login.html?redirect=${encodeURIComponent(targetUrl)}`;
+                return;
+            }
+
+            const textoOriginal = btnContinuarPago.textContent;
+            btnContinuarPago.disabled = true;
+            btnContinuarPago.textContent = 'Generando cobro...';
+
+            try {
+                const response = await authFetch('/api/matriculas/reservar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_disciplina: selectedReservation.disciplina.id,
+                        id_disc_horario: selectedReservation.horario.id_disc_horario,
+                        periodo: selectedReservation.periodo
+                    })
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'No se pudo generar la reserva para pago.');
+                }
+
+                const data = result.data;
+                const params = new URLSearchParams({
+                    preview: '1',
+                    matricula: data.matriculaId,
+                    nombre: data.nombre,
+                    correo: data.correo,
+                    concepto: data.concepto,
+                    monto: String(data.monto),
+                    tipo: 'reserva'
+                });
+
+                window.location.href = `/pagos.html?${params.toString()}`;
+            } catch (error) {
+                console.error('Error al continuar al pago:', error);
+                alert(error.message || 'Error al conectar con la interfaz de cobro.');
+                btnContinuarPago.disabled = false;
+                btnContinuarPago.textContent = textoOriginal;
+            }
+        });
+    }
+
     if (btnCancelarReserva) {
         btnCancelarReserva.addEventListener('click', cerrarModalConfirmacion);
     }
