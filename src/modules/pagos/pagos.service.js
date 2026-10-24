@@ -1,6 +1,5 @@
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const { MercadoPagoConfig, Preference, Payment, MerchantOrder } = require('mercadopago');
 const pagosRepository = require('./pagos.repository');
-const db = require('../../shared/config/database');
 
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN
@@ -28,6 +27,7 @@ class PagosService {
         return {
             tienePago: true,
             estado_pago: pagoExistente.estado_pago,
+            estado_matricula: pagoExistente.estado_matricula,
             medio_pago: pagoExistente.medio_pago,
             id_pago: pagoExistente.Id_Pago
         };
@@ -49,6 +49,10 @@ class PagosService {
             if (esEfectivo) {
                 throw new Error('VALIDACION:Ya tienes una solicitud de pago en efectivo pendiente de confirmación por el tesorero. Espera a que sea aprobada para activar tu acceso.');
             }
+            const [transaccion] = await pagosRepository.obtenerTransaccionesMercado(datosMatricula.id_matricula);
+            if (transaccion) {
+                return new Preference(client).get({ preferenceId: transaccion.Preference_Id });
+            }
         }
 
         const resumen = await pagosRepository.obtenerResumenMatricula(datosMatricula.id_matricula);
@@ -59,9 +63,8 @@ class PagosService {
 
         const preference = new Preference(client);
 
-        // auto_return y notification_url se habilitan siempre que tengamos una URL pública.
-        // En localhost el webhook no puede recibirse desde MP, pero auto_return sí funciona
-        // porque MP redirige al navegador del usuario.
+        // Sin HTTPS público se confirma desde Forca consultando la API.
+        // Mercado Pago no admite localhost como URL de retorno.
         const body = {
             items: [{
                 title: `Mensualidad - ${resumen.disciplinas}`,
@@ -74,13 +77,13 @@ class PagosService {
                 email: datosMatricula.correo
             },
             external_reference: datosMatricula.id_matricula,
-            back_urls: {
-                success: `${appUrl}/api/pagos/success`,
-                failure: `${appUrl}/api/pagos/failure`,
-                pending: `${appUrl}/api/pagos/pending`
-            },
-            auto_return: 'approved',
             ...(appUrl.startsWith('https://') ? {
+                back_urls: {
+                    success: `${appUrl}/api/pagos/success`,
+                    failure: `${appUrl}/api/pagos/failure`,
+                    pending: `${appUrl}/api/pagos/pending`
+                },
+                auto_return: 'approved',
                 notification_url: `${appUrl}/api/pagos/webhook`
             } : {})
         };
@@ -137,179 +140,61 @@ class PagosService {
     }
 
     async procesarWebhook(tipo, id) {
-
-        if (tipo !== 'payment') {
-            return null;
+        if (tipo !== 'payment') return null;
+        if (!['string', 'number'].includes(typeof id) || !/^\d+$/.test(String(id))) {
+            throw new Error('VALIDACION:Identificador de pago inválido.');
         }
-
-        console.log(
-            'Webhook recibido - tipo:',
-            tipo,
-            'id:',
-            id
-        );
-
-        const payment = new Payment(client);
-
-        const pago = await payment.get({ id });
-
-        console.log(
-            'Estado del pago:',
-            pago.status
-        );
-
-        console.log(
-            'ID matrícula:',
-            pago.external_reference
-        );
-
-
-        const estadoMP = pago.status;
-        const idMatricula = pago.external_reference;
-
-
-        const estadoPago =
-            estadoMP === 'approved'
-                ? 'APROBADO'
-                : estadoMP === 'rejected'
-                    ? 'RECHAZADO'
-                    : 'PENDIENTE';
-
-        const transaccionExistente =
-            await pagosRepository.obtenerTransaccionPorPaymentId(id);
-        if (transaccionExistente) {
-            return {
-                duplicado: true,
-                estadoPago,
-                estadoMatricula: transaccionExistente.Estado_Matricula,
-                mensaje: 'El pago ya fue procesado anteriormente.'
-            };
+        const pago = await new Payment(client).get({ id });
+        if (String(pago.id) !== String(id) || !pago.external_reference || !pago.order?.id) {
+            throw new Error('VALIDACION:El pago no tiene una matrícula y una orden verificables.');
         }
-
-        const pagoActualizado = await pagosRepository.actualizarEstadoPago(
-            idMatricula,
-            estadoPago
-        );
-
-
-        let estadoMatricula = 'Pendiente';
-        if (estadoMP === 'approved') {
-            const esFutura = await pagosRepository.esMatriculaPeriodoFuturo(idMatricula);
-            estadoMatricula = esFutura ? 'Reservada' : 'Activa';
-        } else if (estadoMP === 'rejected') {
-            estadoMatricula = 'Inactiva';
+        const orden = await new MerchantOrder(client).get({ merchantOrderId: pago.order.id });
+        if (!orden.preference_id || orden.external_reference !== pago.external_reference ||
+            !orden.payments?.some(item => String(item.id) === String(pago.id))) {
+            throw new Error('VALIDACION:El pago no corresponde a la orden de matrícula.');
         }
-
-        // Actualizar matrícula
-        await pagosRepository.actualizarEstadoMatricula(
-            idMatricula,
-            estadoMatricula
-        );
-
-
-        // SOLO si el pago fue aprobado,
-        // habilitamos la cuenta del alumno.
-        let usuarioActivado = null;
-
-        if (estadoMP === 'approved') {
-
-            usuarioActivado =
-                await pagosRepository.activarUsuarioPorMatricula(
-                    idMatricula
-                );
-
-            console.log(
-                'Usuario habilitado:',
-                usuarioActivado
-            );
-        }
-
-        if (pagoActualizado) {
-            const asociado = await pagosRepository.asociarPaymentId({
-                mp_payment_id: id,
-                id_pago: pagoActualizado.Id_Pago
-            });
-            if (!asociado) {
-                const transaccionRegistrada =
-                    await pagosRepository.obtenerTransaccionPorPaymentId(id);
-                if (transaccionRegistrada) {
-                    return {
-                        duplicado: true,
-                        estadoPago,
-                        mensaje: 'El pago ya fue procesado anteriormente.'
-                    };
-                }
-                throw new Error('No se pudo asociar el pago externo con la matrícula.');
-            }
-            await pagosRepository.registrarRegistroCobro({
-                id_registro: `REG${Date.now().toString().slice(-14)}`,
-                monto: pagoActualizado.Monto,
-                medio_pago: 'MERCADO_PAGO',
-                resultado: estadoPago,
-                id_pago: pagoActualizado.Id_Pago,
-                referencia_operacion: String(id)
-            });
-        }
-
-
-        return {
-            estadoPago,
-            estadoMatricula,
-            usuarioActivado
+        const estados = {
+            approved: 'APROBADO', rejected: 'RECHAZADO', cancelled: 'ANULADO',
+            pending: 'PENDIENTE', in_process: 'PENDIENTE', authorized: 'PENDIENTE'
         };
+        if (!estados[pago.status] || pago.currency_id !== 'PEN' ||
+            !Number.isFinite(pago.transaction_amount) || pago.transaction_amount <= 0 ||
+            Number(pago.transaction_amount_refunded || 0) > 0) {
+            throw new Error('VALIDACION:El estado, moneda o monto del pago requiere revisión.');
+        }
+        return pagosRepository.actualizarPagoMercado({
+            payment_id: String(pago.id),
+            preference_id: orden.preference_id,
+            id_matricula: pago.external_reference,
+            monto: pago.transaction_amount,
+            estado_pago: estados[pago.status]
+        });
     }
 
-    async confirmarRetornoExitosoSandbox({ id_matricula, preference_id, payment_id }) {
-        let matriculaId = id_matricula;
-
-        if (!matriculaId && preference_id) {
-            const row = await db.query(`
-                SELECT p."Id_Matricula"
-                FROM "Academia Forca&Fitness"."Mercado_Pago" mp
-                JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Pago" = mp."Id_Pago"
-                WHERE mp."Preference_Id" = $1
-                LIMIT 1
-            `, [preference_id]);
-            matriculaId = row.rows[0]?.Id_Matricula;
+    async sincronizarPago(idMatricula) {
+        const transacciones = await pagosRepository.obtenerTransaccionesMercado(idMatricula);
+        if (!transacciones.length) {
+            throw new Error('VALIDACION:No hay un pago de Mercado Pago registrado para esta matrícula.');
         }
-
-        if (!matriculaId) {
-            console.warn('Sandbox return: No se pudo determinar el ID de matrícula.');
-            return null;
+        if (transacciones.some(transaccion => transaccion.estado_pago === 'APROBADO')) {
+            return this.verificarEstadoMatricula(idMatricula);
         }
-
-        const pagoActualizado = await pagosRepository.actualizarEstadoPago(matriculaId, 'APROBADO');
-
-        const esFutura = await pagosRepository.esMatriculaPeriodoFuturo(matriculaId);
-        const estadoMatricula = esFutura ? 'Reservada' : 'Activa';
-
-        await pagosRepository.actualizarEstadoMatricula(matriculaId, estadoMatricula);
-        const usuarioActivado = await pagosRepository.activarUsuarioPorMatricula(matriculaId);
-
-        if (pagoActualizado) {
-            // Registrar siempre el cobro (aunque no haya payment_id en sandbox)
-            await pagosRepository.registrarRegistroCobro({
-                id_registro: `REG${Date.now().toString().slice(-14)}`,
-                monto: pagoActualizado.Monto,
-                medio_pago: 'MERCADO_PAGO',
-                resultado: 'APROBADO',
-                id_pago: pagoActualizado.Id_Pago,
-                referencia_operacion: payment_id ? String(payment_id) : null
+        let resultado;
+        for (const transaccion of transacciones) {
+            const busqueda = await new MerchantOrder(client).search({
+                options: { preference_id: transaccion.Preference_Id }
             });
-            // Asociar el payment_id si MP lo envió (fix: era 'paymentId' undefined)
-            if (payment_id) {
-                await pagosRepository.asociarPaymentId({
-                    mp_payment_id: payment_id,
-                    id_pago: pagoActualizado.Id_Pago
-                });
-            }
+            const pagos = (busqueda.elements || [])
+                .filter(orden => orden.preference_id === transaccion.Preference_Id &&
+                    orden.external_reference === idMatricula)
+                .flatMap(orden => orden.payments || [])
+                .sort((a, b) => Number(b.status === 'approved') - Number(a.status === 'approved') ||
+                    Number(b.id) - Number(a.id));
+            if (pagos[0]) resultado = await this.procesarWebhook('payment', pagos[0].id);
+            if (resultado?.estadoPago === 'APROBADO') break;
         }
-
-        return {
-            estadoPago: 'APROBADO',
-            estadoMatricula,
-            usuarioActivado
-        };
+        const estado = await this.verificarEstadoMatricula(idMatricula);
+        return { ...estado, estado_pago: estado.estado_pago || resultado?.estadoPago || transacciones[0].estado_pago };
     }
 
     async confirmarEfectivo(idMatricula, referenciaOperacion, idUsuario) {

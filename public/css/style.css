@@ -685,6 +685,17 @@ body {
     background-color: rgba(26, 79, 139, 0.05);
 }
 
+.disciplina-card:has(input:disabled) {
+    background-color: #f3f5f7;
+    border-color: var(--border-color);
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.disciplina-card input:disabled {
+    cursor: not-allowed;
+}
+
 /* Actions */
 .form-actions {
     display: flex;

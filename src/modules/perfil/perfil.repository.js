@@ -17,6 +17,7 @@ async function obtenerDatosAlumno(idUsuario) {
         NULLIF(TRIM((SELECT mc."Contacto"
          FROM ${SCHEMA}."Metodo_Contacto" mc
          WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CORREO'
+           AND NULLIF(TRIM(mc."Contacto"), '') IS NOT NULL
          ORDER BY (mc."Tipo_Contacto" = 'CORREO') DESC, mc."Id_contacto"
          LIMIT 1)), ''),
         u."Correo"
@@ -24,6 +25,7 @@ async function obtenerDatosAlumno(idUsuario) {
       NULLIF(TRIM((SELECT mc."Contacto"
        FROM ${SCHEMA}."Metodo_Contacto" mc
        WHERE mc."Id_Persona" = p."Id_Persona" AND UPPER(mc."Tipo_Contacto") = 'CELULAR'
+         AND NULLIF(TRIM(mc."Contacto"), '') IS NOT NULL
        ORDER BY (mc."Tipo_Contacto" = 'CELULAR') DESC, mc."Id_contacto"
        LIMIT 1)), '') AS numero_celular
     FROM ${SCHEMA}."Alumno" a
@@ -72,27 +74,7 @@ async function actualizarDatosAlumno(idUsuario, datos) {
       );
     }
 
-    for (const [tipo, valor] of [
-      ['CORREO', datos.correo_electronico],
-      ['CELULAR', datos.numero_celular]
-    ]) {
-      if (valor === undefined) continue;
-      const actualizado = await client.query(
-        `UPDATE ${SCHEMA}."Metodo_Contacto"
-         SET "Contacto" = $1, "Tipo_Contacto" = $2
-         WHERE "Id_Persona" = $3 AND UPPER("Tipo_Contacto") = $2
-         RETURNING "Id_contacto"`,
-        [valor, tipo, idPersona]
-      );
-      if (actualizado.rows.length === 0 && valor) {
-        const nuevoId = await matriculasRepository.generateId(client, 'Metodo_Contacto', 'Id_contacto', 'CON');
-        await client.query(
-          `INSERT INTO ${SCHEMA}."Metodo_Contacto" ("Id_contacto", "Tipo_Contacto", "Contacto", "Id_Persona")
-           VALUES ($1, $2, $3, $4)`,
-          [nuevoId, tipo, valor, idPersona]
-        );
-      }
-    }
+    await matriculasRepository.guardarContactos(idPersona, datos, client);
 
     await client.query("COMMIT");
     return true;
