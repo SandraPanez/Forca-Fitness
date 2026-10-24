@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de cobros | Forca & Fitness</title>
+  <title>Gestión de cobros | Forca &amp; Fitness</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/header.css">
 </head>
@@ -15,30 +15,97 @@
       <h2 class="title">Gestión de cobros</h2>
       <p class="description">Consulta solicitudes, confirma pagos en efectivo y revisa el historial de cobros.</p>
     </div>
-    <section class="treasury-toolbar" aria-label="Filtros de cobros">
-      <input id="treasury-search" type="search" placeholder="Buscar alumno o matrícula">
-      <select id="treasury-status">
-        <option value="">Todos los estados</option>
-        <option value="PENDIENTE">Pendientes</option>
-        <option value="APROBADO">Aprobados</option>
-        <option value="RECHAZADO">Rechazados</option>
-        <option value="ANULADO">Anulados</option>
-      </select>
-      <select id="treasury-method">
-        <option value="">Todos los medios</option>
-        <option value="EFECTIVO">Efectivo</option>
-        <option value="MERCADO_PAGO">Mercado Pago</option>
-      </select>
-      <button id="treasury-refresh" class="btn-submit" type="button">Actualizar</button>
+
+    <!-- Sección "Pagos por aprobar" - Pagos en efectivo pendientes de confirmación -->
+    <section id="seccion-pendientes" class="pending-approvals-section" aria-label="Pagos por aprobar">
+      <div class="pending-approvals-header">
+        <div class="pending-approvals-title-group">
+          <span class="pending-approvals-icon">🕐</span>
+          <div>
+            <h3 class="pending-approvals-title">Pagos por aprobar</h3>
+            <p class="pending-approvals-subtitle">Solicitudes de pago en efectivo pendientes de confirmación (válidas 48 h)</p>
+          </div>
+        </div>
+        <span id="pending-count-badge" class="pending-count-badge" hidden>0</span>
+      </div>
+      <div id="pending-message" class="payment-message" role="status"></div>
+      <div id="pending-tbody-wrapper">
+        <table class="alumnos-table pending-approvals-table">
+          <thead>
+            <tr>
+              <th>Alumno / matrícula</th>
+              <th>Disciplinas</th>
+              <th>Monto</th>
+              <th>Solicitud</th>
+              <th>Vence</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="pending-tbody">
+            <tr><td colspan="6" class="text-center text-muted">Cargando solicitudes pendientes...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
-    <div id="treasury-message" class="payment-message" role="status"></div>
-    <section class="table-container treasury-table-container">
-      <table class="alumnos-table treasury-table">
-        <thead><tr><th>Alumno / matrícula</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th>Vencimiento</th><th>Acción</th></tr></thead>
-        <tbody id="treasury-tbody"><tr><td colspan="7" class="text-center text-muted">Cargando cobros...</td></tr></tbody>
-      </table>
+
+    <!-- Historial general de cobros -->
+    <section aria-label="Historial de cobros">
+      <div class="pending-approvals-header" style="margin-bottom: 1rem;">
+        <div class="pending-approvals-title-group">
+          <span class="pending-approvals-icon">📋</span>
+          <div>
+            <h3 class="pending-approvals-title">Historial de cobros</h3>
+            <p class="pending-approvals-subtitle">Todos los pagos registrados con filtros de búsqueda</p>
+          </div>
+        </div>
+      </div>
+      <section class="treasury-toolbar" aria-label="Filtros de cobros">
+        <input id="treasury-search" type="search" placeholder="Buscar alumno o matrícula">
+        <select id="treasury-status">
+          <option value="">Todos los estados</option>
+          <option value="PENDIENTE">Pendientes</option>
+          <option value="APROBADO">Aprobados</option>
+          <option value="RECHAZADO">Rechazados</option>
+          <option value="ANULADO">Anulados</option>
+        </select>
+        <select id="treasury-method">
+          <option value="">Todos los medios</option>
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="MERCADO_PAGO">Mercado Pago</option>
+        </select>
+        <button id="treasury-refresh" class="btn-submit" type="button">Actualizar</button>
+      </section>
+      <div id="treasury-message" class="payment-message" role="status"></div>
+      <section class="table-container treasury-table-container">
+        <table class="alumnos-table treasury-table">
+          <thead><tr><th>Alumno / matrícula</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th>Vencimiento</th><th>Acción</th></tr></thead>
+          <tbody id="treasury-tbody"><tr><td colspan="7" class="text-center text-muted">Cargando cobros...</td></tr></tbody>
+        </table>
+      </section>
     </section>
   </main>
+
+  <!-- Modal de confirmación de pago en efectivo -->
+  <!-- Modal de confirmación de pago en efectivo -->
+  <div id="confirm-modal" class="modal-overlay" style="display: none;" hidden>
+    <div class="modal-card">
+      <div class="modal-card-icon">💵</div>
+      <h3 class="modal-title">¿Confirmar pago en efectivo?</h3>
+      <p class="modal-desc">¿Estás seguro de que deseas confirmar la recepción del pago en efectivo de <strong id="modal-alumno-name">este alumno</strong>?</p>
+      <div class="form-group" style="text-align: left; margin: 1rem 0;">
+        <label for="modal-referencia" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: #475569;">Referencia o N° de recibo <span class="text-muted">(opcional)</span></label>
+        <input id="modal-referencia" type="text" placeholder="Ej. Recibo N° 0042, Caja central..." maxlength="100" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+      </div>
+      <div class="modal-warning">
+        <span>⚡</span> Al confirmar, el alumno pasará a tener su matrícula <strong>Activa</strong> y se habilitará su acceso al portal de alumnos inmediatamente.
+      </div>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn-cancel" type="button">Cancelar</button>
+        <button id="modal-confirm" class="btn-submit btn-confirm-action" type="button">Sí, confirmar pago</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/auth.js"></script>
   <script src="/js/tesoreria.js"></script>
 </body>

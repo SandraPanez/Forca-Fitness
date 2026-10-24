@@ -5,6 +5,9 @@ const { autenticar } = require('../../shared/middleware/auth.middleware');
 const { autorizar } = require('../../shared/middleware/permisos.middleware');
 const { PERMISOS } = require('../../shared/constants/permisos');
 
+// GET /api/pagos/verificar/:matricula - Verificar estado de pago de una matrícula
+router.get('/verificar/:matricula', pagosController.verificarEstadoMatricula);
+
 // POST /api/pagos/crear-preferencia - Crear preferencia de pago
 router.post('/crear-preferencia', pagosController.crearPreferencia);
 router.post('/efectivo', pagosController.registrarEfectivo);
@@ -13,6 +16,12 @@ router.get(
   autenticar,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   pagosController.listarCobros
+);
+router.get(
+  '/efectivo/pendientes',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  pagosController.listarEfectivoPendientes
 );
 router.post(
   '/efectivo/confirmar',

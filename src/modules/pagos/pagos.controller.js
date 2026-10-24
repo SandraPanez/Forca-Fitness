@@ -14,6 +14,33 @@ class PagosController {
         }
     }
 
+    async listarEfectivoPendientes(req, res) {
+        try {
+            const data = await pagosService.listarEfectivoPendientes();
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al listar pagos efectivo pendientes:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron cargar los pagos pendientes'
+            });
+        }
+    }
+
+    async verificarEstadoMatricula(req, res) {
+        try {
+            const { matricula } = req.params;
+            if (!matricula) {
+                return res.status(400).json({ success: false, message: 'ID de matrícula requerido' });
+            }
+            const data = await pagosService.verificarEstadoMatricula(matricula);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al verificar estado de matrícula:', error);
+            return res.status(500).json({ success: false, message: 'Error interno al consultar estado' });
+        }
+    }
+
     async crearPreferencia(req, res) {
         try {
             const datosMatricula = req.body;
@@ -29,12 +56,12 @@ class PagosController {
             });
         } catch (error) {
             console.error('Error al crear preferencia:', error);
-            return res.status(500).json({
+            const status = error.message.startsWith('VALIDACION:') ? 400 : 500;
+            return res.status(status).json({
                 success: false,
-                message: 'Error al crear la preferencia de pago'
+                message: error.message.replace(/^VALIDACION:\s*/, '')
             });
         }
-
     }
 
     async registrarEfectivo(req, res) {
@@ -81,43 +108,68 @@ class PagosController {
 
     async pagoExitoso(req, res) {
         try {
-            const { payment_id, status } = req.query;
+            const paymentId      = req.query.payment_id || req.query.collection_id;
+            const status         = req.query.status || req.query.collection_status;
+            const externalReference = req.query.external_reference;
+            const preferenceId   = req.query.preference_id;
+            const appUrl         = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+            const isLocalhost    = !appUrl.startsWith('https://');
 
-            if (status === 'approved' && payment_id) {
+            console.log('[pagoExitoso] params:', { paymentId, status, externalReference, preferenceId, isLocalhost });
 
-                const resultado = await pagosService.procesarWebhook(
-                    'payment',
-                    payment_id
-                );
+            if (status === 'approved' || status === 'success') {
+                let resultado = null;
+
+                // En localhost, MP no puede recibir webhooks y el payment de sandbox
+                // no siempre es consultable con token de producción.
+                // Por eso en localhost vamos directo al fallback de sandbox.
+                if (!isLocalhost && paymentId) {
+                    try {
+                        resultado = await pagosService.procesarWebhook('payment', paymentId);
+                        console.log('[pagoExitoso] webhook procesado:', resultado?.estadoPago);
+                    } catch (mpError) {
+                        console.error('[pagoExitoso] Error al consultar pago en MP API:', mpError.message);
+                    }
+                }
+
+                // Fallback: confirmar por external_reference o preference_id
+                // Se usa siempre en localhost o cuando el webhook falló
+                if (!resultado && (externalReference || preferenceId)) {
+                    try {
+                        resultado = await pagosService.confirmarRetornoExitosoSandbox({
+                            id_matricula: externalReference,
+                            preference_id: preferenceId,
+                            payment_id: paymentId
+                        });
+                        console.log('[pagoExitoso] sandbox fallback:', resultado?.estadoMatricula, '| usuario:', resultado?.usuarioActivado?.Correo);
+                    } catch (sandboxError) {
+                        console.error('[pagoExitoso] Error en confirmación sandbox:', sandboxError.message);
+                    }
+                }
 
                 const esReserva = resultado?.estadoMatricula === 'Reservada';
-                return res.redirect(`/pagos.html?preview=1&resultado=exitoso${esReserva ? '&tipo=reserva' : ''}`);
+                const tipoParam = esReserva ? '&tipo=reserva' : '';
+                return res.redirect(`/pagos.html?resultado=exitoso${tipoParam}`);
             }
 
-            return res.redirect('/pagos.html?preview=1&resultado=pendiente');
+            if (status === 'pending' || status === 'in_process') {
+                return res.redirect('/pagos.html?resultado=pendiente');
+            }
+
+            return res.redirect('/pagos.html?resultado=fallido');
 
         } catch (error) {
-            console.error(
-                'Error al procesar retorno de pago:',
-                error
-            );
-
-            return res.redirect('/pagos.html?preview=1&resultado=fallido');
+            console.error('[pagoExitoso] Error inesperado:', error);
+            return res.redirect('/pagos.html?resultado=fallido');
         }
     }
 
     async pagoFallido(req, res) {
-        return res.status(200).json({
-            success: false,
-            message: 'El pago no pudo procesarse, intente nuevamente'
-        });
+        return res.redirect('/pagos.html?resultado=fallido');
     }
 
     async pagoPendiente(req, res) {
-        return res.status(200).json({
-            success: true,
-            message: 'El pago está pendiente de confirmación'
-        });
+        return res.redirect('/pagos.html?resultado=pendiente');
     }
 
     async webhook(req, res) {

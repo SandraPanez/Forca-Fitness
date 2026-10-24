@@ -42,8 +42,12 @@ async function login(req, res) {
     }
 
     if (error.message === 'USUARIO_PAGO_PENDIENTE') {
+      const esEfectivo = String(error.pagoPendiente?.medio_pago || '').toUpperCase() === 'EFECTIVO';
+      const mensaje = esEfectivo
+        ? 'Tu matrícula está pendiente de confirmación de pago en efectivo. Por favor, acércate a recepción para que el tesorero apruebe tu pago y se habilite tu cuenta.'
+        : 'Tu matrícula tiene un pago pendiente. El pago debe ser completado para habilitar tu cuenta.';
       return res.status(403).json({
-        message: 'Tu matrícula tiene un pago pendiente. Puedes continuar el pago con Mercado Pago.',
+        message: mensaje,
         pagoPendiente: error.pagoPendiente
       });
     }

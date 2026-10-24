@@ -169,6 +169,87 @@ class MatriculasService {
     };
   }
 
+  async getHorariosTodasLasDisciplinas(periodo) {
+    await matriculasRepository.activarReservasIniciadas();
+
+    const reg = this.validarReglasReserva({ periodo });
+    const { anio, mes, es_periodo_futuro, fechaInicioStr, fechaFinStr } = reg;
+    periodo = reg.periodo;
+
+    const MAX_CUPOS_RESERVA = 4;
+    const disciplinas = await matriculasRepository.getDisciplinas();
+
+    const mesesNombres = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const listaDisciplinas = [];
+
+    for (const disc of disciplinas) {
+      const horarios = await matriculasRepository.getHorariosPorDisciplina(disc.id);
+      const reservasDisciplina = await matriculasRepository.countReservasPorDisciplinaYPeriodo(
+        disc.id,
+        fechaInicioStr,
+        fechaFinStr
+      );
+      const cuposReservaRestantesDisciplina = Math.max(0, MAX_CUPOS_RESERVA - reservasDisciplina);
+
+      for (let horario of horarios) {
+        const inscritos = await matriculasRepository.countInscritosPorHorarioYPeriodo(
+          horario.id_disc_horario,
+          fechaInicioStr,
+          fechaFinStr
+        );
+
+        horario.capacidad_max = Number(horario.capacidad_max);
+        horario.cupos_disponibles = Math.max(0, horario.capacidad_max - inscritos);
+        horario.max_cupos_reserva = MAX_CUPOS_RESERVA;
+        horario.cupos_reservados_disciplina = reservasDisciplina;
+        horario.cupos_reserva_disponibles = Math.min(
+          cuposReservaRestantesDisciplina,
+          horario.cupos_disponibles
+        );
+        horario.tarifa = Number(disc.tarifa);
+        horario.periodo = periodo;
+        horario.es_periodo_futuro = es_periodo_futuro;
+
+        if (es_periodo_futuro) {
+          if (horario.cupos_reserva_disponibles <= 0) {
+            horario.puede_reservar = false;
+            horario.mensaje_reserva = 'No hay cupos disponibles para reserva';
+          } else {
+            horario.puede_reservar = true;
+            horario.mensaje_reserva = `${horario.cupos_reserva_disponibles} cupo${horario.cupos_reserva_disponibles > 1 ? 's' : ''} disponible${horario.cupos_reserva_disponibles > 1 ? 's' : ''} para reserva`;
+          }
+        } else {
+          horario.puede_reservar = horario.cupos_disponibles > 0;
+          horario.mensaje_reserva = horario.cupos_disponibles > 0
+            ? `${horario.cupos_disponibles} cupo${horario.cupos_disponibles > 1 ? 's' : ''} disponible${horario.cupos_disponibles > 1 ? 's' : ''}`
+            : 'Sin cupos disponibles para este horario';
+        }
+      }
+
+      listaDisciplinas.push({
+        disciplina: disc,
+        cupos_reserva_disciplina_restantes: cuposReservaRestantesDisciplina,
+        total_reservas_disciplina: reservasDisciplina,
+        horarios
+      });
+    }
+
+    return {
+      periodo,
+      anio,
+      mes,
+      mes_nombre: mesesNombres[mes - 1],
+      es_periodo_futuro,
+      max_cupos_reserva: MAX_CUPOS_RESERVA,
+      todas: true,
+      disciplinas: listaDisciplinas
+    };
+  }
+
   async getMatriculasPorUsuario(idUsuario) {
     if (!idUsuario) {
       throw new Error('El ID del usuario es obligatorio.');
@@ -333,16 +414,38 @@ class MatriculasService {
       }
     }
 
-    if (!password || password.length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    // 1. Verificar si el Estudiante ya existe (por documento o correo para no exigir contraseña si la cuenta ya está creada)
+    let estudianteExistente = await matriculasRepository.findEstudianteByDocumento(
+      datosEstudiante.tipo_documento,
+      datosEstudiante.numero_documento
+    );
+
+    if (!estudianteExistente && datosEstudiante.correo_electronico) {
+      estudianteExistente = await matriculasRepository.findEstudianteByCorreo(
+        datosEstudiante.correo_electronico
+      );
     }
 
-    if (password !== confirm_password) {
-      throw new Error('Las contraseñas no coinciden.');
+    if (!estudianteExistente) {
+      if (!password || password.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres.');
+      }
+
+      if (password !== confirm_password) {
+        throw new Error('Las contraseñas no coinciden.');
+      }
     }
 
-    const bcrypt = require('bcryptjs');
-    datosEstudiante.password_hash = await bcrypt.hash(password, 10);
+    if (password) {
+      if (password.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres.');
+      }
+      if (confirm_password && password !== confirm_password) {
+        throw new Error('Las contraseñas no coinciden.');
+      }
+      const bcrypt = require('bcryptjs');
+      datosEstudiante.password_hash = await bcrypt.hash(password, 10);
+    }
 
     // Iniciar transacción de base de datos
     const client = await db.pool.connect();
@@ -351,11 +454,6 @@ class MatriculasService {
 
       // 1. Manejar el Estudiante (Verificar si existe para crear o actualizar)
       let estudianteId;
-      const estudianteExistente = await matriculasRepository.findEstudianteByDocumento(
-        datosEstudiante.tipo_documento,
-        datosEstudiante.numero_documento
-      );
-
       if (estudianteExistente) {
         estudianteId = estudianteExistente.id;
         // Actualizamos los datos en caso haya cambios (dirección, celular, etc)
@@ -428,6 +526,24 @@ class MatriculasService {
     const disciplina = await matriculasRepository.getDisciplinaById(id_disciplina);
     if (!disciplina) {
       throw new Error('La disciplina seleccionada no existe.');
+    }
+
+    // Validar si el alumno ya tiene esta disciplina pagada o pendiente en este periodo
+    const yaRegistrado = await matriculasRepository.verificarDisciplinaActivaOPendiente(
+      alumno.id_alumno,
+      id_disciplina,
+      reg.fechaInicioStr,
+      reg.fechaFinStr
+    );
+    if (yaRegistrado) {
+      const pagado = yaRegistrado.estado_pago === 'APROBADO' || ['Activa', 'Reservada'].includes(yaRegistrado.estado_matricula);
+      if (pagado) {
+        throw new Error(`Ya tienes una vacante confirmada y pagada para ${disciplina.nombre} en el periodo ${reg.periodo}.`);
+      }
+      if (yaRegistrado.medio_pago === 'EFECTIVO' || String(yaRegistrado.estado_matricula).toUpperCase().includes('CONFIRMACIÓN')) {
+        throw new Error(`Ya tienes una solicitud de reserva en efectivo pendiente de confirmación para ${disciplina.nombre} en el periodo ${reg.periodo}. Espera la validación de recepción.`);
+      }
+      throw new Error(`Ya tienes una matrícula o reserva en proceso de pago para ${disciplina.nombre} en el periodo ${reg.periodo}.`);
     }
 
     const client = await db.pool.connect();

@@ -16,6 +16,12 @@ class MatriculasController {
     try {
       const { id } = req.params;
       const { periodo } = req.query;
+
+      if (id === 'todas' || id === 'todos' || id === 'all') {
+        const resultado = await matriculasService.getHorariosTodasLasDisciplinas(periodo);
+        return successResponse(res, 200, resultado, 'Horarios de todas las disciplinas obtenidos correctamente');
+      }
+
       const resultado = await matriculasService.getHorariosPorDisciplina(id, periodo);
       return successResponse(res, 200, resultado, 'Horarios obtenidos correctamente');
     } catch (error) {

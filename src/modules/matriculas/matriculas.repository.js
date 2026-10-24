@@ -250,6 +250,21 @@ class MatriculasRepository {
     return result.rows[0] || null;
   }
 
+  async findEstudianteByCorreo(correo) {
+    if (!correo) return null;
+    const query = `
+      SELECT
+        a."Id_alumno" AS id
+      FROM ${SCHEMA}."Alumno" a
+      JOIN ${SCHEMA}."Persona" p ON p."Id_Persona" = a."Id_Persona"
+      JOIN ${SCHEMA}."Usuario" u ON u."Id_Persona" = p."Id_Persona"
+      WHERE LOWER(u."Correo") = LOWER($1)
+      LIMIT 1
+    `;
+    const result = await db.query(query, [correo]);
+    return result.rows[0] || null;
+  }
+
 
   async createEstudiante(data, client = db) {
 
@@ -513,22 +528,38 @@ class MatriculasRepository {
 
     if (usuarioExistente.rows.length > 0) {
 
-      // Si ya tiene usuario, actualizar credenciales
-      await client.query(
-        `
-          UPDATE ${SCHEMA}."Usuario" u
-          SET
-            "Correo" = $1,
-            "Password_Hash" = $2
-          FROM ${SCHEMA}."Alumno" a
-          WHERE a."Id_alumno" = $3 AND u."Id_Persona" = a."Id_Persona"
-        `,
-        [
-          data.correo_electronico,
-          data.password_hash,
-          id
-        ]
-      );
+      // Si ya tiene usuario, actualizar correo y credenciales (si se proporcionó nueva contraseña)
+      if (data.password_hash) {
+        await client.query(
+          `
+            UPDATE ${SCHEMA}."Usuario" u
+            SET
+              "Correo" = $1,
+              "Password_Hash" = $2
+            FROM ${SCHEMA}."Alumno" a
+            WHERE a."Id_alumno" = $3 AND u."Id_Persona" = a."Id_Persona"
+          `,
+          [
+            data.correo_electronico,
+            data.password_hash,
+            id
+          ]
+        );
+      } else {
+        await client.query(
+          `
+            UPDATE ${SCHEMA}."Usuario" u
+            SET
+              "Correo" = $1
+            FROM ${SCHEMA}."Alumno" a
+            WHERE a."Id_alumno" = $2 AND u."Id_Persona" = a."Id_Persona"
+          `,
+          [
+            data.correo_electronico,
+            id
+          ]
+        );
+      }
 
     } else {
 
@@ -805,6 +836,37 @@ class MatriculasRepository {
         ]
       );
     }
+  }
+
+  async verificarDisciplinaActivaOPendiente(idAlumno, idDisciplina, fechaInicioStr, fechaFinStr, client = db) {
+    const query = `
+      SELECT
+        m."Id_Matricula" AS id_matricula,
+        m."Estado_Matricula" AS estado_matricula,
+        p."Estado_Pago" AS estado_pago,
+        UPPER(mp."Nombre_Metodo") AS medio_pago,
+        d."Nombre_Disciplina" AS disciplina
+      FROM ${SCHEMA}."Matricula" m
+      JOIN ${SCHEMA}."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      JOIN ${SCHEMA}."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      JOIN ${SCHEMA}."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+      LEFT JOIN ${SCHEMA}."Pago" p ON p."Id_Matricula" = m."Id_Matricula"
+      LEFT JOIN ${SCHEMA}."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+      WHERE m."Id_alumno" = $1
+        AND dh."Id_Disciplina" = $2
+        AND m."Estado_Matricula" != 'Anulada'
+        AND dm."Fecha_Inicio" <= $4::date
+        AND dm."Fecha_Fin" >= $3::date
+        AND (
+          m."Estado_Matricula" IN ('Activa', 'Reservada')
+          OR p."Estado_Pago" IN ('APROBADO', 'PENDIENTE')
+          OR UPPER(m."Estado_Matricula") IN ('PENDIENTE', 'PENDIENTE DE CONFIRMACIÓN')
+        )
+      ORDER BY m."Fecha_Inscripcion" DESC
+      LIMIT 1
+    `;
+    const result = await client.query(query, [idAlumno, idDisciplina, fechaInicioStr, fechaFinStr]);
+    return result.rows[0] || null;
   }
 
   async activarReservasIniciadas() {

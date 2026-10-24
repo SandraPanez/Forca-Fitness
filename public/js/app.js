@@ -74,6 +74,36 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarReglasDocumento();
     }
 
+    // Manejo de campos de contraseña:
+    // Si viene desde "Registrarte" (?registro=1), nos aseguramos de que sea un flujo limpio de nuevo usuario
+    const urlParams = new URLSearchParams(window.location.search);
+    const esFlujoRegistro = urlParams.get('registro') === '1';
+
+    if (esFlujoRegistro) {
+        // En flujo de registro se limpian tokens residuales para no interferir
+        if (typeof limpiarSesion === 'function') {
+            limpiarSesion();
+        } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+        }
+    }
+
+    function eliminarCamposPassword() {
+        const passwordGroup = document.getElementById('password-group');
+        const confirmPasswordGroup = document.getElementById('confirm-password-group');
+        if (passwordGroup) passwordGroup.remove();
+        if (confirmPasswordGroup) confirmPasswordGroup.remove();
+    }
+
+    const tokenSesion = typeof obtenerToken === 'function' ? obtenerToken() : localStorage.getItem('token');
+    const usuarioSesion = typeof obtenerUsuario === 'function' ? obtenerUsuario() : null;
+    const esNuevaMatriculaAlumno = !esFlujoRegistro && !!(tokenSesion && usuarioSesion && usuarioSesion.correo);
+
+    if (esNuevaMatriculaAlumno) {
+        eliminarCamposPassword();
+    }
+
     // Validación interactiva de coincidencia de contraseñas
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm_password');
@@ -81,10 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordHint = document.getElementById('password-hint');
 
     function validarCoincidenciaPasswords() {
-        if (!passwordInput || !confirmPasswordInput) return;
+        const passEl = document.getElementById('password');
+        const confirmEl = document.getElementById('confirm_password');
+        if (!passEl || !confirmEl) return;
 
-        const pass = passwordInput.value;
-        const confirm = confirmPasswordInput.value;
+        const pass = passEl.value;
+        const confirm = confirmEl.value;
 
         // Longitud mínima
         if (passwordHint) {
@@ -92,15 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 passwordHint.textContent = 'La contraseña debe tener al menos 6 caracteres.';
                 passwordHint.className = 'password-feedback mismatch';
                 passwordHint.style.display = 'block';
-                passwordInput.classList.add('input-error');
-                passwordInput.classList.remove('input-success');
+                passEl.classList.add('input-error');
+                passEl.classList.remove('input-success');
             } else if (pass.length >= 6) {
                 passwordHint.style.display = 'none';
-                passwordInput.classList.remove('input-error');
-                passwordInput.classList.add('input-success');
+                passEl.classList.remove('input-error');
+                passEl.classList.add('input-success');
             } else {
                 passwordHint.style.display = 'none';
-                passwordInput.classList.remove('input-error', 'input-success');
+                passEl.classList.remove('input-error', 'input-success');
             }
         }
 
@@ -109,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!confirm) {
             confirmFeedback.style.display = 'none';
-            confirmPasswordInput.classList.remove('input-error', 'input-success');
+            confirmEl.classList.remove('input-error', 'input-success');
             return;
         }
 
@@ -117,14 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmFeedback.textContent = '✓ Las contraseñas coinciden';
             confirmFeedback.className = 'password-feedback match';
             confirmFeedback.style.display = 'block';
-            confirmPasswordInput.classList.add('input-success');
-            confirmPasswordInput.classList.remove('input-error');
+            confirmEl.classList.add('input-success');
+            confirmEl.classList.remove('input-error');
         } else {
             confirmFeedback.textContent = '✕ Las contraseñas no coinciden';
             confirmFeedback.className = 'password-feedback mismatch';
             confirmFeedback.style.display = 'block';
-            confirmPasswordInput.classList.add('input-error');
-            confirmPasswordInput.classList.remove('input-success');
+            confirmEl.classList.add('input-error');
+            confirmEl.classList.remove('input-success');
         }
     }
 
@@ -159,22 +191,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Validar contraseñas
-        const password = form.querySelector('#password').value;
-        const confirmPassword = form.querySelector('#confirm_password').value;
+        // Validar contraseñas solo si los campos existen (para nuevo registro de cuenta)
+        const passField = form.querySelector('#password');
+        const confirmPassField = form.querySelector('#confirm_password');
 
-        if (password.length < 6) {
-            validarCoincidenciaPasswords();
-            alert('La contraseña debe tener al menos 6 caracteres.');
-            form.querySelector('#password').focus();
-            return;
-        }
+        if (passField && confirmPassField) {
+            const password = passField.value;
+            const confirmPassword = confirmPassField.value;
 
-        if (password !== confirmPassword) {
-            validarCoincidenciaPasswords();
-            alert('Las contraseñas no coinciden. Por favor, verifícalas.');
-            form.querySelector('#confirm_password').focus();
-            return;
+            if (password.length < 6) {
+                validarCoincidenciaPasswords();
+                alert('La contraseña debe tener al menos 6 caracteres.');
+                passField.focus();
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                validarCoincidenciaPasswords();
+                alert('Las contraseñas no coinciden. Por favor, verifícalas.');
+                confirmPassField.focus();
+                return;
+            }
         }
 
         // Validar que el formulario HTML nativo esté completo
@@ -204,9 +241,15 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.textContent = 'Enviando...';
         btnSubmit.disabled = true;
 
+        const token = typeof obtenerToken === 'function' ? obtenerToken() : localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         fetch('/api/matriculas', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(data)
         })
         .then(async response => {
@@ -275,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Precargar datos del alumno autenticado si ya tiene sesión
     async function precargarDatosAlumno() {
+        if (esFlujoRegistro) return;
         const token = typeof obtenerToken === 'function' ? obtenerToken() : localStorage.getItem('token');
         if (!token) return;
 
@@ -315,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('direccion').value = d.direccion;
             }
             actualizarReglasDocumento();
+            eliminarCamposPassword();
         } catch (e) {
             // Silencioso en caso de error
         }
