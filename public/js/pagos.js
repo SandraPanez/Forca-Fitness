@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const methodInputs = document.querySelectorAll('input[name="method"]');
   const messageEl = document.getElementById('payment-message');
   const params = new URLSearchParams(window.location.search);
-
   // ── Parámetros de URL ────────────────────────────────────────────
   const result          = params.get('resultado');
   const tipo            = params.get('tipo');
@@ -43,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ── Inicialización de campos desde URL ───────────────────────────
-  if (params.get('renovacion') === '1') form.querySelector('.btn-cancel').href = '/mis-matriculas.html';
+  if (params.get('renovacion') === '1') form.querySelector('.btn-cancel').href = '/renovar.html';
   if (params.get('matricula'))  document.getElementById('id-matricula').value    = params.get('matricula');
   if (params.get('concepto'))   document.getElementById('concept').value         = params.get('concepto');
   if (params.get('nombre')) {
@@ -88,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pageSubtitle) pageSubtitle.textContent = 'PAGO DE RESERVA';
     if (pageTitle)    pageTitle.textContent    = 'Pago de reserva de cupo';
     if (pageDesc)     pageDesc.textContent     = 'Asegura tu cupo con tarifa congelada procesando el pago de tu reserva.';
-    if (btnCancel)    btnCancel.href           = '/disciplinas.html';
+    if (btnCancel)    btnCancel.href           = '/renovar.html';
   }
 
   const steps = document.querySelectorAll('.payment-step');

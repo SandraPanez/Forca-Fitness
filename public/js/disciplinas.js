@@ -280,7 +280,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (puedeReservar) {
                 const btnRes = card.querySelector('.btn-reservar:not(:disabled)');
                 if (btnRes) {
-                    btnRes.addEventListener('click', () => abrirModalConfirmacion(horario, disc, dataCompleta));
+                    btnRes.addEventListener('click', () => {
+                        if (modalConfirmar) {
+                            abrirModalConfirmacion(horario, disc, dataCompleta);
+                        } else {
+                            window.location.href = `/renovar.html?tab=reservar&disciplina=${encodeURIComponent(disc.id || '')}&periodo=${encodeURIComponent(dataCompleta.periodo || '')}`;
+                        }
+                    });
                 }
             }
         } else {
