@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input') || document.querySelector('.search-input');
     const filterSelect = document.getElementById('filter-select') || document.querySelector('.filter-select');
     const btnPorVencer = document.getElementById('btn-por-vencer');
+    const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro');
     let alumnosCache = [];
 
     const closePanel = () => {
@@ -217,6 +218,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (btnLimpiarFiltro) {
+        btnLimpiarFiltro.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            if (filterSelect) filterSelect.value = 'Todos';
+            btnPorVencer?.classList.remove('active');
+            filterAlumnos();
+        });
+    }
+
     btnClosePanel.addEventListener('click', closePanel);
     overlay.addEventListener('click', closePanel);
     if (searchInput) searchInput.addEventListener('input', filterAlumnos);
@@ -224,5 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closePanel();
     });
+
     loadAlumnos();
 });
