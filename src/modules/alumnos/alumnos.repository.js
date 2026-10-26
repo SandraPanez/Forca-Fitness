@@ -10,6 +10,8 @@ class AlumnosRepository {
         p."Apellido_Materno" AS apellido_materno,
         m."Fecha_Inscripcion" AS fecha_matricula,
         m."Estado_Matricula" AS estado,
+        dm."Fecha_Fin" AS fecha_fin,
+        dm."Fecha_Inicio" AS fecha_inicio,
         ARRAY(
           SELECT DISTINCT d."Nombre_Disciplina"
           FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_alumno
@@ -27,7 +29,11 @@ class AlumnosRepository {
       JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
       JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
       ${idProfesor !== null ? 'WHERE dh."Id_Profesor" = $1' : ''}
-      ORDER BY a."Id_alumno", p."Nombre" ASC
+      ORDER BY 
+        a."Id_alumno", 
+        (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN 0 ELSE 1 END) ASC,
+        (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN dm."Fecha_Fin" END) ASC NULLS LAST,
+        dm."Fecha_Fin" DESC NULLS LAST
     `;
     const values = idProfesor !== null ? [idProfesor] : [];
     const result = await db.query(query, values);
@@ -47,6 +53,16 @@ class AlumnosRepository {
         a."Condicion" AS observaciones_medicas,
         m."Fecha_Inscripcion" AS fecha_matricula,
         m."Estado_Matricula" AS estado_matricula,
+        (
+          SELECT MIN(dm_f."Fecha_Fin")
+          FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f
+          WHERE dm_f."Id_Matricula" = m."Id_Matricula"
+        ) AS fecha_vencimiento,
+        (
+          SELECT MIN(dm_i."Fecha_Inicio")
+          FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_i
+          WHERE dm_i."Id_Matricula" = m."Id_Matricula"
+        ) AS fecha_inicio,
         (
           SELECT string_agg(d."Nombre_Disciplina", ', ')
           FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
@@ -82,6 +98,21 @@ class AlumnosRepository {
               AND dh_profesor."Id_Profesor" = $2
           )
         )
+      ORDER BY 
+        (
+          CASE 
+            WHEN (SELECT MIN(dm_f."Fecha_Fin") FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f WHERE dm_f."Id_Matricula" = m."Id_Matricula") >= CURRENT_DATE 
+            THEN 0 
+            ELSE 1 
+          END
+        ) ASC,
+        (
+          SELECT MIN(dm_f."Fecha_Fin")
+          FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f
+          WHERE dm_f."Id_Matricula" = m."Id_Matricula"
+        ) ASC NULLS LAST,
+        m."Fecha_Inscripcion" DESC
+      LIMIT 1
     `;
     const result = await db.query(query, [id, idProfesor]);
     return result.rows[0] || null;
