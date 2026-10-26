@@ -1,5 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('personal-tbody');
+    const advertenciaBaja = document.getElementById('advertencia-baja');
+    const nombreBaja = document.getElementById('baja-personal-nombre');
+    document.getElementById('cancelar-baja').addEventListener('click', () => advertenciaBaja.close());
+    document.getElementById('continuar-baja').addEventListener('click', () => {
+        advertenciaBaja.close();
+        // T-56 incorporará la inactivación de la cuenta tras esta advertencia.
+    });
 
     function mostrarMensaje(texto) {
         const fila = document.createElement('tr');
@@ -116,6 +123,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return boton;
     }
 
+    function crearBotonDarBaja(persona) {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'btn-submit btn-danger personal-baja';
+        boton.textContent = 'Dar de baja';
+        boton.setAttribute('aria-haspopup', 'dialog');
+        boton.setAttribute('aria-controls', 'advertencia-baja');
+        boton.addEventListener('click', () => {
+            nombreBaja.textContent = persona.nombre;
+            advertenciaBaja.showModal();
+        });
+        return boton;
+    }
+
     function crearFila(persona) {
         const fila = document.createElement('tr');
         const nombre = document.createElement('td');
@@ -126,6 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
         rol.textContent = persona.roles.map(rolPersona => NOMBRE_ROL[rolPersona] || rolPersona).join(' y ');
         acciones.className = 'text-right';
         acciones.append(crearBotonVerMas(persona, fila), crearBotonModificar(persona));
+        if (obtenerRolesUsuario().includes('DIRECTOR')) {
+            acciones.append(crearBotonDarBaja(persona));
+        }
 
         fila.append(nombre, rol, acciones);
         return fila;

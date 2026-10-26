@@ -136,6 +136,18 @@
         </div>
     </dialog>
 
+    <dialog class="access-confirm-dialog" id="advertencia-baja" aria-labelledby="advertencia-baja-titulo" aria-describedby="baja-personal-identidad advertencia-baja-mensaje">
+        <div class="access-confirm-content">
+            <h2 id="advertencia-baja-titulo">Dar de baja</h2>
+            <p id="baja-personal-identidad">Vas a dar de baja a <strong id="baja-personal-nombre"></strong>.</p>
+            <p id="advertencia-baja-mensaje">Esta persona perderá el acceso al sistema de inmediato. ¿Deseas continuar?</p>
+            <div class="access-form-actions">
+                <button type="button" class="btn-secondary" id="cancelar-baja" autofocus>Cancelar</button>
+                <button type="button" class="btn-submit btn-danger" id="continuar-baja">Continuar</button>
+            </div>
+        </div>
+    </dialog>
+
     <script src="/js/auth.js"></script>
     <script src="/js/administracion-accesos.js"></script>
 </body>

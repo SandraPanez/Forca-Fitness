@@ -1004,6 +1004,11 @@ body {
     margin-bottom: 1rem;
 }
 
+.personal-baja {
+    margin-left: 1rem;
+    padding: 0.5rem 0.85rem;
+}
+
 .modal-form {
     max-width: 600px;
     max-height: 90vh;
