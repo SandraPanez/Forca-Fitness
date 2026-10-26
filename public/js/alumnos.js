@@ -36,17 +36,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const getDiasText = (alumno) => {
+        const dias = Number(alumno.dias_restantes) || 0;
+        if (alumno.estado_matricula === 'Próxima a vencer') {
+            if (dias === 0) return 'Vence hoy';
+            if (dias === 1) return 'Vence mañana';
+            return `Vence en ${dias} días`;
+        }
+        if (alumno.estado_matricula === 'Activa') {
+            return `${dias} días restantes`;
+        }
+        if (alumno.estado_matricula === 'Vencida') {
+            return `Venció hace ${Math.abs(dias)} días`;
+        }
+        if (alumno.estado_matricula === 'Reservada') {
+            return 'Inicia próximo periodo';
+        }
+        return '';
+    };
+
     const renderTable = (alumnos) => {
         tbody.innerHTML = '';
         if (!alumnos.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay alumnos registrados.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted" style="padding: 2.5rem 1rem;">No se encontraron alumnos con el criterio seleccionado.</td></tr>';
             return;
         }
 
         alumnos.forEach((alumno) => {
-            const activa = alumno.estado_matricula === 'Activa';
-            const estado = alumno.estado_matricula || (activa ? 'Activa' : 'Vencida');
-            const dias = Number(alumno.dias_restantes) || 0;
+            const badgeClass = getBadgeClass(alumno.estado_matricula);
+            const diasTexto = getDiasText(alumno);
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
@@ -55,10 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="font-medium">${escapeHtml(alumno.nombres)} ${escapeHtml(alumno.apellido_paterno)} ${escapeHtml(alumno.apellido_materno)}</span>
                     </div>
                 </td>
-                <td><span class="badge-status ${activa ? 'badge-activa' : 'badge-vencida'}">${estado}</span>
-                    <span class="dias-text">${activa ? `${dias} días restantes` : `Venció hace ${Math.abs(dias)} días`}</span>
+                <td>
+                    <span class="badge-status ${badgeClass}">${escapeHtml(alumno.estado_matricula)}</span>
+                    ${diasTexto ? `<span class="dias-text">${escapeHtml(diasTexto)}</span>` : ''}
                 </td>
-                <td class="text-right"><button class="btn-link" data-id="${escapeHtml(alumno.id)}" title="Ver vigencia de matrícula y detalles">Ver detalle</button></td>
+                <td class="text-right">
+                    <button class="btn-link" data-id="${escapeHtml(alumno.id)}" title="Ver vigencia de matrícula y detalles">Ver detalle</button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
@@ -129,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error cargando alumnos:', error);
             const message = error instanceof Error ? error.message : 'Error desconocido al cargar alumnos.';
-            tbody.innerHTML = `<tr><td colspan="3"><div role="alert" class="text-center text-danger">${escapeHtml(message)}</div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3"><div role="alert" class="text-center text-danger" style="padding: 2rem;">${escapeHtml(message)}</div></td></tr>`;
         }
     };
 
