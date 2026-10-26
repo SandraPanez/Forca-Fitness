@@ -30,10 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorBaja.textContent = result.message || 'No se pudo inactivar la cuenta.';
                 return;
             }
-            seleccionBaja.boton.disabled = true;
-            seleccionBaja.boton.textContent = 'Inactiva';
             seleccionBaja = null;
             advertenciaBaja.close();
+            await cargarPersonal();
             personalMensaje.textContent = result.message;
             personalMensaje.className = 'text-muted';
             personalMensaje.hidden = false;
@@ -172,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         boton.setAttribute('aria-controls', 'advertencia-baja');
         boton.addEventListener('click', () => {
             if (bajaEnCurso || boton.disabled) return;
-            seleccionBaja = { id: persona.id, boton };
+            seleccionBaja = { id: persona.id };
             errorBaja.textContent = '';
             personalMensaje.hidden = true;
             nombreBaja.textContent = persona.nombre;
