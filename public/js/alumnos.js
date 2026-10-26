@@ -20,6 +20,21 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 
+    const getBadgeClass = (estado) => {
+        switch (estado) {
+            case 'Próxima a vencer':
+                return 'badge-proxima';
+            case 'Activa':
+                return 'badge-activa';
+            case 'Vencida':
+                return 'badge-vencida';
+            case 'Reservada':
+                return 'badge-reservada';
+            default:
+                return 'badge-activa';
+        }
+    };
+
     const renderTable = (alumnos) => {
         tbody.innerHTML = '';
         if (!alumnos.length) {
@@ -29,20 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         alumnos.forEach((alumno) => {
             const activa = alumno.estado_matricula === 'Activa';
-            const estado = activa ? 'Activa' : 'Vencida';
+            const estado = alumno.estado_matricula || (activa ? 'Activa' : 'Vencida');
             const dias = Number(alumno.dias_restantes) || 0;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
                     <div class="alumno-row">
-                        <div class="avatar-circle">${escapeHtml(alumno.iniciales)}</div>
+                        <div class="avatar-circle">${escapeHtml(alumno.iniciales || 'AL')}</div>
                         <span class="font-medium">${escapeHtml(alumno.nombres)} ${escapeHtml(alumno.apellido_paterno)} ${escapeHtml(alumno.apellido_materno)}</span>
                     </div>
                 </td>
                 <td><span class="badge-status ${activa ? 'badge-activa' : 'badge-vencida'}">${estado}</span>
                     <span class="dias-text">${activa ? `${dias} días restantes` : `Venció hace ${Math.abs(dias)} días`}</span>
                 </td>
-                <td class="text-right"><button class="btn-link" data-id="${escapeHtml(alumno.id)}">Ver detalle</button></td>
+                <td class="text-right"><button class="btn-link" data-id="${escapeHtml(alumno.id)}" title="Ver vigencia de matrícula y detalles">Ver detalle</button></td>
             `;
             tbody.appendChild(tr);
         });
@@ -101,20 +116,28 @@ document.addEventListener('DOMContentLoaded', () => {
         sidePanel.classList.add('active');
         sidePanelContent.innerHTML = '<div class="text-center text-muted mt-4">Cargando información...</div>';
         try {
-            const response = await authFetch(
-                `/api/alumnos/${encodeURIComponent(id)}`
-            );
+            const response = await authFetch(`/api/alumnos/${encodeURIComponent(id)}`);
             const result = await response.json();
             if (!response.ok || !result.success) {
                 throw new Error(result.message || 'No se pudo cargar el detalle.');
             }
             const detalle = result.data;
-            const activa = detalle.estado === 'Activa';
+            const badgeClass = getBadgeClass(detalle.estado);
+            const esPorVencer = detalle.estado === 'Próxima a vencer';
+
             sidePanelContent.innerHTML = `
+                ${esPorVencer ? `
+                <div class="reserva-alert" style="background: #fff8e1; border: 1px solid #ffe082; border-left: 5px solid #f57f17; color: #b78103; margin-bottom: 1.5rem; padding: 0.85rem 1rem; border-radius: 6px;">
+                    <strong>⚠️ Matrícula por vencer</strong>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #795548;">Este alumno requiere seguimiento prioritario para la renovación de su matrícula.</p>
+                </div>
+                ` : ''}
                 <div class="side-panel-header-info">
-                    <div class="avatar-large">${escapeHtml(detalle.nombre_completo.substring(0, 2).toUpperCase())}</div>
-                    <div><h2 class="student-name-large">${escapeHtml(detalle.nombre_completo)}</h2>
-                    <span class="badge-status ${activa ? 'badge-activa' : 'badge-vencida'}">${escapeHtml(detalle.estado)}</span></div>
+                    <div class="avatar-large">${escapeHtml((detalle.nombre_completo || 'AL').substring(0, 2).toUpperCase())}</div>
+                    <div>
+                        <h2 class="student-name-large">${escapeHtml(detalle.nombre_completo)}</h2>
+                        <span class="badge-status ${badgeClass}">${escapeHtml(detalle.estado)}</span>
+                    </div>
                 </div>
                 <hr class="panel-divider">
                 <h4 class="panel-section-title">Información personal</h4>
@@ -126,11 +149,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Dirección</span><span class="info-value">${escapeHtml(detalle.direccion)}</span></div>
                 </div>
                 <hr class="panel-divider">
-                <h4 class="panel-section-title">Información de matrícula</h4>
+                <h4 class="panel-section-title">Información de vigencia de matrícula</h4>
                 <div class="info-grid">
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Disciplina(s)</span><span class="info-value">${escapeHtml(detalle.disciplinas)}</span></div>
-                    <div class="info-item" style="grid-column: span 2;"><span class="info-label">Fecha de inscripción</span><span class="info-value">${escapeHtml(detalle.fecha_inscripcion)}</span></div>
-                    <div class="info-item" style="grid-column: span 2;"><span class="info-label">Estado de matrícula</span><span class="info-value font-medium">${escapeHtml(detalle.dias_restantes_texto)}</span></div>
+                    <div class="info-item"><span class="info-label">Fecha de inscripción</span><span class="info-value">${escapeHtml(detalle.fecha_inscripcion)}</span></div>
+                    <div class="info-item"><span class="info-label">Fecha de vencimiento</span><span class="info-value font-medium" style="color: ${esPorVencer ? '#e65100' : 'inherit'};">${escapeHtml(detalle.fecha_vencimiento || 'No registrada')}</span></div>
+                    <div class="info-item" style="grid-column: span 2;"><span class="info-label">Vigencia / Días restantes</span><span class="info-value font-medium" style="color: ${esPorVencer ? '#e65100' : 'inherit'};">${escapeHtml(detalle.dias_restantes_texto)}</span></div>
                     <div class="info-item" style="grid-column: span 2;"><span class="info-label">Estado del alumno</span><span class="info-value">${escapeHtml(detalle.estado_alumno)}</span></div>
                 </div>
                 <hr class="panel-divider">
