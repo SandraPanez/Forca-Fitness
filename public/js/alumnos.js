@@ -4,8 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidePanel = document.getElementById('side-panel');
     const btnClosePanel = document.getElementById('btn-close-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
-    const searchInput = document.querySelector('.search-input');
-    const filterSelect = document.querySelector('.filter-select');
+    const searchInput = document.getElementById('search-input') || document.querySelector('.search-input');
+    const filterSelect = document.getElementById('filter-select') || document.querySelector('.filter-select');
+    const btnPorVencer = document.getElementById('btn-por-vencer');
     let alumnosCache = [];
 
     const closePanel = () => {
@@ -68,15 +69,36 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const filterAlumnos = () => {
-        const search = searchInput.value.trim().toLowerCase();
-        const status = filterSelect.value.toLowerCase();
-        renderTable(alumnosCache.filter((alumno) => {
-            const name = `${alumno.nombres} ${alumno.apellido_paterno} ${alumno.apellido_materno}`.toLowerCase();
-            const matchesSearch = !search || name.includes(search);
-            const matchesStatus = status === 'todos' || (status === 'activo' && alumno.estado_matricula === 'Activa') ||
-                (status === 'inactivo' && alumno.estado_matricula !== 'Activa');
+        const search = (searchInput?.value || '').trim().toLowerCase();
+        const status = filterSelect?.value || 'Todos';
+
+        if (status === 'Por vencer') {
+            btnPorVencer?.classList.add('active');
+        } else {
+            btnPorVencer?.classList.remove('active');
+        }
+
+        const filtered = alumnosCache.filter((alumno) => {
+            const fullName = `${alumno.nombres || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`.toLowerCase();
+            const matchesSearch = !search || fullName.includes(search);
+
+            let matchesStatus = true;
+            if (status === 'Por vencer') {
+                matchesStatus = alumno.estado_matricula === 'Próxima a vencer' || alumno.por_vencer === true;
+            } else if (status === 'Activa') {
+                matchesStatus = alumno.estado_matricula === 'Activa';
+            } else if (status === 'Vencida') {
+                matchesStatus = alumno.estado_matricula === 'Vencida';
+            } else if (status === 'Reservada') {
+                matchesStatus = alumno.estado_matricula === 'Reservada';
+            } else {
+                matchesStatus = true; // 'Todos'
+            }
+
             return matchesSearch && matchesStatus;
-        }));
+        });
+
+        renderTable(filtered);
     };
 
     const loadAlumnos = async () => {
@@ -167,10 +189,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    if (btnPorVencer) {
+        btnPorVencer.addEventListener('click', () => {
+            filterSelect.value = 'Por vencer';
+            filterAlumnos();
+        });
+    }
+
     btnClosePanel.addEventListener('click', closePanel);
     overlay.addEventListener('click', closePanel);
-    searchInput.addEventListener('input', filterAlumnos);
-    filterSelect.addEventListener('change', filterAlumnos);
+    if (searchInput) searchInput.addEventListener('input', filterAlumnos);
+    if (filterSelect) filterSelect.addEventListener('change', filterAlumnos);
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closePanel();
     });
