@@ -1,4 +1,33 @@
 const personalService = require('./personal.service');
+const ROLES = require('../../shared/constants/roles');
+
+async function validarRegistro(req, res) {
+  if (!req.user.roles.includes(ROLES.DIRECTOR)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Solo el director puede registrar personal.'
+    });
+  }
+
+  try {
+    await personalService.validarRegistro(req.body);
+    return res.status(200).json({ success: true, message: 'Los datos son válidos.' });
+  } catch (error) {
+    if (error.status === 400 || error.status === 409) {
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+        campo: error.campo
+      });
+    }
+
+    console.error('Error al validar el registro de personal:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'No se pudieron validar los datos. Inténtalo nuevamente.'
+    });
+  }
+}
 
 async function listarPersonal(req, res) {
   try {
@@ -73,6 +102,7 @@ async function actualizarAccesos(req, res) {
 }
 
 module.exports = {
+  validarRegistro,
   listarPersonal,
   obtenerDetalle,
   actualizarAccesos

@@ -1,7 +1,69 @@
 const personalRepository = require('./personal.repository');
+const authRepository = require('../auth/auth.repository');
 const ROLES = require('../../shared/constants/roles');
 const { PERMISOS, PERMISOS_POR_ROL } = require('../../shared/constants/permisos');
 const permisosRepository = require('../../shared/repositories/permisos.repository');
+
+async function validarRegistro(datos) {
+  function rechazar(campo, mensaje, status = 400) {
+    const error = new Error(mensaje);
+    error.status = status;
+    error.campo = campo;
+    throw error;
+  }
+
+  const etiquetas = {
+    nombres: 'Los nombres',
+    apellido_paterno: 'El apellido paterno',
+    apellido_materno: 'El apellido materno',
+    numero_documento: 'El DNI',
+    correo_electronico: 'El correo electrónico',
+    numero_celular: 'El número de celular',
+    password: 'La contraseña temporal'
+  };
+  const campos = {};
+
+  for (const [campo, etiqueta] of Object.entries(etiquetas)) {
+    if (typeof datos?.[campo] !== 'string' || !datos[campo].trim()) {
+      rechazar(campo, `${etiqueta}: completa este campo obligatorio.`);
+    }
+    campos[campo] = campo === 'password' ? datos[campo] : datos[campo].trim();
+  }
+
+  const [nombre, ...otrosNombres] = campos.nombres.split(/\s+/);
+  if (nombre.length > 40 || otrosNombres.join(' ').length > 40) {
+    rechazar('nombres', 'El primer nombre y los demás nombres admiten hasta 40 caracteres cada uno.');
+  }
+  for (const campo of ['apellido_paterno', 'apellido_materno']) {
+    if (campos[campo].length > 20) {
+      rechazar(campo, `${etiquetas[campo]} admite hasta 20 caracteres.`);
+    }
+  }
+  if (!/^[0-9]{8}$/.test(campos.numero_documento)) {
+    rechazar('numero_documento', 'El DNI debe tener 8 dígitos.');
+  }
+  if (campos.correo_electronico.length > 50 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(campos.correo_electronico)) {
+    rechazar('correo_electronico', 'Ingresa un correo electrónico válido de hasta 50 caracteres.');
+  }
+  if (!/^[0-9]{9}$/.test(campos.numero_celular)) {
+    rechazar('numero_celular', 'El número de celular debe tener 9 dígitos.');
+  }
+  if (campos.password.length < 6) {
+    rechazar('password', 'La contraseña temporal debe tener al menos 6 caracteres.');
+  }
+  if (Buffer.byteLength(campos.password, 'utf8') > 72) {
+    rechazar('password', 'La contraseña temporal es demasiado larga. Usa una más corta.');
+  }
+  if (!Array.isArray(datos.roles) || datos.roles.length === 0 ||
+      new Set(datos.roles).size !== datos.roles.length ||
+      datos.roles.some(rol => ![ROLES.PROFESOR, ROLES.TESORERO].includes(rol))) {
+    rechazar('roles', 'Selecciona al menos un rol válido: Profesor o Tesorero.');
+  }
+
+  if (await authRepository.buscarPorCorreo(campos.correo_electronico)) {
+    rechazar('correo_electronico', 'El correo electrónico ya está registrado.', 409);
+  }
+}
 
 // Tesoreros primero y, dentro de cada grupo, orden alfabético por el nombre que se muestra.
 // Se ordena aquí y no en SQL para que las tildes y mayúsculas no alteren el orden.
@@ -90,6 +152,7 @@ async function actualizarAccesos(idUsuario, datos) {
 }
 
 module.exports = {
+  validarRegistro,
   listarPersonal,
   obtenerDetalle,
   actualizarAccesos

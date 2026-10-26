@@ -156,6 +156,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventana "Agregar personal"
     const registroModal = document.getElementById('registroModal');
     const registroForm = document.getElementById('registroForm');
+    const registroMensaje = document.getElementById('registro-mensaje');
+    const inputsRegistro = [...registroForm.querySelectorAll('input')];
+    const rolesRegistro = inputsRegistro.filter(input => input.name === 'roles');
+    const botonRegistrar = registroForm.querySelector('[type="submit"]');
+    let validacionRegistro = null;
+
+    function limpiarValidacionRegistro() {
+        validacionRegistro?.abort();
+        validacionRegistro = null;
+        inputsRegistro.forEach(input => input.setCustomValidity(''));
+        registroMensaje.hidden = true;
+        botonRegistrar.disabled = false;
+        botonRegistrar.textContent = 'Registrar';
+    }
+
+    function mostrarResultadoRegistro(texto, esError = false) {
+        registroMensaje.className = esError ? 'error-message' : 'text-muted';
+        registroMensaje.textContent = texto;
+        registroMensaje.hidden = false;
+    }
 
     function abrirRegistro() {
         registroModal.style.display = 'flex';
@@ -163,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function cerrarRegistro() {
+        limpiarValidacionRegistro();
         registroModal.style.display = 'none';
         registroForm.reset();
     }
@@ -179,8 +200,64 @@ document.addEventListener('DOMContentLoaded', () => {
             cerrarRegistro();
         }
     });
-    // El envío del formulario se implementa en T-52 y T-53
-    registroForm.addEventListener('submit', event => event.preventDefault());
+    registroForm.addEventListener('input', limpiarValidacionRegistro);
+    registroForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (validacionRegistro) return;
+
+        limpiarValidacionRegistro();
+        for (const input of inputsRegistro) {
+            if (input.type !== 'password') input.value = input.value.trim();
+        }
+        rolesRegistro[0].setCustomValidity(
+            rolesRegistro.some(input => input.checked) ? '' : 'Selecciona al menos un rol.'
+        );
+        if (!registroForm.reportValidity()) return;
+
+        const datos = Object.fromEntries(new FormData(registroForm));
+        datos.roles = rolesRegistro.filter(input => input.checked).map(input => input.value);
+        const solicitud = new AbortController();
+        validacionRegistro = solicitud;
+        botonRegistrar.disabled = true;
+        botonRegistrar.textContent = 'Validando...';
+
+        try {
+            const response = await authFetch('/api/personal/validar-registro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos),
+                signal: solicitud.signal
+            });
+            const result = await response.json();
+            if (solicitud.signal.aborted) return;
+
+            if (!response.ok || !result.success) {
+                const mensaje = result.message || 'No se pudieron validar los datos.';
+                mostrarResultadoRegistro(mensaje, true);
+                const campo = result.campo === 'roles'
+                    ? rolesRegistro[0]
+                    : registroForm.elements.namedItem(result.campo);
+                if (campo) {
+                    campo.setCustomValidity(mensaje);
+                    campo.reportValidity();
+                }
+                return;
+            }
+
+            mostrarResultadoRegistro('Los datos son válidos.');
+            // T-53 continuará aquí con la confirmación; T-54 creará la cuenta.
+        } catch {
+            if (!solicitud.signal.aborted) {
+                mostrarResultadoRegistro('No se pudieron validar los datos. Inténtalo nuevamente.', true);
+            }
+        } finally {
+            if (validacionRegistro === solicitud) {
+                validacionRegistro = null;
+                botonRegistrar.disabled = false;
+                botonRegistrar.textContent = 'Registrar';
+            }
+        }
+    });
 
     cargarPersonal();
 });

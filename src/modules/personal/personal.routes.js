@@ -6,6 +6,13 @@ const { PERMISOS } = require('../../shared/constants/permisos');
 
 const router = express.Router();
 
+router.post(
+  '/validar-registro',
+  autenticar,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  personalController.validarRegistro
+);
+
 router.get(
   '/',
   autenticar,
