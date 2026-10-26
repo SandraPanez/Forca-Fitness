@@ -14,7 +14,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
+        "Tarifa" AS tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
@@ -106,7 +106,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
+        "Tarifa" AS tarifa
       FROM ${SCHEMA}."Disciplina"
       WHERE "Id_Disciplinas" = $1
     `;
@@ -651,13 +651,13 @@ class MatriculasRepository {
       JOIN ${SCHEMA}."Matricula" m
         ON m."Id_alumno" = a."Id_alumno"
 
-      LEFT JOIN ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Detalles_Matricula" dm
         ON dm."Id_Matricula" = m."Id_Matricula"
 
-      LEFT JOIN ${SCHEMA}."Disciplina_Horario" dh
+      JOIN ${SCHEMA}."Disciplina_Horario" dh
         ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
 
-      LEFT JOIN ${SCHEMA}."Disciplina" d
+      JOIN ${SCHEMA}."Disciplina" d
         ON d."Id_Disciplinas" = dh."Id_Disciplina"
 
       LEFT JOIN ${SCHEMA}."Pago" p
