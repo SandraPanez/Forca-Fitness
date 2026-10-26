@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="/css/header.css">
 </head>
-<body data-preview-auth="true">
+<body data-allow-guest="true">
   <header id="app-header"></header>
   <main class="payment-container">
     <div class="page-header"><p class="subtitle">PAGOS</p><h2 class="title">Registrar pago</h2><p class="description">Procesa el cobro de una matrícula o una renovación pendiente.</p></div>
@@ -39,7 +39,8 @@
           <label class="method-option"><input type="radio" name="method" value="efectivo"><span><strong>Efectivo</strong><small>Reserva válida por 48 horas. Se confirma en recepción.</small></span></label>
         </div>
         <div id="cash-notice" class="cash-notice" hidden>Al elegir efectivo, la matrícula quedará <strong>Pendiente de confirmación</strong> hasta que el tesorero registre el pago.</div>
-        <div class="form-actions"><a class="btn-cancel" href="/index.html">Cancelar</a><button class="btn-submit" type="submit">Continuar</button></div>
+        <div class="form-actions"><a class="btn-cancel" href="/index.html">Cancelar</a><button id="verify-payment" class="btn-cancel" type="button" hidden>Verificar pago</button><button class="btn-submit" type="submit">Continuar</button></div>
+        <a id="checkout-link" target="_blank" rel="noopener noreferrer" hidden>Abrir Mercado Pago</a>
       </form>
       <aside class="payment-summary"><span class="section-subtitle">RESUMEN DEL COBRO</span><div class="summary-student"><div><strong id="summary-student">Alumno de Forca & Fitness</strong><small id="summary-matricula">Código de matrícula pendiente</small></div></div><dl><div><dt>Concepto</dt><dd id="summary-concept">Mensualidad</dd></div><div><dt>Estado</dt><dd><span class="status-pill">Pendiente</span></dd></div><div><dt>Método</dt><dd id="summary-method">Mercado Pago</dd></div></dl><hr><div class="summary-total"><span>Total</span><strong id="summary-total">S/ 150.00</strong></div></aside>
     </section>

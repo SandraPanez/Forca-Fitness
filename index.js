@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 const express = require('express');
 const db = require('./src/shared/config/database');
@@ -103,19 +103,27 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
 const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
-const expirationCheck = setInterval(async () => {
+async function ejecutarTareasPeriodicas() {
   try {
     const expired = await require('./src/modules/pagos/pagos.service')
       .anularSolicitudesEfectivoVencidas();
     if (expired > 0) {
       console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
     }
+    const activadas = await require('./src/modules/pagos/pagos.service')
+      .activarReservasIniciadas();
+    if (activadas > 0) {
+      console.log(`Reservas activadas automáticamente al iniciar periodo: ${activadas}`);
+    }
   } catch (error) {
-    console.error('Error al anular solicitudes de efectivo vencidas:', error);
+    console.error('Error al procesar tareas periódicas de pagos/reservas:', error);
   }
-}, EXPIRATION_CHECK_INTERVAL);
+}
+
+const expirationCheck = setInterval(ejecutarTareasPeriodicas, EXPIRATION_CHECK_INTERVAL);
 expirationCheck.unref();
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
+  ejecutarTareasPeriodicas();
 });

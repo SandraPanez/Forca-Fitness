@@ -68,14 +68,14 @@
                         <div class="form-group">
                             <label for="tipo_documento">Tipo de documento <span class="asterisk">*</span></label>
                             <select id="tipo_documento" name="tipo_documento" required>
-                                <option value="DNI">DNI</option>
+                                <option value="DNI" selected>DNI</option>
                                 <option value="CE">Carnet de Extranjería</option>
                                 <option value="Pasaporte">Pasaporte</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="numero_documento">Número de documento <span class="asterisk">*</span></label>
-                            <input type="text" id="numero_documento" name="numero_documento" placeholder="Ej: 74628153" pattern="[0-9]{8,12}" title="Debe contener entre 8 y 12 dígitos numéricos" required>
+                            <input type="text" id="numero_documento" name="numero_documento" placeholder="Ej: 74628153" pattern="^[0-9]{8}$" maxlength="8" minlength="8" inputmode="numeric" title="El DNI debe contener exactamente 8 dígitos numéricos" required>
                         </div>
                         
                         <div class="form-group">
@@ -118,7 +118,7 @@
                             <input type="text" id="direccion" name="direccion" placeholder="Ej: Los Olivos, Lima, Perú" maxlength="50" required>
                         </div>
                         
-                        <div class="form-group position-relative">
+                        <div class="form-group position-relative" id="password-group">
                             <label for="password">Contraseña (Para tu cuenta web) <span class="asterisk">*</span></label>
                             <div class="password-wrapper">
                                 <input type="password" id="password" name="password" placeholder="Crea una contraseña segura" required minlength="6">
@@ -126,8 +126,9 @@
                                     <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                 </button>
                             </div>
+                            <small id="password-hint" class="password-feedback" style="display: none;"></small>
                         </div>
-                        <div class="form-group position-relative">
+                        <div class="form-group position-relative" id="confirm-password-group">
                             <label for="confirm_password">Confirmar contraseña <span class="asterisk">*</span></label>
                             <div class="password-wrapper">
                                 <input type="password" id="confirm_password" name="confirm_password" placeholder="Repite tu contraseña" required minlength="6">
@@ -135,6 +136,7 @@
                                     <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                 </button>
                             </div>
+                            <small id="confirm-password-feedback" class="password-feedback" style="display: none;"></small>
                         </div>
                     </div>
                 </div>
@@ -156,7 +158,7 @@
                     <hr class="divider">
 
                     <label class="mb-1">Disciplinas <span class="asterisk">*</span></label>
-                    <p class="field-hint">Puedes seleccionar una o más disciplinas.</p>
+                    <p id="disciplinas-edad" class="field-hint" role="status">Ingresa tu fecha de nacimiento para habilitar las disciplinas disponibles para tu edad.</p>
 
                     <div class="grid-2-cols" id="disciplinas-container">
                         <!-- T_04: Disciplinas cargadas dinámicamente desde la BD -->
@@ -199,6 +201,7 @@
     </div>
 
     <script src="/js/auth.js"></script>
+    <script src="/js/disciplinas-edad.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

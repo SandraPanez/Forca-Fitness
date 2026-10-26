@@ -25,7 +25,6 @@ function obtenerRolesUsuario(usuario = obtenerUsuario()) {
         return usuario.roles;
     }
 
-    // Compatibilidad con sesiones anteriores de un solo rol
     if (usuario.rol) {
         return [usuario.rol];
     }
@@ -43,7 +42,7 @@ function verificarSesion() {
 
     if (!token) {
         // Páginas que también puede abrir alguien sin sesión
-        const paginaPublica = document.body?.dataset.public === 'true';
+        const paginaPublica = document.body?.dataset.public === 'true' || document.body?.dataset.allowGuest === 'true';
         const previewEnabled =
             document.body?.dataset.previewAuth === 'true' &&
             new URLSearchParams(window.location.search).get('preview') === '1';
@@ -81,7 +80,7 @@ async function authFetch(url, options = {}) {
 }
 
 async function cerrarSesion(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
 
     const token = obtenerToken();
 
@@ -119,9 +118,9 @@ const MENU_POR_ROL = {
         ['Alumnos', '/control-acceso#vista-alumnos', 'students']
     ],
     ALUMNO: [
-        ['Nueva matrícula', '/index.html'],
+        ['Nueva matrícula', '/index.html?modo=nueva_matricula'],
         ['Disciplinas', '/disciplinas.html'],
-        ['Renovar', '/mis-matriculas.html#renovar'],
+        ['Renovar', '/renovar.html'],
         ['Mis matrículas', '/mis-matriculas.html'],
         ['Mi perfil', '/perfil.html']
     ]
@@ -233,8 +232,21 @@ function pintarEncabezado() {
     header.append(nav, cuenta);
 }
 
+const renderNavbar = pintarEncabezado;
+
 // Se arma apenas carga el script (va al final de cada página), antes que los scripts propios
 // de la página, porque control de acceso usa los enlaces del menú para cambiar de vista.
 pintarEncabezado();
 
-document.addEventListener('DOMContentLoaded', verificarSesion);
+document.addEventListener('DOMContentLoaded', () => {
+    verificarSesion();
+
+    // Mostrar/ocultar elementos según rol con data-rol
+    const usuario = obtenerUsuario();
+    const roles = usuario ? obtenerRolesUsuario(usuario) : [];
+    document.querySelectorAll('[data-rol]').forEach(el => {
+        const rolesPermitidos = el.dataset.rol.split(',').map(r => r.trim());
+        const tieneRol = roles.some(r => rolesPermitidos.includes(r));
+        el.style.display = tieneRol ? '' : 'none';
+    });
+});

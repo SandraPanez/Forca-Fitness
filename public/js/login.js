@@ -60,6 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const existente = document.getElementById('pending-payment-link');
         if (existente) existente.remove();
 
+        // Si ya eligió efectivo, no debe sugerir Mercado Pago; solo esperar aprobación del tesorero
+        const esEfectivo = String(pago?.medio_pago || '').toUpperCase() === 'EFECTIVO';
+        if (esEfectivo) {
+            return;
+        }
+
         const params = new URLSearchParams({
             preview: '1',
             resultado: 'pendiente',
@@ -67,7 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nombre: pago.nombre,
             correo: pago.correo,
             concepto: `Mensualidad - ${pago.disciplinas || 'Disciplinas seleccionadas'}`,
-            monto: String(pago.monto)
+            monto: String(pago.monto),
+            metodo: pago.medio_pago ? String(pago.medio_pago).toLowerCase() : ''
         });
         const link = document.createElement('a');
         link.id = 'pending-payment-link';

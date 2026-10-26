@@ -1,59 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const tbody = document.getElementById('mis-matriculas-tbody');
-    const panel = document.getElementById('renovar');
-    const mensaje = document.getElementById('renovacion-mensaje');
-    const continuar = document.getElementById('renovacion-continuar');
-    let seleccionada = null;
-    let renovables = [];
 
-    function mostrarRenovacion(matricula) {
-        seleccionada = matricula;
-        mensaje.textContent = '';
-        document.getElementById('renovacion-disciplina').value = matricula.disciplina;
-        document.getElementById('renovacion-horario').value = `${matricula.dias || 'Horario actual'} ${matricula.hora_inicio?.slice(0, 5) || ''} - ${matricula.hora_fin?.slice(0, 5) || ''}`;
-        const hoy = new Date().toLocaleDateString('en-CA');
-        const despuesDelVencimiento = new Date(`${matricula.fecha_fin.slice(0, 10)}T00:00:00Z`).getTime() + 86400000;
-        const inicio = new Date(Math.max(new Date(`${hoy}T00:00:00Z`).getTime(), despuesDelVencimiento));
-        const fin = new Date(inicio.getTime() + 29 * 86400000);
-        document.getElementById('renovacion-periodo').value = `${formatearFecha(inicio.toISOString())} - ${formatearFecha(fin.toISOString())}`;
-        panel.hidden = false;
-        continuar.focus();
-        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Si alguien llega con #renovar o #reservar a mis-matriculas, redirigir a renovar.html
+    if (window.location.hash === '#renovar') {
+        window.location.replace('/renovar.html');
+        return;
     }
-
-    function abrirDesdeMenu() {
-        if (window.location.hash !== '#renovar') return;
-        if (renovables.length) mostrarRenovacion(renovables[0]);
-        else mensaje.textContent = 'No tienes matrículas vencidas o próximas a vencer disponibles para renovar.';
+    if (window.location.hash === '#reservar') {
+        window.location.replace('/renovar.html?tab=reservar');
+        return;
     }
-
-    document.getElementById('renovacion-cancelar').addEventListener('click', () => {
-        panel.hidden = true;
-        seleccionada = null;
-        window.history.replaceState(null, '', window.location.pathname);
-        pintarEncabezado();
-    });
-
-    document.getElementById('renovacion-form').addEventListener('submit', async event => {
-        event.preventDefault();
-        if (!seleccionada || continuar.disabled) return;
-        continuar.disabled = true;
-        mensaje.textContent = 'Comprobando disponibilidad...';
-        try {
-            const response = await authFetch(`/api/matriculas/mis-matriculas/${encodeURIComponent(seleccionada.id_detalle)}/renovar`, { method: 'POST' });
-            const result = await response.json();
-            if (!response.ok || !result.success) throw new Error(result.message || 'No se pudo preparar la renovación.');
-            const data = result.data;
-            const params = new URLSearchParams({ matricula: data.matriculaId, nombre: data.nombre,
-                correo: data.correo, concepto: `Renovación - ${data.disciplinas}`, monto: String(data.monto), renovacion: '1' });
-            window.location.href = `/pagos.html?${params.toString()}`;
-        } catch (error) {
-            mensaje.textContent = error.message;
-            mensaje.focus();
-            continuar.disabled = false;
-        }
-    });
-    window.addEventListener('hashchange', abrirDesdeMenu);
 
     async function cargarMatriculas() {
         try {
@@ -67,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const matriculas = result.data || [];
-            renovables = [];
 
             if (matriculas.length === 0) {
                 tbody.innerHTML = `
@@ -77,11 +32,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </td>
                     </tr>
                 `;
-                abrirDesdeMenu();
                 return;
             }
 
             tbody.innerHTML = '';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('reserva') === 'exitosa' || urlParams.get('reserva') === '1') {
+                const banner = document.getElementById('reserva-banner');
+                if (banner) {
+                    banner.style.display = 'flex';
+                }
+            }
+            if (urlParams.get('pago') === 'pendiente') {
+                const bannerEfectivo = document.getElementById('pago-pendiente-banner');
+                if (bannerEfectivo) {
+                    bannerEfectivo.style.display = 'flex';
+                }
+            }
 
             matriculas.forEach(matricula => {
                 const fila = document.createElement('tr');
@@ -102,13 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const diasTexto = obtenerTextoDias(
                     estado,
-                    matricula.dias_restantes
+                    matricula.dias_restantes,
+                    matricula
                 );
 
                 const renovacion = matricula.puede_renovar && matricula.id_detalle
                     ? `
                         <div style="margin-top: 0.5rem;">
-                            <button type="button" class="btn-link btn-renovar">Renovar</button>
+                            <a href="/renovar.html?detalle=${encodeURIComponent(matricula.id_detalle)}" class="btn-link btn-renovar" style="text-decoration: none;">Renovar</a>
                         </div>
                     `
                     : '';
@@ -127,12 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
 
                 tbody.appendChild(fila);
-                if (renovacion) {
-                    renovables.push(matricula);
-                    fila.querySelector('.btn-renovar').addEventListener('click', () => mostrarRenovacion(matricula));
-                }
             });
-            abrirDesdeMenu();
 
         } catch (error) {
             console.error('Error cargando matrículas:', error);
@@ -146,19 +110,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }
     }
-    await cargarMatriculas();
-    window.addEventListener('focus', () => { if (!seleccionada) cargarMatriculas(); });
-});
 
+    await cargarMatriculas();
+    window.addEventListener('focus', cargarMatriculas);
+});
 
 function formatearFecha(fecha) {
     const [anio, mes, dia] = fecha.substring(0, 10).split('-');
-
     return `${dia}/${mes}/${anio}`;
 }
 
-
 function obtenerClaseEstado(estado) {
+    if (estado === 'Reservada') {
+        return 'badge-reservada';
+    }
+
     if (estado === 'Activa') {
         return 'badge-activa';
     }
@@ -180,15 +146,23 @@ function obtenerClaseEstado(estado) {
     return '';
 }
 
+function obtenerTextoDias(estado, diasRestantes, matricula) {
+    if (estado === 'Reservada') {
+        const tarifa = matricula?.tarifa_congelada ? ` • Tarifa congelada: S/ ${Number(matricula.tarifa_congelada).toFixed(2)}` : '';
+        return `
+            <div class="dias-reserva">
+                <span class="dias-reserva-check">✓ Cupo reservado correctamente</span>
+                <span class="dias-reserva-sub">Inicio próximo periodo${tarifa}</span>
+            </div>
+        `;
+    }
 
-function obtenerTextoDias(estado, diasRestantes) {
     if (diasRestantes === null || diasRestantes === undefined) {
         return '';
     }
 
     if (estado === 'Vencida') {
         const diasVencida = Math.abs(diasRestantes);
-
         return `
             <span class="dias-text">
                 Vencida hace ${diasVencida} día${diasVencida === 1 ? '' : 's'}
@@ -210,7 +184,6 @@ function obtenerTextoDias(estado, diasRestantes) {
         </span>
     `;
 }
-
 
 function escapeHtml(valor) {
     return String(valor)

@@ -14,6 +14,48 @@ class PagosController {
         }
     }
 
+    async listarEfectivoPendientes(req, res) {
+        try {
+            const data = await pagosService.listarEfectivoPendientes();
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al listar pagos efectivo pendientes:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron cargar los pagos pendientes'
+            });
+        }
+    }
+
+    async verificarEstadoMatricula(req, res) {
+        try {
+            const { matricula } = req.params;
+            if (!matricula) {
+                return res.status(400).json({ success: false, message: 'ID de matrícula requerido' });
+            }
+            const data = await pagosService.verificarEstadoMatricula(matricula);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al verificar estado de matrícula:', error);
+            return res.status(500).json({ success: false, message: 'Error interno al consultar estado' });
+        }
+    }
+
+    async sincronizarPago(req, res) {
+        try {
+            const data = await pagosService.sincronizarPago(req.params.matricula);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al consultar Mercado Pago:', error.message);
+            const validacion = error.message?.startsWith('VALIDACION:');
+            return res.status(validacion ? 400 : 502).json({
+                success: false,
+                message: validacion ? error.message.replace(/^VALIDACION:\s*/, '')
+                    : 'No pudimos consultar tu pago en Mercado Pago. Vuelve a verificar en unos momentos.'
+            });
+        }
+    }
+
     async crearPreferencia(req, res) {
         try {
             const datosMatricula = req.body;
@@ -29,12 +71,12 @@ class PagosController {
             });
         } catch (error) {
             console.error('Error al crear preferencia:', error);
-            return res.status(500).json({
+            const status = error.message.startsWith('VALIDACION:') ? 400 : 500;
+            return res.status(status).json({
                 success: false,
-                message: 'Error al crear la preferencia de pago'
+                message: error.message.replace(/^VALIDACION:\s*/, '')
             });
         }
-
     }
 
     async registrarEfectivo(req, res) {
@@ -62,10 +104,13 @@ class PagosController {
                 req.body.referencia_operacion,
                 req.user.id
             );
+            const esReserva = pago?.estadoMatricula === 'Reservada';
             return res.status(200).json({
                 success: true,
                 data: pago,
-                message: 'Pago en efectivo confirmado'
+                message: esReserva
+                    ? 'Pago en efectivo confirmado. Cupo reservado correctamente.'
+                    : 'Pago en efectivo confirmado correctamente.'
             });
         } catch (error) {
             console.error('Error al confirmar pago en efectivo:', error);
@@ -77,55 +122,36 @@ class PagosController {
     }
 
     async pagoExitoso(req, res) {
+        let idMatricula = typeof req.query.external_reference === 'string' ? req.query.external_reference : '';
+        let resultado = 'verificar';
+        let tipo = '';
         try {
-            const { payment_id, status } = req.query;
-
-            if (status === 'approved' && payment_id) {
-
-                // Confirmar el pago también desde la URL de retorno.
-                // Esto actualiza Pago, Matrícula y activa el Usuario.
-                await pagosService.procesarWebhook(
-                    'payment',
-                    payment_id
-                );
-
-                return res.redirect('/pagos.html?preview=1&resultado=exitoso');
+            const paymentId = req.query.payment_id || req.query.collection_id;
+            if (paymentId) {
+                // El mismo chequeo se aplica en localhost, sandbox y producción.
+                const pago = await pagosService.procesarWebhook('payment', paymentId);
+                idMatricula = pago.idMatricula;
+                resultado = pago.estadoPago === 'APROBADO' ? 'exitoso'
+                    : pago.estadoPago === 'PENDIENTE' ? 'pendiente' : 'fallido';
+                tipo = pago.estadoMatricula === 'Reservada' ? 'reserva' : '';
             }
-
-            return res.redirect('/pagos.html?preview=1&resultado=pendiente');
-
         } catch (error) {
-            console.error(
-                'Error al procesar retorno de pago:',
-                error
-            );
-
-            return res.redirect('/pagos.html?preview=1&resultado=fallido');
+            console.error('No se pudo verificar el retorno del pago:', error.message);
         }
-    }
-
-    async pagoFallido(req, res) {
-        return res.status(200).json({
-            success: false,
-            message: 'El pago no pudo procesarse, intente nuevamente'
-        });
-    }
-
-    async pagoPendiente(req, res) {
-        return res.status(200).json({
-            success: true,
-            message: 'El pago está pendiente de confirmación'
-        });
+        const params = new URLSearchParams({ resultado });
+        if (idMatricula) params.set('matricula', idMatricula);
+        if (tipo) params.set('tipo', tipo);
+        return res.redirect(`/pagos.html?${params}`);
     }
 
     async webhook(req, res) {
         try {
-            const { type, data } = req.body;
-            const resultado = await pagosService.procesarWebhook(type, data?.id);
-            console.log('Webhook recibido:', resultado);
+            const type = req.body?.type || req.query.type;
+            const id = req.body?.data?.id || req.query['data.id'];
+            await pagosService.procesarWebhook(type, id);
             return res.status(200).send('OK');
         } catch (error) {
-            console.error('Error en webhook:', error);
+            console.error('Error en webhook:', error.message);
             return res.status(500).send('Error');
         }
     }
