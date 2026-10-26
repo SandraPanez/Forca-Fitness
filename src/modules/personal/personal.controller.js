@@ -41,7 +41,39 @@ async function obtenerDetalle(req, res) {
   }
 }
 
+async function actualizarAccesos(req, res) {
+  try {
+    const resultado = await personalService.actualizarAccesos(req.params.id, req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: resultado.mensaje
+    });
+  } catch (error) {
+    if (error.status === 404) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    if (error.status === 400) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    console.error('Error al actualizar roles y permisos del trabajador:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno al guardar los roles y permisos del trabajador'
+    });
+  }
+}
+
 module.exports = {
   listarPersonal,
-  obtenerDetalle
+  obtenerDetalle,
+  actualizarAccesos
 };

@@ -13,19 +13,81 @@
 <body data-menu="/administracion-accesos.html">
     <header id="app-header"></header>
 
-    <main class="container" style="max-width: 1200px;">
+    <main class="container access-edit-container">
         <div class="page-header">
             <h2 class="title">Modificar roles y permisos</h2>
             <p class="description">Aquí el Director cambiará el rol y los permisos de acceso del trabajador seleccionado.</p>
         </div>
 
-        <div class="info-grid" id="acceso-datos">
-            <div class="info-item"><span class="info-label">Cargando trabajador...</span></div>
+        <div class="access-summary" aria-live="polite">
+            <div class="info-item">
+                <span class="info-label">Trabajador:</span>
+                <span class="info-value" id="trabajador-nombre">Cargando trabajador...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Roles seleccionados:</span>
+                <span class="info-value" id="trabajador-roles">Cargando roles...</span>
+            </div>
         </div>
 
-        <p class="description" style="margin-top: 2rem;">La edición de roles y permisos se habilita con la HU-24.</p>
-        <p><a class="btn-link" href="/administracion-accesos.html">Volver a Administración de accesos</a></p>
+        <section class="access-section" aria-labelledby="informacion-general-titulo">
+            <h3 class="access-section-title" id="informacion-general-titulo">I. INFORMACIÓN GENERAL</h3>
+            <div class="access-fields">
+                <div class="form-group">
+                    <label for="trabajador-nombres">Nombres</label>
+                    <input id="trabajador-nombres" type="text" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="trabajador-apellidos">Apellidos</label>
+                    <input id="trabajador-apellidos" type="text" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="trabajador-documento">DNI</label>
+                    <input id="trabajador-documento" type="text" readonly>
+                </div>
+            </div>
+        </section>
+
+        <section class="access-section" aria-labelledby="asignacion-roles-titulo">
+            <h3 class="access-section-title" id="asignacion-roles-titulo">II. ASIGNACIÓN DE ROLES</h3>
+            <div class="access-role-options" id="acceso-roles" aria-live="polite">
+                <span class="access-loading">Cargando roles...</span>
+            </div>
+            <p class="access-role-hint" id="acceso-roles-mensaje" aria-live="polite">
+                El trabajador debe mantener al menos un rol asignado.
+            </p>
+        </section>
+
+        <section class="access-section" aria-labelledby="permisos-individuales-titulo">
+            <h3 class="access-section-title" id="permisos-individuales-titulo">III. PERMISOS INDIVIDUALES</h3>
+            <p class="access-permissions-note">Los permisos seleccionados se guardan para este trabajador y prevalecen sobre los derivados de sus roles.</p>
+            <div class="access-permission-list" id="acceso-permisos" aria-live="polite">
+                <span class="access-loading">Cargando permisos...</span>
+            </div>
+        </section>
+
+        <p class="access-save-message" id="acceso-guardado-mensaje" role="status" aria-live="polite"></p>
+
+        <div class="access-form-footer">
+            <a class="btn-link" href="/administracion-accesos.html">Volver a Administración de accesos</a>
+            <div class="access-form-actions">
+                <a class="btn-secondary" href="/administracion-accesos.html">Cancelar</a>
+                <button class="btn-primary" id="guardar-accesos" type="button" disabled>Guardar Cambios</button>
+            </div>
+        </div>
     </main>
+
+    <dialog class="access-confirm-dialog" id="confirmar-guardado" aria-labelledby="confirmar-guardado-titulo">
+        <div class="access-confirm-content">
+            <h2 id="confirmar-guardado-titulo">Confirmar cambios</h2>
+            <p>¿Deseas guardar los roles y permisos seleccionados para este trabajador?</p>
+            <p class="access-confirm-error" id="confirmar-guardado-error" role="alert"></p>
+            <div class="access-form-actions">
+                <button class="btn-secondary" id="cancelar-confirmacion" type="button">Volver a editar</button>
+                <button class="btn-primary" id="confirmar-guardado-boton" type="button">Confirmar y guardar</button>
+            </div>
+        </div>
+    </dialog>
 
     <script src="/js/auth.js"></script>
     <script src="/js/editar-acceso.js"></script>

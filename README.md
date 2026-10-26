@@ -64,6 +64,10 @@ Para usar una base propia, créala y ejecuta solo este archivo:
 psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagrama version 4.sql"
 ```
 
+- Para habilitar la administración de accesos, ejecuta también una vez
+  `src/modules/personal/personal-permisos.schema.sql` contra el mismo esquema.
+  Esta migración crea las sobrescrituras individuales que usa la autorización
+  del servidor; debe estar aplicada antes de iniciar la versión que las consulta.
 - `src/modules/pagos/pagos.schema version 2.sql` es una copia del mismo
   esquema: no ejecutes los dos, el segundo falla porque las tablas ya existen.
 - El esquema crea las tablas vacías. Los roles, métodos de pago, disciplinas,
@@ -101,7 +105,8 @@ variable `PORT` que Render inyecta. Para el servicio web en Render:
    resto de variables de la tabla de arriba, con `APP_URL` igual a la
    dirección pública del servicio. No subas `.env` ni copies una URL con
    credenciales al repositorio.
-3. Ejecuta una vez el archivo SQL de la sección "Base de datos" contra esa base.
+3. Ejecuta una vez el esquema base y la migración de permisos de la sección
+   "Base de datos" contra esa base.
 4. Configura `/api/health` como health check del servicio.
 
 La imagen no crea tablas automáticamente: el esquema debe ejecutarse una vez
