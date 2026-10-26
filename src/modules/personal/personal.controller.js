@@ -7,7 +7,7 @@ async function inactivarPersonal(req, res) {
   }
   try {
     const resultado = await personalService.inactivarPersonal(req.params.id, req.user.id);
-    return res.status(200).json({ success: true, message: 'Cuenta inactivada correctamente.', data: resultado });
+    return res.status(200).json({ success: true, message: 'Acceso retirado', data: resultado });
   } catch (error) {
     if ([400, 403, 404].includes(error.status)) {
       return res.status(error.status).json({ success: false, message: error.message });
@@ -23,7 +23,7 @@ async function crearPersonal(req, res) {
   }
   try {
     const resultado = await personalService.crearPersonal(req.body);
-    return res.status(201).json({ success: true, message: 'Cuenta creada correctamente.', data: resultado });
+    return res.status(201).json({ success: true, message: 'Trabajador registrado', data: resultado });
   } catch (error) {
     if (error.status === 400 || error.status === 409) {
       return res.status(error.status).json({ success: false, message: error.message, campo: error.campo });
