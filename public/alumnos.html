@@ -19,13 +19,26 @@
             <p class="description">Consulta los alumnos que forman parte de Forca & Fitness.</p>
         </div>
 
-    <input type="text" id="search-input" class="search-input" placeholder="🔍 Buscar por nombre">
-    <select id="filter-select" class="filter-select">
-        <option value="Todos">Todos</option>
-        <option value="Activa">Activa</option>
-        <option value="Vencida">Vencida</option>
-        <option value="Inhabilitada">Inhabilitada</option>
-    </select>
+        <div class="alumnos-toolbar">
+            <div class="search-box">
+                <input type="text" id="search-input" class="search-input" placeholder="🔍 Buscar por nombre">
+            </div>
+            <div class="filter-controls">
+                <button type="button" id="btn-por-vencer" class="btn-filtro-accion" title="Filtrar matrículas próximas a vencer">
+                    ⚠️ Matrículas por vencer
+                </button>
+                <select id="filter-select" class="filter-select" aria-label="Filtrar por estado">
+                    <option value="Todos">Todos</option>
+                    <option value="Por vencer">Matrículas por vencer</option>
+                    <option value="Activa">Activa</option>
+                    <option value="Vencida">Vencida</option>
+                    <option value="Reservada">Reservada</option>
+                </select>
+                <button type="button" id="btn-limpiar-filtro" class="btn-limpiar-filtro" title="Retirar filtro y ver lista completa">
+                    ✕ Limpiar filtro
+                </button>
+            </div>
+        </div>
 
         <!-- Tabla principal -->
         <div class="table-container">
