@@ -160,9 +160,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputsRegistro = [...registroForm.querySelectorAll('input')];
     const rolesRegistro = inputsRegistro.filter(input => input.name === 'roles');
     const botonRegistrar = registroForm.querySelector('[type="submit"]');
+    const confirmarRegistro = document.getElementById('confirmar-registro');
+    const resumenRegistro = document.getElementById('confirmar-registro-resumen');
     let validacionRegistro = null;
 
     function limpiarValidacionRegistro() {
+        if (confirmarRegistro.open) confirmarRegistro.close();
         validacionRegistro?.abort();
         validacionRegistro = null;
         inputsRegistro.forEach(input => input.setCustomValidity(''));
@@ -190,13 +193,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-agregar-personal').addEventListener('click', abrirRegistro);
     document.getElementById('btn-cancelar-registro').addEventListener('click', cerrarRegistro);
+    document.getElementById('cancelar-confirmacion-registro').addEventListener('click', () => confirmarRegistro.close());
+    document.getElementById('confirmar-registro-boton').addEventListener('click', () => {
+        confirmarRegistro.close();
+        mostrarResultadoRegistro('Datos confirmados.');
+        // T-54 creará la cuenta después de esta confirmación.
+    });
     registroModal.addEventListener('click', event => {
         if (event.target === registroModal) {
             cerrarRegistro();
         }
     });
     document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && registroModal.style.display === 'flex') {
+        if (event.key === 'Escape' && registroModal.style.display === 'flex' && !confirmarRegistro.open) {
             cerrarRegistro();
         }
     });
@@ -245,7 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             mostrarResultadoRegistro('Los datos son válidos.');
-            // T-53 continuará aquí con la confirmación; T-54 creará la cuenta.
+            resumenRegistro.textContent = `${datos.nombres} ${datos.apellido_paterno} ${datos.apellido_materno} · ${datos.correo_electronico} · Roles: ${datos.roles.map(rol => NOMBRE_ROL[rol]).join(' y ')}.`;
+            confirmarRegistro.showModal();
         } catch {
             if (!solicitud.signal.aborted) {
                 mostrarResultadoRegistro('No se pudieron validar los datos. Inténtalo nuevamente.', true);

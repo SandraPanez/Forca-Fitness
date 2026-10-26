@@ -104,6 +104,18 @@
         </form>
     </div>
 
+    <dialog class="access-confirm-dialog" id="confirmar-registro" aria-labelledby="confirmar-registro-titulo" aria-describedby="confirmar-registro-resumen">
+        <div class="access-confirm-content">
+            <h2 id="confirmar-registro-titulo">Confirmar registro</h2>
+            <p>¿Deseas registrar a esta persona con los roles seleccionados?</p>
+            <p id="confirmar-registro-resumen"></p>
+            <div class="access-form-actions">
+                <button type="button" class="btn-secondary" id="cancelar-confirmacion-registro" autofocus>Volver a editar</button>
+                <button type="button" class="btn-primary" id="confirmar-registro-boton">Confirmar</button>
+            </div>
+        </div>
+    </dialog>
+
     <script src="/js/auth.js"></script>
     <script src="/js/administracion-accesos.js"></script>
 </body>
