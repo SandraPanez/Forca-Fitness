@@ -14,7 +14,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
+        "Tarifa" AS tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
