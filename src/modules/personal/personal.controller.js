@@ -1,6 +1,22 @@
 const personalService = require('./personal.service');
 const ROLES = require('../../shared/constants/roles');
 
+async function inactivarPersonal(req, res) {
+  if (!req.user.roles.includes(ROLES.DIRECTOR)) {
+    return res.status(403).json({ success: false, message: 'Solo el director puede dar de baja al personal.' });
+  }
+  try {
+    const resultado = await personalService.inactivarPersonal(req.params.id, req.user.id);
+    return res.status(200).json({ success: true, message: 'Cuenta inactivada correctamente.', data: resultado });
+  } catch (error) {
+    if ([400, 403, 404].includes(error.status)) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    console.error('Error al inactivar la cuenta del trabajador:', error);
+    return res.status(500).json({ success: false, message: 'No se pudo inactivar la cuenta del trabajador.' });
+  }
+}
+
 async function crearPersonal(req, res) {
   if (!req.user.roles.includes(ROLES.DIRECTOR)) {
     return res.status(403).json({ success: false, message: 'Solo el director puede registrar personal.' });
@@ -118,6 +134,7 @@ async function actualizarAccesos(req, res) {
 }
 
 module.exports = {
+  inactivarPersonal,
   crearPersonal,
   validarRegistro,
   listarPersonal,

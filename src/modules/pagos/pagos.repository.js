@@ -202,13 +202,7 @@ class PagosRepository {
             const estadoMatricula = esFutura ? 'Reservada' : 'Activa';
 
             await this.actualizarEstadoMatricula(idMatricula, estadoMatricula, client);
-            await client.query(`
-                UPDATE "Academia Forca&Fitness"."Usuario" u
-                SET "Estado_Usuario" = 'ACTIVO'
-                FROM "Academia Forca&Fitness"."Matricula" m
-                JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
-                WHERE m."Id_Matricula" = $1 AND u."Id_Persona" = a."Id_Persona"
-            `, [idMatricula]);
+            await this.activarUsuarioPorMatricula(idMatricula, client);
             await client.query(`
                 INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
                 ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
@@ -275,12 +269,7 @@ class PagosRepository {
 
         if (result.rows.length > 0) {
             for (const row of result.rows) {
-                await db.query(`
-                    UPDATE "Academia Forca&Fitness"."Usuario" u
-                    SET "Estado_Usuario" = 'ACTIVO'
-                    FROM "Academia Forca&Fitness"."Alumno" a
-                    WHERE a."Id_alumno" = $1 AND u."Id_Persona" = a."Id_Persona"
-                `, [row.Id_alumno]);
+                await this.activarUsuarioPorMatricula(row.Id_Matricula);
             }
         }
 
@@ -524,6 +513,7 @@ class PagosRepository {
               ON a."Id_alumno" = m."Id_alumno"
             WHERE m."Id_Matricula" = $1
               AND u."Id_Persona" = a."Id_Persona"
+              AND UPPER(u."Estado_Usuario") <> 'INACTIVO'
             RETURNING
                 u."Id_Usuario",
                 u."Correo",

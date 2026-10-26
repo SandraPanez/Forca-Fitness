@@ -5,6 +5,41 @@ const ROLES = require('../../shared/constants/roles');
 
 const SCHEMA = '"Academia Forca&Fitness"';
 
+async function inactivarPersonal(idUsuario) {
+  const client = await db.pool.connect();
+  const rechazar = (status, mensaje) => Object.assign(new Error(mensaje), { status });
+  try {
+    await client.query('BEGIN');
+    const cuenta = await client.query(
+      `SELECT "Id_Usuario", "Estado_Usuario" FROM ${SCHEMA}."Usuario" WHERE "Id_Usuario" = $1 FOR UPDATE`,
+      [idUsuario]
+    );
+    if (!cuenta.rows[0]) throw rechazar(404, 'Trabajador no encontrado.');
+    const catalogo = await client.query(
+      `SELECT UPPER(r."Rol_Cargo") AS rol FROM ${SCHEMA}."Usuario_Rol" ur
+       JOIN ${SCHEMA}."Rol" r ON r."Id_Rol" = ur."Id_Rol" WHERE ur."Id_Usuario" = $1`, [idUsuario]
+    );
+    const roles = catalogo.rows.map(fila => fila.rol);
+    if (roles.includes(ROLES.DIRECTOR)) {
+      throw rechazar(403, 'Las cuentas de Director están protegidas frente a esta operación.');
+    }
+    if (!roles.some(rol => [ROLES.PROFESOR, ROLES.TESORERO].includes(rol))) {
+      throw rechazar(404, 'Trabajador no encontrado en el personal operativo.');
+    }
+    if (String(cuenta.rows[0].Estado_Usuario).toUpperCase() !== 'INACTIVO') {
+      await client.query(`UPDATE ${SCHEMA}."Usuario" SET "Estado_Usuario" = 'INACTIVO' WHERE "Id_Usuario" = $1`, [idUsuario]);
+    }
+    await client.query('COMMIT');
+    return { id: idUsuario, estado: 'INACTIVO' };
+  } catch (error) {
+    try { await client.query('ROLLBACK'); }
+    catch (rollbackError) { console.error('Error al revertir la baja de personal:', rollbackError); }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function crearPersonal(datos, passwordHash) {
   const client = await db.pool.connect();
   const conflicto = (campo, mensaje) => Object.assign(new Error(mensaje), { status: 409, campo });
@@ -264,6 +299,7 @@ async function guardarAccesos(idUsuario, roles, permisosActivos) {
 }
 
 module.exports = {
+  inactivarPersonal,
   crearPersonal,
   listarPersonalOperativo,
   obtenerDetallePersonal,

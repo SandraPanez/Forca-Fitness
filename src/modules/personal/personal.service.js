@@ -5,6 +5,16 @@ const { PERMISOS, PERMISOS_POR_ROL } = require('../../shared/constants/permisos'
 const permisosRepository = require('../../shared/repositories/permisos.repository');
 const bcrypt = require('bcryptjs');
 
+async function inactivarPersonal(idUsuario, idDirector) {
+  if (typeof idUsuario !== 'string' || !idUsuario.trim() || idUsuario.length > 10) {
+    throw Object.assign(new Error('El identificador del trabajador no es válido.'), { status: 400 });
+  }
+  if (idUsuario === idDirector) {
+    throw Object.assign(new Error('No puedes dar de baja a tu propia cuenta.'), { status: 403 });
+  }
+  return personalRepository.inactivarPersonal(idUsuario);
+}
+
 async function validarRegistro(datos) {
   function rechazar(campo, mensaje, status = 400) {
     const error = new Error(mensaje);
@@ -177,6 +187,7 @@ async function actualizarAccesos(idUsuario, datos) {
 }
 
 module.exports = {
+  inactivarPersonal,
   crearPersonal,
   validarRegistro,
   listarPersonal,

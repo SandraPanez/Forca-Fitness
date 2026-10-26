@@ -7,6 +7,13 @@ const { PERMISOS } = require('../../shared/constants/permisos');
 const router = express.Router();
 
 router.post(
+  '/:id/inactivar',
+  autenticar,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  personalController.inactivarPersonal
+);
+
+router.post(
   '/',
   autenticar,
   autorizar(PERMISOS.ADMINISTRAR_ACCESOS),

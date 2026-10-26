@@ -2,10 +2,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('personal-tbody');
     const advertenciaBaja = document.getElementById('advertencia-baja');
     const nombreBaja = document.getElementById('baja-personal-nombre');
-    document.getElementById('cancelar-baja').addEventListener('click', () => advertenciaBaja.close());
-    document.getElementById('continuar-baja').addEventListener('click', () => {
+    const errorBaja = document.getElementById('baja-error');
+    const cancelarBaja = document.getElementById('cancelar-baja');
+    const continuarBaja = document.getElementById('continuar-baja');
+    let seleccionBaja = null;
+    let bajaEnCurso = false;
+    cancelarBaja.addEventListener('click', () => {
+        if (bajaEnCurso) return;
         advertenciaBaja.close();
-        // T-56 incorporará la inactivación de la cuenta tras esta advertencia.
+        seleccionBaja = null;
+    });
+    advertenciaBaja.addEventListener('cancel', event => {
+        if (bajaEnCurso) event.preventDefault();
+        else seleccionBaja = null;
+    });
+    continuarBaja.addEventListener('click', async () => {
+        if (bajaEnCurso || !seleccionBaja || !advertenciaBaja.open) return;
+        bajaEnCurso = true;
+        continuarBaja.disabled = true;
+        cancelarBaja.disabled = true;
+        continuarBaja.textContent = 'Procesando...';
+        errorBaja.textContent = '';
+        try {
+            const response = await authFetch(`/api/personal/${encodeURIComponent(seleccionBaja.id)}/inactivar`, { method: 'POST' });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                errorBaja.textContent = result.message || 'No se pudo inactivar la cuenta.';
+                return;
+            }
+            seleccionBaja.boton.disabled = true;
+            seleccionBaja.boton.textContent = 'Inactiva';
+            seleccionBaja = null;
+            advertenciaBaja.close();
+            personalMensaje.textContent = result.message;
+            personalMensaje.className = 'text-muted';
+            personalMensaje.hidden = false;
+            document.getElementById('btn-agregar-personal').focus();
+        } catch {
+            errorBaja.textContent = 'No se pudo confirmar la baja. Inténtalo nuevamente.';
+        } finally {
+            bajaEnCurso = false;
+            continuarBaja.disabled = false;
+            cancelarBaja.disabled = false;
+            continuarBaja.textContent = 'Continuar';
+        }
     });
 
     function mostrarMensaje(texto) {
@@ -131,6 +171,10 @@ document.addEventListener('DOMContentLoaded', () => {
         boton.setAttribute('aria-haspopup', 'dialog');
         boton.setAttribute('aria-controls', 'advertencia-baja');
         boton.addEventListener('click', () => {
+            if (bajaEnCurso || boton.disabled) return;
+            seleccionBaja = { id: persona.id, boton };
+            errorBaja.textContent = '';
+            personalMensaje.hidden = true;
             nombreBaja.textContent = persona.nombre;
             advertenciaBaja.showModal();
         });
@@ -147,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rol.textContent = persona.roles.map(rolPersona => NOMBRE_ROL[rolPersona] || rolPersona).join(' y ');
         acciones.className = 'text-right';
         acciones.append(crearBotonVerMas(persona, fila), crearBotonModificar(persona));
-        if (obtenerRolesUsuario().includes('DIRECTOR')) {
+        if (obtenerRolesUsuario().includes('DIRECTOR') && persona.id !== obtenerUsuario()?.id) {
             acciones.append(crearBotonDarBaja(persona));
         }
 

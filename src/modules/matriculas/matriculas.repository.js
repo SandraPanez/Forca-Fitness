@@ -1,4 +1,5 @@
 const db = require('../../shared/config/database');
+const pagosRepository = require('../pagos/pagos.repository');
 
 const SCHEMA = '"Academia Forca&Fitness"';
 
@@ -858,12 +859,7 @@ class MatriculasRepository {
 
     if (result.rows.length > 0) {
       for (const row of result.rows) {
-        await db.query(`
-          UPDATE ${SCHEMA}."Usuario" u
-          SET "Estado_Usuario" = 'ACTIVO'
-          FROM ${SCHEMA}."Alumno" a
-          WHERE a."Id_alumno" = $1 AND u."Id_Persona" = a."Id_Persona"
-        `, [row.Id_alumno]);
+        await pagosRepository.activarUsuarioPorMatricula(row.Id_Matricula);
       }
     }
 
