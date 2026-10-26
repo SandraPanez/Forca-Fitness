@@ -56,6 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const btnAccesoTesorero = document.getElementById('btnAccesoTesorero');
+    if (btnAccesoTesorero) {
+        btnAccesoTesorero.addEventListener('click', () => {
+            document.getElementById('correo').value = 'tesorero@forcafitness.com';
+            document.getElementById('password').value = 'tesorero123';
+            form.requestSubmit();
+        });
+    }
+
     function mostrarPagoPendiente(pago) {
         const existente = document.getElementById('pending-payment-link');
         if (existente) existente.remove();

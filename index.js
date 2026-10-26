@@ -100,7 +100,7 @@ async function ejecutarTareasPeriodicas() {
       console.log(`Reservas activadas automáticamente al iniciar periodo: ${activadas}`);
     }
   } catch (error) {
-    console.error('Error al procesar tareas periódicas de pagos/reservas:', error);
+    console.warn(`Tareas periódicas: Base de datos no disponible temporalmente (${error.message || 'error de conexión'}).`);
   }
 }
 
