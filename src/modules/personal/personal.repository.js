@@ -1,7 +1,78 @@
 const db = require('../../shared/config/database');
 const { PERMISOS } = require('../../shared/constants/permisos');
+const matriculasRepository = require('../matriculas/matriculas.repository');
+const ROLES = require('../../shared/constants/roles');
 
 const SCHEMA = '"Academia Forca&Fitness"';
+
+async function crearPersonal(datos, passwordHash) {
+  const client = await db.pool.connect();
+  const conflicto = (campo, mensaje) => Object.assign(new Error(mensaje), { status: 409, campo });
+  try {
+    await client.query('BEGIN');
+    for (const clave of [`personal_correo:${datos.correo_electronico}`, `personal_dni:${datos.numero_documento}`]) {
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [clave]);
+    }
+    const correo = await client.query(
+      `SELECT 1 FROM ${SCHEMA}."Usuario" WHERE LOWER("Correo") = LOWER($1) LIMIT 1`,
+      [datos.correo_electronico]
+    );
+    if (correo.rows.length) throw conflicto('correo_electronico', 'El correo electrónico ya está registrado.');
+    const documento = await client.query(
+      `SELECT 1 FROM ${SCHEMA}."Persona" WHERE "Numero_Documento" = $1 LIMIT 1`, [datos.numero_documento]
+    );
+    if (documento.rows.length) throw conflicto('numero_documento', 'El DNI ya está registrado. Revisa la ficha existente.');
+
+    const tipoDocumento = await client.query(
+      `SELECT "Id_Documento" FROM ${SCHEMA}."Documento_Identificacion" WHERE UPPER("Tipo_Documento") = 'DNI'`
+    );
+    const roles = await client.query(
+      `SELECT "Id_Rol" FROM ${SCHEMA}."Rol" WHERE UPPER("Rol_Cargo") = ANY($1::text[])`, [datos.roles]
+    );
+    if (tipoDocumento.rows.length !== 1 || roles.rows.length !== datos.roles.length) {
+      throw new Error('El catálogo de documentos o roles está incompleto.');
+    }
+    const idPersona = await matriculasRepository.generateId(client, 'Persona', 'Id_Persona', 'PERADM');
+    const [nombre, ...otrosNombres] = datos.nombres.split(/\s+/);
+    await client.query(
+      `INSERT INTO ${SCHEMA}."Persona"
+       ("Id_Persona", "Nombre", "Segundo_Nombre", "Apellido_Paterno", "Apellido_Materno",
+        "Fecha_Nacimiento", "Genero", "Direccion", "Numero_Documento", "Id_Documento")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [idPersona, nombre, otrosNombres.join(' ') || null, datos.apellido_paterno, datos.apellido_materno,
+        datos.fecha_nacimiento, datos.genero, datos.direccion, datos.numero_documento, tipoDocumento.rows[0].Id_Documento]
+    );
+    await matriculasRepository.guardarContactos(idPersona, datos, client);
+    const idUsuario = await matriculasRepository.generateId(client, 'Usuario', 'Id_Usuario', 'USU');
+    await client.query(
+      `INSERT INTO ${SCHEMA}."Usuario" ("Id_Usuario", "Correo", "Password_Hash", "Estado_Usuario", "Id_Persona")
+       VALUES ($1,$2,$3,'ACTIVO',$4)`, [idUsuario, datos.correo_electronico, passwordHash, idPersona]
+    );
+    for (const rol of roles.rows) {
+      await client.query(`INSERT INTO ${SCHEMA}."Usuario_Rol" ("Id_Usuario", "Id_Rol") VALUES ($1,$2)`,
+        [idUsuario, rol.Id_Rol]);
+    }
+    if (datos.roles.includes(ROLES.PROFESOR)) {
+      const idProfesor = await matriculasRepository.generateId(client, 'Profesor', 'Id_Profesor', 'PROF');
+      await client.query(`INSERT INTO ${SCHEMA}."Profesor" ("Id_Profesor", "Id_Persona") VALUES ($1,$2)`,
+        [idProfesor, idPersona]);
+    }
+    await client.query('COMMIT');
+    return { id: idUsuario };
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error('Error al revertir el alta de personal:', rollbackError);
+    }
+    if (error.code === '23505' && /correo/i.test(error.constraint || '')) {
+      throw conflicto('correo_electronico', 'El correo electrónico ya está registrado.');
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 // Cuentas activas que tienen rol Tesorero y/o Profesor (el personal operativo)
 async function listarPersonalOperativo() {
@@ -193,6 +264,7 @@ async function guardarAccesos(idUsuario, roles, permisosActivos) {
 }
 
 module.exports = {
+  crearPersonal,
   listarPersonalOperativo,
   obtenerDetallePersonal,
   guardarAccesos

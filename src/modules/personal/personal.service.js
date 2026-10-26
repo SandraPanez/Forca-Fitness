@@ -3,6 +3,7 @@ const authRepository = require('../auth/auth.repository');
 const ROLES = require('../../shared/constants/roles');
 const { PERMISOS, PERMISOS_POR_ROL } = require('../../shared/constants/permisos');
 const permisosRepository = require('../../shared/repositories/permisos.repository');
+const bcrypt = require('bcryptjs');
 
 async function validarRegistro(datos) {
   function rechazar(campo, mensaje, status = 400) {
@@ -19,6 +20,9 @@ async function validarRegistro(datos) {
     numero_documento: 'El DNI',
     correo_electronico: 'El correo electrónico',
     numero_celular: 'El número de celular',
+    fecha_nacimiento: 'La fecha de nacimiento',
+    genero: 'El género',
+    direccion: 'La dirección',
     password: 'La contraseña temporal'
   };
   const campos = {};
@@ -48,6 +52,19 @@ async function validarRegistro(datos) {
   if (!/^[0-9]{9}$/.test(campos.numero_celular)) {
     rechazar('numero_celular', 'El número de celular debe tener 9 dígitos.');
   }
+  const fecha = new Date(campos.fecha_nacimiento);
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(campos.fecha_nacimiento) || Number.isNaN(fecha.getTime()) ||
+      fecha.toISOString().slice(0, 10) !== campos.fecha_nacimiento ||
+      campos.fecha_nacimiento < '1930-01-01' || campos.fecha_nacimiento > hoy) {
+    rechazar('fecha_nacimiento', 'Ingresa una fecha de nacimiento válida, sin fechas futuras.');
+  }
+  if (!['M', 'F', 'OTRO'].includes(campos.genero)) {
+    rechazar('genero', 'Selecciona un género válido.');
+  }
+  if (campos.direccion.length > 50) {
+    rechazar('direccion', 'La dirección admite hasta 50 caracteres.');
+  }
   if (campos.password.length < 6) {
     rechazar('password', 'La contraseña temporal debe tener al menos 6 caracteres.');
   }
@@ -60,9 +77,17 @@ async function validarRegistro(datos) {
     rechazar('roles', 'Selecciona al menos un rol válido: Profesor o Tesorero.');
   }
 
+  campos.correo_electronico = campos.correo_electronico.toLowerCase();
   if (await authRepository.buscarPorCorreo(campos.correo_electronico)) {
     rechazar('correo_electronico', 'El correo electrónico ya está registrado.', 409);
   }
+  return { ...campos, roles: [...datos.roles] };
+}
+
+async function crearPersonal(datos) {
+  const { password, ...campos } = await validarRegistro(datos);
+  const passwordHash = await bcrypt.hash(password, 10);
+  return personalRepository.crearPersonal(campos, passwordHash);
 }
 
 // Tesoreros primero y, dentro de cada grupo, orden alfabético por el nombre que se muestra.
@@ -152,6 +177,7 @@ async function actualizarAccesos(idUsuario, datos) {
 }
 
 module.exports = {
+  crearPersonal,
   validarRegistro,
   listarPersonal,
   obtenerDetalle,

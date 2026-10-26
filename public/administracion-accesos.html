@@ -20,8 +20,10 @@
         </div>
 
         <div class="personal-toolbar">
-            <button type="button" class="btn-submit" id="btn-agregar-personal">Agregar personal</button>
+            <button type="button" class="btn-submit" id="btn-agregar-personal" data-rol="DIRECTOR">Agregar personal</button>
         </div>
+
+        <p id="personal-mensaje" role="status" hidden></p>
 
         <div class="table-container">
             <table class="alumnos-table">
@@ -64,6 +66,23 @@
                 <div class="form-group">
                     <label for="registro-correo">Correo electrónico <span class="asterisk">*</span></label>
                     <input type="email" id="registro-correo" name="correo_electronico" placeholder="Ej: nombre.apellido@forcafitness.com" autocomplete="off" required maxlength="50" pattern="[^\s@]+@[^\s@]+\.[^\s@]+" title="Ingresa un correo electrónico válido.">
+                </div>
+                <div class="form-group">
+                    <label for="registro-fecha-nacimiento">Fecha de nacimiento <span class="asterisk">*</span></label>
+                    <input type="date" id="registro-fecha-nacimiento" name="fecha_nacimiento" required min="1930-01-01">
+                </div>
+                <div class="form-group">
+                    <label for="registro-genero">Género <span class="asterisk">*</span></label>
+                    <select id="registro-genero" name="genero" required>
+                        <option value="">Selecciona una opción</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                        <option value="OTRO">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="registro-direccion">Dirección <span class="asterisk">*</span></label>
+                    <input type="text" id="registro-direccion" name="direccion" required maxlength="50" autocomplete="street-address">
                 </div>
                 <div class="form-group">
                     <label for="registro-celular">Número de celular <span class="asterisk">*</span></label>
@@ -109,6 +128,7 @@
             <h2 id="confirmar-registro-titulo">Confirmar registro</h2>
             <p>¿Deseas registrar a esta persona con los roles seleccionados?</p>
             <p id="confirmar-registro-resumen"></p>
+            <p class="access-confirm-error" id="confirmar-registro-error" role="alert"></p>
             <div class="access-form-actions">
                 <button type="button" class="btn-secondary" id="cancelar-confirmacion-registro" autofocus>Volver a editar</button>
                 <button type="button" class="btn-primary" id="confirmar-registro-boton">Confirmar</button>

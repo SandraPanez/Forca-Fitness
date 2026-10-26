@@ -1,6 +1,22 @@
 const personalService = require('./personal.service');
 const ROLES = require('../../shared/constants/roles');
 
+async function crearPersonal(req, res) {
+  if (!req.user.roles.includes(ROLES.DIRECTOR)) {
+    return res.status(403).json({ success: false, message: 'Solo el director puede registrar personal.' });
+  }
+  try {
+    const resultado = await personalService.crearPersonal(req.body);
+    return res.status(201).json({ success: true, message: 'Cuenta creada correctamente.', data: resultado });
+  } catch (error) {
+    if (error.status === 400 || error.status === 409) {
+      return res.status(error.status).json({ success: false, message: error.message, campo: error.campo });
+    }
+    console.error('Error al crear la cuenta del trabajador:', error);
+    return res.status(500).json({ success: false, message: 'No se pudo crear la cuenta del trabajador.' });
+  }
+}
+
 async function validarRegistro(req, res) {
   if (!req.user.roles.includes(ROLES.DIRECTOR)) {
     return res.status(403).json({
@@ -102,6 +118,7 @@ async function actualizarAccesos(req, res) {
 }
 
 module.exports = {
+  crearPersonal,
   validarRegistro,
   listarPersonal,
   obtenerDetalle,

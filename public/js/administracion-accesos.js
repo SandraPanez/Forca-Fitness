@@ -157,15 +157,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const registroModal = document.getElementById('registroModal');
     const registroForm = document.getElementById('registroForm');
     const registroMensaje = document.getElementById('registro-mensaje');
-    const inputsRegistro = [...registroForm.querySelectorAll('input')];
+    const personalMensaje = document.getElementById('personal-mensaje');
+    const inputsRegistro = [...registroForm.querySelectorAll('input, select')];
     const rolesRegistro = inputsRegistro.filter(input => input.name === 'roles');
     const botonRegistrar = registroForm.querySelector('[type="submit"]');
     const confirmarRegistro = document.getElementById('confirmar-registro');
     const resumenRegistro = document.getElementById('confirmar-registro-resumen');
+    const errorConfirmacion = document.getElementById('confirmar-registro-error');
+    const botonConfirmar = document.getElementById('confirmar-registro-boton');
+    const botonVolver = document.getElementById('cancelar-confirmacion-registro');
     let validacionRegistro = null;
+    let datosConfirmados = null;
+    let guardandoRegistro = false;
+    registroForm.elements.fecha_nacimiento.max = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
     function limpiarValidacionRegistro() {
+        if (guardandoRegistro) return;
         if (confirmarRegistro.open) confirmarRegistro.close();
+        datosConfirmados = null;
+        errorConfirmacion.textContent = '';
         validacionRegistro?.abort();
         validacionRegistro = null;
         inputsRegistro.forEach(input => input.setCustomValidity(''));
@@ -180,12 +190,23 @@ document.addEventListener('DOMContentLoaded', () => {
         registroMensaje.hidden = false;
     }
 
+    function mostrarErrorRegistro(mensaje, nombreCampo) {
+        mostrarResultadoRegistro(mensaje, true);
+        const campo = nombreCampo === 'roles' ? rolesRegistro[0] : registroForm.elements.namedItem(nombreCampo);
+        if (campo) {
+            campo.setCustomValidity(mensaje);
+            campo.reportValidity();
+        }
+    }
+
     function abrirRegistro() {
+        personalMensaje.hidden = true;
         registroModal.style.display = 'flex';
         registroForm.elements.nombres.focus();
     }
 
     function cerrarRegistro() {
+        if (guardandoRegistro) return;
         limpiarValidacionRegistro();
         registroModal.style.display = 'none';
         registroForm.reset();
@@ -193,11 +214,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-agregar-personal').addEventListener('click', abrirRegistro);
     document.getElementById('btn-cancelar-registro').addEventListener('click', cerrarRegistro);
-    document.getElementById('cancelar-confirmacion-registro').addEventListener('click', () => confirmarRegistro.close());
-    document.getElementById('confirmar-registro-boton').addEventListener('click', () => {
-        confirmarRegistro.close();
-        mostrarResultadoRegistro('Datos confirmados.');
-        // T-54 creará la cuenta después de esta confirmación.
+    botonVolver.addEventListener('click', () => {
+        if (!guardandoRegistro) confirmarRegistro.close();
+    });
+    confirmarRegistro.addEventListener('cancel', event => {
+        if (guardandoRegistro) event.preventDefault();
+    });
+    botonConfirmar.addEventListener('click', async () => {
+        if (guardandoRegistro || !datosConfirmados || !confirmarRegistro.open) return;
+        guardandoRegistro = true;
+        botonConfirmar.disabled = true;
+        botonVolver.disabled = true;
+        botonConfirmar.textContent = 'Guardando...';
+        errorConfirmacion.textContent = '';
+        try {
+            const response = await authFetch('/api/personal', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosConfirmados)
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                confirmarRegistro.close();
+                datosConfirmados = null;
+                mostrarErrorRegistro(result.message || 'No se pudo crear la cuenta.', result.campo);
+                return;
+            }
+            await cargarPersonal();
+            guardandoRegistro = false;
+            cerrarRegistro();
+            personalMensaje.textContent = result.message;
+            personalMensaje.className = 'text-muted';
+            personalMensaje.hidden = false;
+            document.getElementById('btn-agregar-personal').focus();
+        } catch {
+            errorConfirmacion.textContent = 'No se pudo confirmar el registro. Inténtalo nuevamente.';
+        } finally {
+            guardandoRegistro = false;
+            botonConfirmar.disabled = false;
+            botonVolver.disabled = false;
+            botonConfirmar.textContent = 'Confirmar';
+        }
     });
     registroModal.addEventListener('click', event => {
         if (event.target === registroModal) {
@@ -212,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     registroForm.addEventListener('input', limpiarValidacionRegistro);
     registroForm.addEventListener('submit', async event => {
         event.preventDefault();
-        if (validacionRegistro) return;
+        if (validacionRegistro || guardandoRegistro) return;
 
         limpiarValidacionRegistro();
         for (const input of inputsRegistro) {
@@ -242,18 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok || !result.success) {
                 const mensaje = result.message || 'No se pudieron validar los datos.';
-                mostrarResultadoRegistro(mensaje, true);
-                const campo = result.campo === 'roles'
-                    ? rolesRegistro[0]
-                    : registroForm.elements.namedItem(result.campo);
-                if (campo) {
-                    campo.setCustomValidity(mensaje);
-                    campo.reportValidity();
-                }
+                mostrarErrorRegistro(mensaje, result.campo);
                 return;
             }
 
             mostrarResultadoRegistro('Los datos son válidos.');
+            datosConfirmados = datos;
             resumenRegistro.textContent = `${datos.nombres} ${datos.apellido_paterno} ${datos.apellido_materno} · ${datos.correo_electronico} · Roles: ${datos.roles.map(rol => NOMBRE_ROL[rol]).join(' y ')}.`;
             confirmarRegistro.showModal();
         } catch {
