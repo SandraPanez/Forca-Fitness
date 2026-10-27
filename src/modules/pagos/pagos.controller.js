@@ -14,6 +14,19 @@ class PagosController {
         }
     }
 
+    async listarCobrosPorAlumno(req, res) {
+        try {
+            const data = await pagosService.listarCobrosPorAlumno(req.query);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al listar cobros por alumno:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron cargar los cobros por alumno'
+            });
+        }
+    }
+
     async listarEfectivoPendientes(req, res) {
         try {
             const data = await pagosService.listarEfectivoPendientes();

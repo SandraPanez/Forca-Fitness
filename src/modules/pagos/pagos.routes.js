@@ -20,6 +20,12 @@ router.get(
   pagosController.listarCobros
 );
 router.get(
+  '/por-alumno',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  pagosController.listarCobrosPorAlumno
+);
+router.get(
   '/efectivo/pendientes',
   autenticar,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
