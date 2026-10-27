@@ -119,7 +119,7 @@ class PagosRepository {
             ("Id_Pago", "Monto", "Estado_Pago", "Id_Matricula", "Id_MPago")
             SELECT $1, $2, 'PENDIENTE', $3, "Id_MPago"
             FROM "Academia Forca&Fitness"."Metodo_Pago"
-            WHERE REPLACE(UPPER("Nombre_Metodo"), ' ', '_') = 'MERCADO_PAGO'
+            WHERE UPPER("Nombre_Metodo") IN ('MERCADO PAGO', 'MERCADO_PAGO')
             RETURNING "Id_Pago"
         `;
         const result = await db.query(query, [
@@ -369,7 +369,7 @@ class PagosRepository {
                 JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Pago" = mp."Id_Pago"
                 JOIN "Academia Forca&Fitness"."Metodo_Pago" medio ON medio."Id_MPago" = p."Id_MPago"
                 WHERE mp."Preference_Id" = $1 AND mp."Referencia_Ext" = $2
-                  AND p."Id_Matricula" = $2 AND REPLACE(UPPER(medio."Nombre_Metodo"), ' ', '_') = 'MERCADO_PAGO'
+                  AND p."Id_Matricula" = $2 AND UPPER(medio."Nombre_Metodo") IN ('MERCADO PAGO', 'MERCADO_PAGO')
                 FOR UPDATE OF p, mp
             `, [preference_id, id_matricula]);
             const pago = transaccion.rows[0];
