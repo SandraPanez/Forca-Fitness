@@ -347,7 +347,7 @@ class PagosService {
                     if (r.profesores) {
                         r.profesores.split(',').map(p => p.trim()).filter(Boolean).forEach(p => alu.profesores.add(p));
                     }
-                    if (r.id_pago) {
+                    if (r.id_pago && !alu.pagos.some(p => p.id_pago === r.id_pago)) {
                         const fecha = new Date(r.fecha_pago);
                         const mes = NOMBRES_MESES[fecha.getMonth()] || '';
                         alu.pagos.push({

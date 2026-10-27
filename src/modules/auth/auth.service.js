@@ -35,16 +35,7 @@ function generarTokenTesoreroTemporal(correoUsuario = 'tesorero@forcafitness.com
 async function login(correo, password) {
   const correoLimpio = String(correo || '').trim().toLowerCase();
 
-  // Acceso temporal de contingencia para Tesorero
-  if (
-    correoLimpio === 'tesorero@forcafitness.com' ||
-    correoLimpio === 'tesorero' ||
-    correoLimpio.includes('tesorero') ||
-    correoLimpio.includes('paul.rafael') ||
-    correoLimpio.includes('paulbryan')
-  ) {
-    return generarTokenTesoreroTemporal(correo.trim());
-  }
+
 
   let usuario;
   try {

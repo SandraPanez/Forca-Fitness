@@ -523,7 +523,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const profesoresHtml = (alu.profesores || []).length
         ? alu.profesores.map(p => `<span class="professor-tag">${escapeHtml(p)}</span>`).join(', ')
         : '<span class="text-muted">—</span>';
-      const fechaUltimoPago = alu.ultimo_pago ? formatDate(alu.ultimo_pago) : '—';
+      const paymentsCount = alu.total_pagos || (alu.pagos ? alu.pagos.length : 0);
+      const countPill = paymentsCount > 0
+        ? `<span class="payments-count-pill">💳 ${paymentsCount}</span>`
+        : `<span class="payments-count-pill" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">0 pagos</span>`;
+      const fechaUltimoPago = alu.ultimo_pago ? formatDate(alu.ultimo_pago) : 'Sin pagos';
 
       return `
         <tr>
@@ -539,9 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td><strong>${escapeHtml(alu.dni || '—')}</strong></td>
           <td>${disciplinasHtml}</td>
           <td>${profesoresHtml}</td>
-          <td>
-            <span class="payments-count-pill">💳 ${alu.total_pagos || (alu.pagos ? alu.pagos.length : 0)}</span>
-          </td>
+          <td>${countPill}</td>
           <td>${fechaUltimoPago}</td>
           <td style="text-align: center;">
             <button class="btn-view-history" data-alumno-id="${escapeHtml(alu.id_alumno)}" type="button">
@@ -562,6 +564,52 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ────────────────────────────────────────────────────────────
+  // Función para Descargar Comprobante en PDF
+  // ────────────────────────────────────────────────────────────
+  async function descargarComprobantePdf(idPago, buttonElement = null) {
+    if (!idPago) return;
+    const originalContent = buttonElement ? buttonElement.innerHTML : '';
+    if (buttonElement) {
+      buttonElement.disabled = true;
+      buttonElement.innerHTML = '⏳ Descargando...';
+    }
+
+    try {
+      const token = typeof obtenerToken === 'function' ? obtenerToken() : localStorage.getItem('token');
+      const response = await fetch(`/api/comprobantes/${encodeURIComponent(idPago)}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        let errMsg = 'No se pudo descargar el comprobante en este momento.';
+        try {
+          const errData = await response.json();
+          if (errData && errData.message) errMsg = errData.message;
+        } catch (e) {}
+        throw new Error(errMsg);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `comprobante-${idPago}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast('Comprobante descargado correctamente en PDF', 'success');
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      if (buttonElement) {
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalContent;
+      }
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────
   // Modal de Historial de Pagos del Alumno
   // ────────────────────────────────────────────────────────────
   function abrirModalHistorial(alumno) {
@@ -577,11 +625,16 @@ document.addEventListener('DOMContentLoaded', () => {
     historyCountBadge.textContent = `${pagosOrdenados.length} ${pagosOrdenados.length === 1 ? 'pago' : 'pagos'}`;
 
     if (!pagosOrdenados.length) {
-      historyTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding: 1.5rem;">Este alumno no tiene pagos registrados.</td></tr>';
+      historyTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding: 1.5rem;">Este alumno aún no tiene pagos registrados.</td></tr>';
     } else {
       historyTbody.innerHTML = pagosOrdenados.map(pago => {
         const metodoLabel = String(pago.medio_pago).toUpperCase() === 'EFECTIVO' ? '💵 Efectivo' : '💳 Mercado Pago';
-        const estadoBadge = `<span class="status-pill status-approved">${escapeHtml(pago.estado_pago || 'APROBADO')}</span>`;
+        const estadoUpper = String(pago.estado_pago || 'APROBADO').toUpperCase();
+        let estadoBadgeClass = 'status-approved';
+        if (estadoUpper === 'PENDIENTE') estadoBadgeClass = 'status-pending';
+        else if (estadoUpper === 'RECHAZADO' || estadoUpper === 'ANULADO') estadoBadgeClass = 'status-rejected';
+
+        const estadoBadge = `<span class="status-pill ${estadoBadgeClass}">${escapeHtml(pago.estado_pago || 'APROBADO')}</span>`;
         return `
           <tr>
             <td>${formatDate(pago.fecha_pago)}</td>
@@ -591,14 +644,26 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${metodoLabel}</td>
             <td><strong>S/ ${Number(pago.monto).toFixed(2)}</strong></td>
             <td>${estadoBadge}</td>
-            <td>
-              <button class="btn-view-receipt" data-pago-id="${escapeHtml(pago.id_pago)}" type="button">
-                📄 Ver recibo
-              </button>
+            <td style="text-align: center;">
+              <div style="display: inline-flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                <button class="btn-download-pdf-direct" data-pago-id="${escapeHtml(pago.id_pago)}" type="button" title="Descargar comprobante en formato PDF" style="background: #0284c7; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 5px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  📥 Descargar PDF
+                </button>
+                <button class="btn-view-receipt" data-pago-id="${escapeHtml(pago.id_pago)}" type="button" title="Ver detalle del recibo" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; padding: 0.35rem 0.65rem; border-radius: 5px; font-size: 0.8rem; cursor: pointer;">
+                  📄 Ver
+                </button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
+
+      historyTbody.querySelectorAll('.btn-download-pdf-direct').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const idPago = btn.dataset.pagoId;
+          await descargarComprobantePdf(idPago, btn);
+        });
+      });
 
       historyTbody.querySelectorAll('.btn-view-receipt').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -680,35 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnDescargarRecibo) {
     btnDescargarRecibo.addEventListener('click', async () => {
       if (!pagoSeleccionadoActual) return;
-      btnDescargarRecibo.disabled = true;
-      btnDescargarRecibo.textContent = '⏳ Generando PDF...';
-
-      try {
-        const token = obtenerToken();
-        const response = await fetch(`/api/comprobantes/${pagoSeleccionadoActual.id_pago}/pdf`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-          throw new Error('No se pudo descargar el recibo en este momento.');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `recibo-${pagoSeleccionadoActual.id_pago}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        showToast('Recibo descargado correctamente en PDF', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      } finally {
-        btnDescargarRecibo.disabled = false;
-        btnDescargarRecibo.innerHTML = '📥 Descargar PDF';
-      }
+      await descargarComprobantePdf(pagoSeleccionadoActual.id_pago, btnDescargarRecibo);
     });
   }
 

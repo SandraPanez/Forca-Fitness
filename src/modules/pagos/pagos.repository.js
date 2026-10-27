@@ -119,7 +119,7 @@ class PagosRepository {
             ("Id_Pago", "Monto", "Estado_Pago", "Id_Matricula", "Id_MPago")
             SELECT $1, $2, 'PENDIENTE', $3, "Id_MPago"
             FROM "Academia Forca&Fitness"."Metodo_Pago"
-            WHERE UPPER("Nombre_Metodo") = 'MERCADO_PAGO'
+            WHERE REPLACE(UPPER("Nombre_Metodo"), ' ', '_') = 'MERCADO_PAGO'
             RETURNING "Id_Pago"
         `;
         const result = await db.query(query, [
@@ -164,6 +164,7 @@ class PagosRepository {
                    $3, "Id_MPago"
             FROM "Academia Forca&Fitness"."Metodo_Pago"
             WHERE UPPER("Nombre_Metodo") = 'EFECTIVO'
+              AND "Activo" = TRUE
             RETURNING "Id_Pago", "Monto", "Estado_Pago", "Fecha_Pago",
                       "Id_Matricula"
         `;
@@ -368,7 +369,7 @@ class PagosRepository {
                 JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Pago" = mp."Id_Pago"
                 JOIN "Academia Forca&Fitness"."Metodo_Pago" medio ON medio."Id_MPago" = p."Id_MPago"
                 WHERE mp."Preference_Id" = $1 AND mp."Referencia_Ext" = $2
-                  AND p."Id_Matricula" = $2 AND UPPER(medio."Nombre_Metodo") = 'MERCADO_PAGO'
+                  AND p."Id_Matricula" = $2 AND REPLACE(UPPER(medio."Nombre_Metodo"), ' ', '_') = 'MERCADO_PAGO'
                 FOR UPDATE OF p, mp
             `, [preference_id, id_matricula]);
             const pago = transaccion.rows[0];
@@ -574,28 +575,49 @@ class PagosRepository {
                 p."Monto" AS monto,
                 p."Estado_Pago" AS estado_pago,
                 p."Fecha_Pago" AS fecha_pago,
-                UPPER(mp."Nombre_Metodo") AS medio_pago,
+                UPPER(COALESCE(mp."Nombre_Metodo", 'EFECTIVO')) AS medio_pago,
                 cobro."Referencia_Operacion" AS referencia,
-                (
-                    SELECT STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ')
-                    FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
-                    JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
-                    JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
-                    WHERE dm."Id_Matricula" = m."Id_Matricula"
+                COALESCE(
+                    (
+                        SELECT STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ')
+                        FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+                        WHERE dm."Id_Matricula" = m."Id_Matricula"
+                    ),
+                    (
+                        SELECT STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ')
+                        FROM "Academia Forca&Fitness"."Matricula" m2
+                        JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m2."Id_Matricula"
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+                        WHERE m2."Id_alumno" = a."Id_alumno"
+                    )
                 ) AS disciplinas,
-                (
-                    SELECT STRING_AGG(DISTINCT TRIM(per_prof."Nombre" || ' ' || per_prof."Apellido_Paterno"), ', ')
-                    FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
-                    JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
-                    JOIN "Academia Forca&Fitness"."Profesor" prof ON prof."Id_Profesor" = dh."Id_Profesor"
-                    JOIN "Academia Forca&Fitness"."Persona" per_prof ON per_prof."Id_Persona" = prof."Id_Persona"
-                    WHERE dm."Id_Matricula" = m."Id_Matricula"
+                COALESCE(
+                    (
+                        SELECT STRING_AGG(DISTINCT TRIM(per_prof."Nombre" || ' ' || per_prof."Apellido_Paterno"), ', ')
+                        FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Profesor" prof ON prof."Id_Profesor" = dh."Id_Profesor"
+                        JOIN "Academia Forca&Fitness"."Persona" per_prof ON per_prof."Id_Persona" = prof."Id_Persona"
+                        WHERE dm."Id_Matricula" = m."Id_Matricula"
+                    ),
+                    (
+                        SELECT STRING_AGG(DISTINCT TRIM(per_prof."Nombre" || ' ' || per_prof."Apellido_Paterno"), ', ')
+                        FROM "Academia Forca&Fitness"."Matricula" m2
+                        JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m2."Id_Matricula"
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Profesor" prof ON prof."Id_Profesor" = dh."Id_Profesor"
+                        JOIN "Academia Forca&Fitness"."Persona" per_prof ON per_prof."Id_Persona" = prof."Id_Persona"
+                        WHERE m2."Id_alumno" = a."Id_alumno"
+                    )
                 ) AS profesores
-            FROM "Academia Forca&Fitness"."Pago" p
-            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
-            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
-            JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+            FROM "Academia Forca&Fitness"."Alumno" a
             JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+            LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_alumno" = a."Id_alumno"
+            LEFT JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Matricula" = m."Id_Matricula"
+            LEFT JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
             LEFT JOIN LATERAL (
                 SELECT rc."Referencia_Operacion"
                 FROM "Academia Forca&Fitness"."Registro_Cobro" rc
@@ -603,7 +625,7 @@ class PagosRepository {
                 ORDER BY rc."Fecha_Hora" DESC
                 LIMIT 1
             ) cobro ON TRUE
-            ORDER BY a."Id_alumno", p."Fecha_Pago" DESC;
+            ORDER BY a."Id_alumno", p."Fecha_Pago" DESC NULLS LAST;
         `;
         const result = await db.query(query);
         return result.rows;
