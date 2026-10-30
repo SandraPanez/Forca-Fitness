@@ -14,6 +14,19 @@ class PagosController {
         }
     }
 
+    async listarCobrosPorAlumno(req, res) {
+        try {
+            const data = await pagosService.listarCobrosPorAlumno(req.query);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al listar cobros por alumno:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron cargar los cobros por alumno'
+            });
+        }
+    }
+
     async listarEfectivoPendientes(req, res) {
         try {
             const data = await pagosService.listarEfectivoPendientes();
@@ -38,6 +51,21 @@ class PagosController {
         } catch (error) {
             console.error('Error al verificar estado de matrícula:', error);
             return res.status(500).json({ success: false, message: 'Error interno al consultar estado' });
+        }
+    }
+
+    async sincronizarPago(req, res) {
+        try {
+            const data = await pagosService.sincronizarPago(req.params.matricula);
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            console.error('Error al consultar Mercado Pago:', error.message);
+            const validacion = error.message?.startsWith('VALIDACION:');
+            return res.status(validacion ? 400 : 502).json({
+                success: false,
+                message: validacion ? error.message.replace(/^VALIDACION:\s*/, '')
+                    : 'No pudimos consultar tu pago en Mercado Pago. Vuelve a verificar en unos momentos.'
+            });
         }
     }
 
@@ -107,79 +135,36 @@ class PagosController {
     }
 
     async pagoExitoso(req, res) {
+        let idMatricula = typeof req.query.external_reference === 'string' ? req.query.external_reference : '';
+        let resultado = 'verificar';
+        let tipo = '';
         try {
-            const paymentId      = req.query.payment_id || req.query.collection_id;
-            const status         = req.query.status || req.query.collection_status;
-            const externalReference = req.query.external_reference;
-            const preferenceId   = req.query.preference_id;
-            const appUrl         = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-            const isLocalhost    = !appUrl.startsWith('https://');
-
-            console.log('[pagoExitoso] params:', { paymentId, status, externalReference, preferenceId, isLocalhost });
-
-            if (status === 'approved' || status === 'success') {
-                let resultado = null;
-
-                // En localhost, MP no puede recibir webhooks y el payment de sandbox
-                // no siempre es consultable con token de producción.
-                // Por eso en localhost vamos directo al fallback de sandbox.
-                if (!isLocalhost && paymentId) {
-                    try {
-                        resultado = await pagosService.procesarWebhook('payment', paymentId);
-                        console.log('[pagoExitoso] webhook procesado:', resultado?.estadoPago);
-                    } catch (mpError) {
-                        console.error('[pagoExitoso] Error al consultar pago en MP API:', mpError.message);
-                    }
-                }
-
-                // Fallback: confirmar por external_reference o preference_id
-                // Se usa siempre en localhost o cuando el webhook falló
-                if (!resultado && (externalReference || preferenceId)) {
-                    try {
-                        resultado = await pagosService.confirmarRetornoExitosoSandbox({
-                            id_matricula: externalReference,
-                            preference_id: preferenceId,
-                            payment_id: paymentId
-                        });
-                        console.log('[pagoExitoso] sandbox fallback:', resultado?.estadoMatricula, '| usuario:', resultado?.usuarioActivado?.Correo);
-                    } catch (sandboxError) {
-                        console.error('[pagoExitoso] Error en confirmación sandbox:', sandboxError.message);
-                    }
-                }
-
-                const esReserva = resultado?.estadoMatricula === 'Reservada';
-                const tipoParam = esReserva ? '&tipo=reserva' : '';
-                return res.redirect(`/pagos.html?resultado=exitoso${tipoParam}`);
+            const paymentId = req.query.payment_id || req.query.collection_id;
+            if (paymentId) {
+                // El mismo chequeo se aplica en localhost, sandbox y producción.
+                const pago = await pagosService.procesarWebhook('payment', paymentId);
+                idMatricula = pago.idMatricula;
+                resultado = pago.estadoPago === 'APROBADO' ? 'exitoso'
+                    : pago.estadoPago === 'PENDIENTE' ? 'pendiente' : 'fallido';
+                tipo = pago.estadoMatricula === 'Reservada' ? 'reserva' : '';
             }
-
-            if (status === 'pending' || status === 'in_process') {
-                return res.redirect('/pagos.html?resultado=pendiente');
-            }
-
-            return res.redirect('/pagos.html?resultado=fallido');
-
         } catch (error) {
-            console.error('[pagoExitoso] Error inesperado:', error);
-            return res.redirect('/pagos.html?resultado=fallido');
+            console.error('No se pudo verificar el retorno del pago:', error.message);
         }
-    }
-
-    async pagoFallido(req, res) {
-        return res.redirect('/pagos.html?resultado=fallido');
-    }
-
-    async pagoPendiente(req, res) {
-        return res.redirect('/pagos.html?resultado=pendiente');
+        const params = new URLSearchParams({ resultado });
+        if (idMatricula) params.set('matricula', idMatricula);
+        if (tipo) params.set('tipo', tipo);
+        return res.redirect(`/pagos.html?${params}`);
     }
 
     async webhook(req, res) {
         try {
-            const { type, data } = req.body;
-            const resultado = await pagosService.procesarWebhook(type, data?.id);
-            console.log('Webhook recibido:', resultado);
+            const type = req.body?.type || req.query.type;
+            const id = req.body?.data?.id || req.query['data.id'];
+            await pagosService.procesarWebhook(type, id);
             return res.status(200).send('OK');
         } catch (error) {
-            console.error('Error en webhook:', error);
+            console.error('Error en webhook:', error.message);
             return res.status(500).send('Error');
         }
     }

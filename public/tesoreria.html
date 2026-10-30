@@ -48,41 +48,340 @@
       </div>
     </section>
 
-    <!-- Historial general de cobros -->
+    <!-- Historial general de cobros y Por alumno -->
     <section aria-label="Historial de cobros">
-      <div class="pending-approvals-header" style="margin-bottom: 1rem;">
+      <div class="pending-approvals-header" style="margin-bottom: 1rem; flex-wrap: wrap;">
         <div class="pending-approvals-title-group">
           <span class="pending-approvals-icon">📋</span>
           <div>
             <h3 class="pending-approvals-title">Historial de cobros</h3>
-            <p class="pending-approvals-subtitle">Todos los pagos registrados con filtros de búsqueda</p>
+            <p class="pending-approvals-subtitle">Consulta todos los pagos registrados o filtra por alumno</p>
+          </div>
+        </div>
+        
+        <!-- Pestañas de Historial: Vista General y Por Alumno (Solo Tesorero) -->
+        <div class="treasury-tabs" role="tablist">
+          <button id="tab-todos" class="treasury-tab active" role="tab" aria-selected="true" type="button">
+            Todos los cobros
+          </button>
+          <button id="tab-por-alumno" class="treasury-tab" role="tab" aria-selected="false" type="button" style="display: none;">
+            👤 Por alumno
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista 1: Todos los cobros (Tabla general existente) -->
+      <div id="vista-todos-cobros">
+        <section class="treasury-toolbar" aria-label="Filtros de cobros">
+          <input id="treasury-search" type="search" placeholder="Buscar alumno o matrícula">
+          <select id="treasury-status">
+            <option value="">Todos los estados</option>
+            <option value="PENDIENTE">Pendientes</option>
+            <option value="APROBADO">Aprobados</option>
+            <option value="RECHAZADO">Rechazados</option>
+            <option value="ANULADO">Anulados</option>
+          </select>
+          <select id="treasury-method">
+            <option value="">Todos los medios</option>
+            <option value="EFECTIVO">Efectivo</option>
+            <option value="MERCADO_PAGO">Mercado Pago</option>
+          </select>
+          <button id="treasury-refresh" class="btn-submit" type="button">Actualizar</button>
+        </section>
+        <div id="treasury-message" class="payment-message" role="status"></div>
+        <section class="table-container treasury-table-container">
+          <table class="alumnos-table treasury-table">
+            <thead><tr><th>Alumno / matrícula</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th>Vencimiento</th><th>Acción</th></tr></thead>
+            <tbody id="treasury-tbody"><tr><td colspan="7" class="text-center text-muted">Cargando cobros...</td></tr></tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- Vista 2: Por alumno (Solo para Tesorero) -->
+      <div id="vista-por-alumno" style="display: none;">
+        <!-- Sección de Filtros (No obligatoria) -->
+        <section class="student-filters-panel" aria-label="Filtros por alumno">
+          <div class="filters-panel-header">
+            <div class="filters-panel-title">
+              <span class="filters-icon">🔍</span>
+              <div>
+                <strong>Filtros avanzados</strong>
+                <p class="filters-panel-desc">Elige uno o más filtros para activar y personalizar tu búsqueda</p>
+              </div>
+            </div>
+            <button id="btn-limpiar-filtros" class="btn-clean-filters" type="button">
+              ↺ Limpiar filtros
+            </button>
+          </div>
+
+          <!-- Selector de qué filtros activar (multiselección) -->
+          <div class="filter-type-selectors" aria-label="Tipos de filtros disponibles">
+            <span class="filter-label">Activar filtros:</span>
+            <label class="filter-chip-checkbox">
+              <input type="checkbox" id="chk-filtro-nombre">
+              <span class="chip-text">👤 Nombre</span>
+            </label>
+            <label class="filter-chip-checkbox">
+              <input type="checkbox" id="chk-filtro-dni">
+              <span class="chip-text">🪪 DNI</span>
+            </label>
+            <label class="filter-chip-checkbox">
+              <input type="checkbox" id="chk-filtro-disciplina">
+              <span class="chip-text">🥋 Disciplina</span>
+            </label>
+            <label class="filter-chip-checkbox">
+              <input type="checkbox" id="chk-filtro-profesor">
+              <span class="chip-text">🥊 Profesor encargado</span>
+            </label>
+            <label class="filter-chip-checkbox">
+              <input type="checkbox" id="chk-filtro-mes">
+              <span class="chip-text">📅 Mes</span>
+            </label>
+            <label class="filter-chip-checkbox">
+              <input type="checkbox" id="chk-filtro-metodo">
+              <span class="chip-text">💳 Método de pago</span>
+            </label>
+          </div>
+
+          <!-- Opciones desplegables según los filtros activados -->
+          <div class="filter-options-container">
+            <!-- Opción Nombre -->
+            <div id="box-filtro-nombre" class="filter-box" style="display: none;">
+              <label for="input-filtro-nombre" class="filter-box-label">Escribir nombre del alumno:</label>
+              <div class="search-input-wrapper">
+                <input id="input-filtro-nombre" type="text" placeholder="Ej. Carlos Mendoza, Lucía..." class="input-control">
+              </div>
+            </div>
+
+            <!-- Opción DNI -->
+            <div id="box-filtro-dni" class="filter-box" style="display: none;">
+              <label for="input-filtro-dni" class="filter-box-label">Escribir DNI del alumno:</label>
+              <div class="search-input-wrapper">
+                <input id="input-filtro-dni" type="text" placeholder="Ej. 74839201" maxlength="12" class="input-control">
+              </div>
+            </div>
+
+            <!-- Opción Disciplina (Capoeira, Capoeira Kids, BJJ, BJJ Kids, MMA, Cross Training, Box) -->
+            <div id="box-filtro-disciplina" class="filter-box" style="display: none;">
+              <span class="filter-box-label">Seleccionar disciplina(s):</span>
+              <div id="chips-disciplinas" class="chips-options-group">
+                <button type="button" class="option-pill" data-value="Capoeira">Capoeira</button>
+                <button type="button" class="option-pill" data-value="Capoeira Kids">Capoeira Kids</button>
+                <button type="button" class="option-pill" data-value="BJJ">BJJ</button>
+                <button type="button" class="option-pill" data-value="BJJ Kids">BJJ Kids</button>
+                <button type="button" class="option-pill" data-value="MMA">MMA</button>
+                <button type="button" class="option-pill" data-value="Cross Training">Cross Training</button>
+                <button type="button" class="option-pill" data-value="Box">Box</button>
+              </div>
+            </div>
+
+            <!-- Opción Profesor (Faridh Cruz, Paul Rafael, Cristian Benites) -->
+            <div id="box-filtro-profesor" class="filter-box" style="display: none;">
+              <span class="filter-box-label">Seleccionar profesor(es) encargado(s):</span>
+              <div id="chips-profesores" class="chips-options-group">
+                <button type="button" class="option-pill" data-value="Faridh Cruz">Faridh Cruz</button>
+                <button type="button" class="option-pill" data-value="Paul Rafael">Paul Rafael</button>
+                <button type="button" class="option-pill" data-value="Cristian Benites">Cristian Benites</button>
+              </div>
+            </div>
+
+            <!-- Opción Mes (Enero a Diciembre) -->
+            <div id="box-filtro-mes" class="filter-box" style="display: none;">
+              <span class="filter-box-label">Seleccionar mes(es):</span>
+              <div id="chips-meses" class="chips-options-group">
+                <button type="button" class="option-pill" data-value="Enero">Enero</button>
+                <button type="button" class="option-pill" data-value="Febrero">Febrero</button>
+                <button type="button" class="option-pill" data-value="Marzo">Marzo</button>
+                <button type="button" class="option-pill" data-value="Abril">Abril</button>
+                <button type="button" class="option-pill" data-value="Mayo">Mayo</button>
+                <button type="button" class="option-pill" data-value="Junio">Junio</button>
+                <button type="button" class="option-pill" data-value="Julio">Julio</button>
+                <button type="button" class="option-pill" data-value="Agosto">Agosto</button>
+                <button type="button" class="option-pill" data-value="Setiembre">Setiembre</button>
+                <button type="button" class="option-pill" data-value="Octubre">Octubre</button>
+                <button type="button" class="option-pill" data-value="Noviembre">Noviembre</button>
+                <button type="button" class="option-pill" data-value="Diciembre">Diciembre</button>
+              </div>
+            </div>
+
+            <!-- Opción Método de pago (Efectivo, Mercado Pago) -->
+            <div id="box-filtro-metodo" class="filter-box" style="display: none;">
+              <span class="filter-box-label">Seleccionar método de pago:</span>
+              <div id="chips-metodos" class="chips-options-group">
+                <button type="button" class="option-pill" data-value="EFECTIVO">💵 Efectivo</button>
+                <button type="button" class="option-pill" data-value="MERCADO_PAGO">💳 Mercado Pago</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Barra de estado y contador de alumnos -->
+        <div class="students-results-bar">
+          <span id="students-count-label" class="students-count-text">Cargando alumnos...</span>
+        </div>
+
+        <div id="students-message" class="payment-message" role="status"></div>
+
+        <!-- Tabla de Alumnos registrados con pagos (sin repetirse) -->
+        <section class="table-container treasury-table-container">
+          <table class="alumnos-table students-payment-table">
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>DNI</th>
+                <th>Disciplinas</th>
+                <th>Profesor(es)</th>
+                <th>N° Pagos</th>
+                <th>Último pago</th>
+                <th style="text-align: center;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="students-tbody">
+              <tr><td colspan="7" class="text-center text-muted">Cargando lista de alumnos...</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de Historial de Pagos del Alumno -->
+  <div id="modal-historial-alumno" class="modal-overlay" style="display: none;" hidden>
+    <div class="modal-card modal-history-card">
+      <div class="modal-history-header">
+        <div class="student-header-info">
+          <div class="student-avatar-circle" id="history-avatar">AL</div>
+          <div>
+            <h3 class="modal-title" id="history-student-name" style="text-align: left; margin-bottom: 0.2rem;">Alumno</h3>
+            <p class="modal-desc" style="text-align: left; margin-bottom: 0;">
+              <strong>DNI:</strong> <span id="history-student-dni">—</span> &nbsp;|&nbsp; 
+              <strong>Correo:</strong> <span id="history-student-email">—</span>
+            </p>
+          </div>
+        </div>
+        <button id="close-modal-historial" class="btn-close-modal" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-history-subtitle">
+        <span>Historial de pagos (ordenado del más reciente al más antiguo)</span>
+        <span id="history-count-badge" class="history-badge">0 pagos</span>
+      </div>
+
+      <div class="history-table-wrapper">
+        <table class="alumnos-table history-table">
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Matrícula / Código</th>
+              <th>Disciplinas</th>
+              <th>Profesor</th>
+              <th>Método</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th style="text-align: center;">Comprobante</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr><td colspan="8" class="text-center text-muted">Cargando pagos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.5rem;">
+        <button id="btn-cerrar-historial" class="btn-cancel" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal del Recibo Oficial de Pago -->
+  <div id="modal-recibo" class="modal-overlay" style="display: none;" hidden>
+    <div class="modal-card modal-receipt-card">
+      <div class="receipt-header-banner">
+        <img src="/images/logo_recibo.png" alt="Forca & Fitness" class="receipt-logo" onerror="this.style.display='none'">
+        <div>
+          <h2 class="receipt-main-title">RECIBO VIRTUAL</h2>
+          <p class="receipt-sub-title">ACADEMIA FORCA &amp; FITNESS</p>
+        </div>
+        <button id="close-modal-recibo" class="btn-close-modal receipt-close" aria-label="Cerrar recibo">&times;</button>
+      </div>
+
+      <div class="receipt-body">
+        <div class="receipt-meta-grid">
+          <div class="receipt-meta-item">
+            <span class="receipt-label">N° RECIBO</span>
+            <strong id="receipt-number" class="receipt-value receipt-highlight">CP-2026-0001</strong>
+          </div>
+          <div class="receipt-meta-item">
+            <span class="receipt-label">FECHA DE EMISIÓN</span>
+            <span id="receipt-date" class="receipt-value">—</span>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-field">
+          <span class="receipt-field-title">PAGADOR</span>
+          <span id="receipt-payer" class="receipt-field-value">—</span>
+        </div>
+
+        <div class="receipt-row-two">
+          <div class="receipt-field">
+            <span class="receipt-field-title">DOCUMENTO (DNI)</span>
+            <span id="receipt-dni" class="receipt-field-value">—</span>
+          </div>
+          <div class="receipt-field">
+            <span class="receipt-field-title">CORREO REGISTRADO</span>
+            <span id="receipt-email" class="receipt-field-value">—</span>
+          </div>
+        </div>
+
+        <div class="receipt-field">
+          <span class="receipt-field-title">CONCEPTO</span>
+          <span id="receipt-concept" class="receipt-field-value">—</span>
+        </div>
+
+        <div class="receipt-row-two">
+          <div class="receipt-field">
+            <span class="receipt-field-title">MÉTODO DE PAGO</span>
+            <span id="receipt-method" class="receipt-field-value">—</span>
+          </div>
+          <div class="receipt-field">
+            <span class="receipt-field-title">REFERENCIA</span>
+            <span id="receipt-ref" class="receipt-field-value">—</span>
+          </div>
+        </div>
+
+        <div class="receipt-total-box">
+          <div>
+            <span class="receipt-total-label">TOTAL PAGADO</span>
+            <p id="receipt-total-letters" class="receipt-total-letters">—</p>
+          </div>
+          <span id="receipt-total" class="receipt-total-amount">S/ 0.00</span>
+        </div>
+
+        <div class="receipt-signature-section">
+          <div class="signature-box">
+            <img src="/images/firma_tesorero.png" alt="Firma del Tesorero" class="signature-img" onerror="this.style.display='none'">
+            <div class="signature-line"></div>
+            <span class="signature-caption">Conformidad - Firma del Tesorero</span>
           </div>
         </div>
       </div>
-      <section class="treasury-toolbar" aria-label="Filtros de cobros">
-        <input id="treasury-search" type="search" placeholder="Buscar alumno o matrícula">
-        <select id="treasury-status">
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE">Pendientes</option>
-          <option value="APROBADO">Aprobados</option>
-          <option value="RECHAZADO">Rechazados</option>
-          <option value="ANULADO">Anulados</option>
-        </select>
-        <select id="treasury-method">
-          <option value="">Todos los medios</option>
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="MERCADO_PAGO">Mercado Pago</option>
-        </select>
-        <button id="treasury-refresh" class="btn-submit" type="button">Actualizar</button>
-      </section>
-      <div id="treasury-message" class="payment-message" role="status"></div>
-      <section class="table-container treasury-table-container">
-        <table class="alumnos-table treasury-table">
-          <thead><tr><th>Alumno / matrícula</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th>Vencimiento</th><th>Acción</th></tr></thead>
-          <tbody id="treasury-tbody"><tr><td colspan="7" class="text-center text-muted">Cargando cobros...</td></tr></tbody>
-        </table>
-      </section>
-    </section>
+
+      <!-- Acciones de Descargar y Reenviar -->
+      <div class="receipt-actions">
+        <button id="btn-descargar-recibo" class="btn-receipt-action btn-download" type="button">
+          📥 Descargar comprobante (PDF)
+        </button>
+        <button id="btn-reenviar-recibo" class="btn-receipt-action btn-resend" type="button">
+          ✉️ Reenviar al correo
+        </button>
+        <button id="btn-volver-historial" class="btn-cancel" type="button">
+          ← Volver
+        </button>
+      </div>
+    </div>
+  </div>
   </main>
 
   <!-- Modal de confirmación de pago en efectivo -->

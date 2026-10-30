@@ -7,6 +7,8 @@ const { PERMISOS } = require('../../shared/constants/permisos');
 
 // GET /api/pagos/verificar/:matricula - Verificar estado de pago de una matrícula
 router.get('/verificar/:matricula', pagosController.verificarEstadoMatricula);
+// La cuenta de un alumno nuevo sigue inactiva hasta verificar el pago en la API.
+router.post('/sincronizar/:matricula', pagosController.sincronizarPago);
 
 // POST /api/pagos/crear-preferencia - Crear preferencia de pago
 router.post('/crear-preferencia', pagosController.crearPreferencia);
@@ -16,6 +18,12 @@ router.get(
   autenticar,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   pagosController.listarCobros
+);
+router.get(
+  '/por-alumno',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  pagosController.listarCobrosPorAlumno
 );
 router.get(
   '/efectivo/pendientes',
@@ -31,13 +39,7 @@ router.post(
 );
 
 // GET /api/pagos/success - URL de retorno exitoso
-router.get('/success', pagosController.pagoExitoso);
-
-// GET /api/pagos/failure - URL de retorno fallido
-router.get('/failure', pagosController.pagoFallido);
-
-// GET /api/pagos/pending - URL de retorno pendiente
-router.get('/pending', pagosController.pagoPendiente);
+router.get(['/success', '/failure', '/pending'], pagosController.pagoExitoso);
 
 // POST /api/pagos/webhook - Notificaciones de Mercado Pago
 router.post('/webhook', pagosController.webhook);

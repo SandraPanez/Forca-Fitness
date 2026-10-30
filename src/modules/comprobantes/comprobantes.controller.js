@@ -41,6 +41,7 @@ async function descargarPdf(req, res) {
 
     const pdf = generarReciboPdf(comprobante.recibo);
 
+    res.setHeader('Content-Type', 'application/pdf');
     res.attachment(`recibo-${comprobante.id_pago}.pdf`);
 
     return pdf.pipe(res);

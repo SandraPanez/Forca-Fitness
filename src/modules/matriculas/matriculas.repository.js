@@ -14,7 +14,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
+        "Tarifa" AS tarifa
       FROM ${SCHEMA}."Disciplina"
       ORDER BY "Nombre_Disciplina" ASC
     `;
@@ -106,7 +106,7 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        COALESCE(NULLIF("Tarifa", 0), tarifa, 0) AS tarifa
+        "Tarifa" AS tarifa
       FROM ${SCHEMA}."Disciplina"
       WHERE "Id_Disciplinas" = $1
     `;
@@ -348,64 +348,7 @@ class MatriculasRepository {
     await client.query(query, [idAlumno, idPersona]);
 
 
-    // Guardar correo como método de contacto
-    if (data.correo_electronico) {
-
-      const idContactoCorreo =
-        await this.generateId(
-          client,
-          'Metodo_Contacto',
-          'Id_contacto',
-          'CON'
-        );
-
-      await client.query(
-        `
-          INSERT INTO ${SCHEMA}."Metodo_Contacto" (
-            "Id_contacto",
-            "Tipo_Contacto",
-            "Contacto",
-            "Id_Persona"
-          )
-          VALUES ($1, 'CORREO', $2, $3)
-        `,
-        [
-          idContactoCorreo,
-          data.correo_electronico,
-          idPersona
-        ]
-      );
-    }
-
-
-    // Guardar celular
-    if (data.numero_celular) {
-
-      const idContactoCelular =
-        await this.generateId(
-          client,
-          'Metodo_Contacto',
-          'Id_contacto',
-          'CON'
-        );
-
-      await client.query(
-        `
-          INSERT INTO ${SCHEMA}."Metodo_Contacto" (
-            "Id_contacto",
-            "Tipo_Contacto",
-            "Contacto",
-            "Id_Persona"
-          )
-          VALUES ($1, 'CELULAR', $2, $3)
-        `,
-        [
-          idContactoCelular,
-          data.numero_celular,
-          idPersona
-        ]
-      );
-    }
+    await this.guardarContactos(idPersona, data, client);
 
 
     // Generar USUxx
@@ -453,6 +396,29 @@ class MatriculasRepository {
     return idAlumno;
   }
 
+  async guardarContactos(idPersona, datos, client) {
+    for (const [tipo, campo] of [['CORREO', 'correo_electronico'], ['CELULAR', 'numero_celular']]) {
+      if (datos[campo] === undefined) continue;
+      if (typeof datos[campo] !== 'string') throw new Error('El contacto debe ser texto.');
+      const valor = datos[campo].trim();
+      if (tipo === 'CELULAR' && valor && !/^\d{9}$/.test(valor)) {
+        throw new Error('El número de celular debe tener 9 dígitos.');
+      }
+      const actualizado = await client.query(`
+        UPDATE ${SCHEMA}."Metodo_Contacto"
+        SET "Contacto" = $1, "Tipo_Contacto" = $2
+        WHERE "Id_Persona" = $3 AND UPPER("Tipo_Contacto") = $2
+        RETURNING "Id_contacto"
+      `, [valor, tipo, idPersona]);
+      if (!actualizado.rows.length && valor) {
+        const idContacto = await this.generateId(client, 'Metodo_Contacto', 'Id_contacto', 'CON');
+        await client.query(`
+          INSERT INTO ${SCHEMA}."Metodo_Contacto" ("Id_contacto", "Tipo_Contacto", "Contacto", "Id_Persona")
+          VALUES ($1, $2, $3, $4)
+        `, [idContacto, tipo, valor, idPersona]);
+      }
+    }
+  }
 
   // =========================================================
   // ACTUALIZAR ALUMNO EXISTENTE
@@ -495,9 +461,10 @@ class MatriculasRepository {
         "Direccion" = $7
       FROM ${SCHEMA}."Alumno" a
       WHERE a."Id_alumno" = $8 AND p."Id_Persona" = a."Id_Persona"
+      RETURNING p."Id_Persona"
     `;
 
-    await client.query(
+    const persona = await client.query(
       query,
       [
         primerNombre,
@@ -510,6 +477,8 @@ class MatriculasRepository {
         id
       ]
     );
+    if (!persona.rows[0]) throw new Error('Alumno no encontrado.');
+    await this.guardarContactos(persona.rows[0].Id_Persona, data, client);
 
 
     // Verificar si el alumno ya tiene Usuario
@@ -682,13 +651,13 @@ class MatriculasRepository {
       JOIN ${SCHEMA}."Matricula" m
         ON m."Id_alumno" = a."Id_alumno"
 
-      LEFT JOIN ${SCHEMA}."Detalles_Matricula" dm
+      JOIN ${SCHEMA}."Detalles_Matricula" dm
         ON dm."Id_Matricula" = m."Id_Matricula"
 
-      LEFT JOIN ${SCHEMA}."Disciplina_Horario" dh
+      JOIN ${SCHEMA}."Disciplina_Horario" dh
         ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
 
-      LEFT JOIN ${SCHEMA}."Disciplina" d
+      JOIN ${SCHEMA}."Disciplina" d
         ON d."Id_Disciplinas" = dh."Id_Disciplina"
 
       LEFT JOIN ${SCHEMA}."Pago" p
@@ -714,6 +683,7 @@ class MatriculasRepository {
     const query = `
       SELECT
         a."Id_alumno" AS id_alumno,
+        TO_CHAR(p."Fecha_Nacimiento", 'YYYY-MM-DD') AS fecha_nacimiento,
         u."Correo" AS correo,
         TRIM(p."Nombre" || ' ' || p."Apellido_Paterno" || ' ' || COALESCE(p."Apellido_Materno", '')) AS nombre_completo
       FROM ${SCHEMA}."Usuario" u
@@ -733,6 +703,7 @@ class MatriculasRepository {
   async getDetalleParaRenovar(idUsuario, idDetalle, client) {
     const result = await client.query(`
       SELECT a."Id_alumno" AS id_alumno, dh."Id_DiscHorario" AS id_disc_horario,
+        TO_CHAR(pe."Fecha_Nacimiento", 'YYYY-MM-DD') AS fecha_nacimiento,
         d."Nombre_Disciplina" AS disciplina, u."Correo" AS correo,
         TRIM(CONCAT_WS(' ', pe."Nombre", pe."Segundo_Nombre", pe."Apellido_Paterno", pe."Apellido_Materno")) AS nombre,
         vigencia.fecha_fin <= CURRENT_DATE + 3 AS puede_renovar,

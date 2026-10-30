@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const tipo            = params.get('tipo');
   const metodoPredefinido = (params.get('metodo') || '').toLowerCase();
   const idMatriculaActual = params.get('matricula');
+  const verifyButton = document.getElementById('verify-payment');
+  const checkoutLink = document.getElementById('checkout-link');
+  const submitButton = form.querySelector('button[type="submit"]');
+  let mercadoPendiente = false;
+  let pagoConfirmado = false;
+  let verificando = false;
+  let registrando = false;
 
   // ── Helpers ──────────────────────────────────────────────────────
   const showMessage = (text, type = 'info') => {
@@ -44,6 +51,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (params.get('correo')) document.getElementById('email').value  = params.get('correo');
   if (params.get('monto'))  document.getElementById('amount').value = params.get('monto');
+  // Conserva el formulario al volver del checkout en una pestaña de la misma app.
+  if (idMatriculaActual) {
+    const campos = ['student-name', 'email', 'concept', 'amount'];
+    try {
+      const anterior = JSON.parse(sessionStorage.getItem(`pago:${idMatriculaActual}`) || 'null');
+      if (!params.get('correo') && anterior) {
+        campos.forEach(id => { document.getElementById(id).value = anterior[id]; });
+        document.getElementById('summary-student').textContent = anterior['student-name'];
+      }
+      if (document.getElementById('email').value) {
+        sessionStorage.setItem(`pago:${idMatriculaActual}`, JSON.stringify(Object.fromEntries(
+          campos.map(id => [id, document.getElementById(id).value])
+        )));
+      }
+    } catch { /* El pago también funciona con el almacenamiento del navegador deshabilitado. */ }
+  }
 
   // ── Método predefinido (bloqueado) ───────────────────────────────
   if (metodoPredefinido === 'efectivo' || metodoPredefinido === 'mercado' || metodoPredefinido === 'mercado_pago') {
@@ -67,55 +90,95 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCancel)    btnCancel.href           = '/renovar.html';
   }
 
-  // ── Verificar pago duplicado (solo si no estamos en resultado) ───
-  if (idMatriculaActual && !result) {
+  const steps = document.querySelectorAll('.payment-step');
+  const bloquearMetodos = (medio) => {
+    methodInputs.forEach(input => {
+      input.checked = input.value === medio;
+      input.disabled = true;
+      input.closest('.method-option')?.classList.add('method-locked');
+    });
+    updateSummary();
+  };
+
+  const mostrarEstado = (pago) => {
+    if (pago.estado_pago === 'APROBADO') {
+      if (pagoConfirmado) return;
+      pagoConfirmado = true;
+      mercadoPendiente = false;
+      verifyButton.hidden = true;
+      checkoutLink.hidden = true;
+      methodInputs.forEach(input => { input.disabled = true; });
+      const reserva = pago.estado_matricula === 'Reservada';
+      const token = typeof obtenerToken === 'function' ? obtenerToken() : localStorage.getItem('token');
+      const destino = token ? `/mis-matriculas.html${reserva ? '?reserva=exitosa' : ''}`
+        : '/login.html?registro=exitoso';
+      showMessage(`${reserva ? '¡Pago aprobado! Tu cupo está reservado.' : '¡Pago aprobado! Tu matrícula está confirmada.'} ${token ? 'Abriendo Mis matrículas...' : 'Tu cuenta está habilitada. Inicia sesión para entrar al portal.'}`, 'success');
+      steps[1]?.classList.remove('active');
+      steps[1]?.classList.add('completed');
+      if (steps[1]) steps[1].querySelector('span').textContent = '✓';
+      steps[2]?.classList.add('active');
+      document.querySelectorAll('.payment-step-line')[1]?.classList.add('active');
+      document.querySelector('.status-pill').textContent = reserva ? 'Reservada' : 'Activa';
+      submitButton.type = 'button';
+      submitButton.textContent = token ? 'Ir a Mis matrículas' : 'Iniciar sesión';
+      submitButton.disabled = false;
+      submitButton.onclick = () => { window.location.href = destino; };
+      setTimeout(() => { window.location.href = destino; }, 3000);
+    } else if (pago.medio_pago === 'EFECTIVO' && pago.estado_pago === 'PENDIENTE') {
+      bloquearMetodos('efectivo');
+      showMessage('Ya tienes una solicitud de pago en efectivo pendiente de confirmación por el tesorero.', 'info');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Pendiente de aprobación';
+    } else if (pago.medio_pago === 'MERCADO_PAGO' || mercadoPendiente) {
+      mercadoPendiente = true;
+      bloquearMetodos('mercado');
+      verifyButton.hidden = false;
+      const rechazado = ['RECHAZADO', 'ANULADO'].includes(pago.estado_pago);
+      showMessage(rechazado
+        ? 'Mercado Pago no aprobó este intento. Puedes volver al checkout e intentarlo nuevamente.'
+        : 'El pago todavía no está aprobado. Si ya pagaste en Mercado Pago, pulsa «Verificar pago» en unos momentos.', rechazado ? 'error' : 'info');
+      submitButton.textContent = 'Volver a Mercado Pago';
+    }
+  };
+
+  const verificarPago = async () => {
+    if (verificando || registrando || pagoConfirmado) return;
+    verificando = true;
+    verifyButton.disabled = true;
+    submitButton.disabled = true;
+    verifyButton.textContent = 'Verificando...';
+    showMessage('Consultando tu pago en Mercado Pago...', 'info');
+    try {
+      const matricula = document.getElementById('id-matricula').value;
+      const response = await fetch(`/api/pagos/sincronizar/${encodeURIComponent(matricula)}`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'No se pudo verificar el pago.');
+      mostrarEstado(data.data);
+    } catch (error) {
+      showMessage(error.message, 'error');
+    } finally {
+      verificando = false;
+      verifyButton.disabled = false;
+      submitButton.disabled = false;
+      verifyButton.textContent = 'Verificar pago';
+    }
+  };
+  verifyButton.addEventListener('click', verificarPago);
+  window.addEventListener('focus', () => { if (mercadoPendiente) verificarPago(); });
+
+  // El resultado de la URL nunca es una prueba de pago; se consulta lo guardado.
+  if (idMatriculaActual) {
     fetch(`/api/pagos/verificar/${encodeURIComponent(idMatriculaActual)}`)
       .then(res => res.json())
-      .then(resData => {
-        if (resData.success && resData.data && resData.data.tienePago) {
-          const pagoActivo = resData.data;
-          const submitBtn  = form.querySelector('button[type="submit"]');
-          if (pagoActivo.estado_pago === 'APROBADO') {
-            showMessage('Esta matrícula ya se encuentra pagada y confirmada. No es necesario realizar otro pago.', 'info');
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Matrícula pagada'; }
-          } else if (pagoActivo.estado_pago === 'PENDIENTE') {
-            const esEfectivo = (pagoActivo.medio_pago || '').toUpperCase().includes('EFECTIVO');
-            if (esEfectivo) {
-              showMessage('Ya tienes una solicitud de pago en efectivo registrada y pendiente de confirmación por el tesorero.', 'info');
-              if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Pendiente de aprobación'; }
-            }
-          }
-        }
+      .then(async data => {
+        if (!data.success) throw new Error('No se pudo consultar el estado de la matrícula.');
+        mostrarEstado(data.data);
+        if (mercadoPendiente) await verificarPago();
       })
-      .catch(() => {});
+      .catch(error => showMessage(error.message, 'error'));
+  } else if (result) {
+    showMessage('No pudimos identificar la matrícula para verificar el pago. Vuelve a abrir su pantalla de pago.', 'info');
   }
-
-  // ── Estado de resultado (retorno de MP / efectivo) ───────────────
-  const steps = document.querySelectorAll('.payment-step');
-
-  if (result === 'exitoso') {
-    const successMsg = tipo === 'reserva'
-      ? '¡Pago aprobado! Cupo reservado correctamente. Redirigiendo a Mis matrículas en 3 segundos...'
-      : '¡Pago aprobado! Tu matrícula está confirmada. Redirigiendo a Mis matrículas en 3 segundos...';
-    showMessage(successMsg, 'success');
-    steps[1]?.classList.remove('active');
-    steps[1]?.classList.add('completed');
-    if (steps[1]) steps[1].querySelector('span').textContent = '✓';
-    steps[2]?.classList.add('active');
-    document.querySelectorAll('.payment-step-line')[1]?.classList.add('active');
-
-    const isReserva  = tipo === 'reserva';
-    const redirectUrl = isReserva ? '/mis-matriculas.html?reserva=exitosa' : '/mis-matriculas.html';
-    const submitBtn   = form.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.textContent = 'Ir a Mis matrículas';
-      submitBtn.disabled    = false;
-      submitBtn.onclick = (e) => { e.preventDefault(); window.location.href = redirectUrl; };
-    }
-    setTimeout(() => { window.location.href = redirectUrl; }, 3000);
-  }
-  if (result === 'pendiente') showMessage('Estamos pendientes de confirmar tu pago. Conserva tu código de matrícula.', 'info');
-  if (result === 'fallido')   showMessage('El pago no pudo procesarse. Tu matrícula sigue pendiente y puedes intentarlo nuevamente.', 'error');
 
   // ── Escucha de cambios de método ─────────────────────────────────
   methodInputs.forEach(input => input.addEventListener('change', updateSummary));
@@ -124,7 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Envío del formulario ─────────────────────────────────────────
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const button = form.querySelector('button[type="submit"]');
+    if (pagoConfirmado || registrando || verificando) return;
+    registrando = true;
+    const button = submitButton;
     button.disabled    = true;
     button.textContent = 'Procesando...';
 
@@ -137,6 +202,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const cash = document.querySelector('input[name="method"]:checked')?.value === 'efectivo';
+    // Abrir durante el clic evita que el navegador bloquee la pestaña tras esperar la API.
+    const checkoutTab = cash ? null : window.open('about:blank', '_blank');
+    if (checkoutTab) checkoutTab.opener = null;
 
     methodInputs.forEach(i => {
       i.disabled = true;
@@ -169,21 +237,31 @@ document.addEventListener('DOMContentLoaded', () => {
             : '/login.html?registro=exitoso';
         }, 2500);
       } else {
-        // Redirigir al checkout de Mercado Pago
+        // Forca permanece abierta para consultar el pago incluso sin webhooks.
         const checkoutUrl = resultData.init_point;
         if (!checkoutUrl) throw new Error('No se recibió la URL de pago de Mercado Pago.');
-        window.location.href = checkoutUrl;
+        checkoutLink.href = checkoutUrl;
+        checkoutLink.hidden = false;
+        mercadoPendiente = true;
+        verifyButton.hidden = false;
+        button.disabled = false;
+        button.textContent = 'Volver a Mercado Pago';
+        showMessage('Completa el pago en Mercado Pago. Después vuelve aquí y pulsa «Verificar pago».', 'info');
+        if (checkoutTab) checkoutTab.location.href = checkoutUrl;
       }
     } catch (error) {
+      if (checkoutTab) checkoutTab.close();
       showMessage(error.message, 'error');
       button.disabled    = false;
       button.textContent = 'Continuar';
-      if (!metodoPredefinido) {
+      if (!metodoPredefinido && !mercadoPendiente) {
         methodInputs.forEach(i => {
           i.disabled = false;
           i.closest('.method-option')?.classList.remove('method-locked');
         });
       }
+    } finally {
+      registrando = false;
     }
   });
 });

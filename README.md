@@ -34,6 +34,25 @@ npm start
 `GET /api/health` comprueba el servidor y la base: responde `200` con
 `database: "connected"`, o `503` con `database: "disconnected"`.
 
+## Probar Mercado Pago desde localhost
+
+Usa las credenciales del vendedor de prueba en `MP_ACCESS_TOKEN` y conserva
+`APP_URL=http://localhost:3000`. Al continuar con Mercado Pago, el checkout se
+abre en otra pestaña y Forca permanece abierta. Completa la compra con el
+comprador y la tarjeta de prueba; luego vuelve a Forca y pulsa **Verificar pago**.
+También se consulta al recuperar el foco de la pestaña. No se necesita un túnel
+para esta consulta: el servidor local accede a la API de Mercado Pago.
+
+Solo un pago verificado como aprobado habilita la cuenta y confirma la matrícula.
+Los periodos futuros quedan **Reservados**. Una respuesta pendiente o un error de
+la API no se convierte en aprobación. Las cuentas y tarjetas se obtienen de la
+[guía oficial de pruebas](https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/integration-test/test-purchases).
+
+Para recibir notificaciones aunque el alumno cierre Forca, configura `APP_URL`
+con una dirección pública HTTPS que llegue a ese mismo servidor. Con ella se
+incluyen el webhook y las URLs de retorno; Mercado Pago desaconseja usar
+[localhost en las URLs de retorno](https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/configure-back-urls).
+
 ## Base de datos
 
 El equipo trabaja con la base PostgreSQL compartida en Render: con sus

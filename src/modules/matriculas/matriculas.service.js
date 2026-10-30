@@ -1,5 +1,18 @@
 const matriculasRepository = require('./matriculas.repository');
 const db = require('../../shared/config/database');
+const { calcularEdadMatricula, disciplinaPermitidaPorEdad } = require('../../../public/js/disciplinas-edad');
+
+function validarEdadParaDisciplina(fechaNacimiento, nombre) {
+  const edad = calcularEdadMatricula(fechaNacimiento);
+  if (edad === null) {
+    throw Object.assign(new Error('Ingresa una fecha de nacimiento válida, sin fechas futuras.'), { status: 400 });
+  }
+  if (!disciplinaPermitidaPorEdad(edad, nombre)) {
+    throw Object.assign(new Error(edad <= 12
+      ? 'Los alumnos de hasta 12 años solo pueden matricularse en disciplinas Kids.'
+      : `${nombre} solo admite alumnos de hasta 12 años inclusive.`), { status: 400 });
+  }
+}
 
 class MatriculasService {
   async getDisciplinasDisponibles() {
@@ -331,6 +344,7 @@ class MatriculasService {
       await client.query('BEGIN');
       const info = await matriculasRepository.getDetalleParaRenovar(idUsuario, idDetalle, client);
       if (!info) throw Object.assign(new Error('No se encontró una matrícula tuya habilitada para renovar.'), { status: 404 });
+      validarEdadParaDisciplina(info.fecha_nacimiento, info.disciplina);
       if (!info.puede_renovar) throw Object.assign(new Error('Puedes renovar cuando falten tres días o la matrícula haya vencido.'), { status: 409 });
       const horario = await client.query(`
         SELECT "Capacidad_Max" AS capacidad FROM "Academia Forca&Fitness"."Disciplina_Horario"
@@ -393,6 +407,13 @@ class MatriculasService {
     
     if (!disciplinas || !Array.isArray(disciplinas) || disciplinas.length === 0) {
       throw new Error('Debe seleccionar al menos una disciplina.');
+    }
+
+    const disponibles = await matriculasRepository.getDisciplinas();
+    for (const id of disciplinas) {
+      const disciplina = disponibles.find(item => item.id === id);
+      if (!disciplina) throw new Error('La disciplina seleccionada no existe.');
+      validarEdadParaDisciplina(datosEstudiante.fecha_nacimiento, disciplina.nombre);
     }
 
     // Validación de periodo de reserva y tope máximo de 4 cupos
@@ -475,6 +496,18 @@ class MatriculasService {
 
       if (!matriculaExistente) {
         await matriculasRepository.addDisciplinasAMatricula(matriculaId, disciplinas, client, fechasDetalle);
+      } else {
+        // Se valida lo que realmente se va a pagar, también al recuperar un pendiente antiguo.
+        const guardadas = await client.query(`
+          SELECT d."Nombre_Disciplina" AS nombre
+          FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+          JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+          JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+          WHERE dm."Id_Matricula" = $1
+        `, [matriculaId]);
+        for (const disciplina of guardadas.rows) {
+          validarEdadParaDisciplina(datosEstudiante.fecha_nacimiento, disciplina.nombre);
+        }
       }
 
       await client.query('COMMIT');
@@ -527,6 +560,7 @@ class MatriculasService {
     if (!disciplina) {
       throw new Error('La disciplina seleccionada no existe.');
     }
+    validarEdadParaDisciplina(alumno.fecha_nacimiento, disciplina.nombre);
 
     // Validar si el alumno ya tiene esta disciplina pagada o pendiente en este periodo
     const yaRegistrado = await matriculasRepository.verificarDisciplinaActivaOPendiente(
@@ -556,17 +590,15 @@ class MatriculasService {
         client
       );
 
-      let horarioFinal = id_disc_horario;
-      if (!horarioFinal) {
-        const hRes = await client.query(
-          `SELECT "Id_DiscHorario" FROM "Academia Forca&Fitness"."Disciplina_Horario" WHERE "Id_Disciplina" = $1 LIMIT 1`,
-          [id_disciplina]
-        );
-        horarioFinal = hRes.rows[0]?.Id_DiscHorario;
-      }
+      const hRes = await client.query(`
+        SELECT "Id_DiscHorario" FROM "Academia Forca&Fitness"."Disciplina_Horario"
+        WHERE "Id_Disciplina" = $1 AND ($2::text IS NULL OR "Id_DiscHorario" = $2)
+        ORDER BY "Id_DiscHorario" LIMIT 1
+      `, [id_disciplina, id_disc_horario || null]);
+      const horarioFinal = hRes.rows[0]?.Id_DiscHorario;
 
       if (!horarioFinal) {
-        throw new Error('No hay horarios disponibles configurados para esta disciplina.');
+        throw new Error('No hay un horario válido para la disciplina seleccionada.');
       }
 
       const idDetalle = await matriculasRepository.generateId(
