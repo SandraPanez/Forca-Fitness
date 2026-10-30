@@ -136,8 +136,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Clics en Tarjetas de Planes (Mockup) ---
     planCards.forEach(card => {
         card.addEventListener('click', () => {
-            planCards.forEach(c => c.classList.remove('active'));
+            planCards.forEach(c => {
+                c.classList.remove('active');
+                c.style.border = '1.5px solid #cbd5e1';
+                c.style.boxShadow = 'none';
+                const nombre = c.querySelector('.plan-card-nombre');
+                const precio = c.querySelector('.plan-card-precio');
+                if (nombre) nombre.style.color = '#0f172a';
+                if (precio) {
+                    precio.style.color = '#64748b';
+                    precio.style.fontWeight = '500';
+                }
+            });
             card.classList.add('active');
+            card.style.border = '2px solid #2563eb';
+            card.style.boxShadow = '0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08)';
+            const activeNombre = card.querySelector('.plan-card-nombre');
+            const activePrecio = card.querySelector('.plan-card-precio');
+            if (activeNombre) activeNombre.style.color = '#1e40af';
+            if (activePrecio) {
+                activePrecio.style.color = '#2563eb';
+                activePrecio.style.fontWeight = '600';
+            }
             planSeleccionado = card.dataset.plan || 'Mensual';
 
             const tarifaBase = Number(matriculaSeleccionada?.tarifa_congelada || matriculaSeleccionada?.tarifa) || 150;

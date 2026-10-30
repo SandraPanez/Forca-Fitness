@@ -11,6 +11,81 @@
 
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/header.css">
+
+    <style>
+    /* ========================================================
+       ESTILOS PARA REDISEÑO DE RENOVACIÓN (MOCKUP HU-08)
+       ======================================================== */
+    .renovacion-grid-datos {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        column-gap: 3.5rem !important;
+        row-gap: 1.35rem !important;
+        margin: 1.5rem 0 1.75rem 0 !important;
+    }
+
+    .planes-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .plan-card {
+        border: 1.5px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        border-radius: 8px !important;
+        padding: 1.15rem 1.35rem !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        user-select: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+    }
+
+    .plan-card:hover {
+        border-color: #94a3b8 !important;
+        background-color: #f8fafc !important;
+    }
+
+    .plan-card.active {
+        border: 2px solid #2563eb !important;
+        background: #ffffff !important;
+        box-shadow: 0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08) !important;
+    }
+
+    .plan-card-nombre {
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        color: #0f172a !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .plan-card.active .plan-card-nombre {
+        color: #1e40af !important;
+    }
+
+    .plan-card-precio {
+        font-size: 0.92rem !important;
+        color: #64748b !important;
+        font-weight: 500 !important;
+    }
+
+    .plan-card.active .plan-card-precio {
+        color: #2563eb !important;
+        font-weight: 600 !important;
+    }
+
+    @media (max-width: 640px) {
+        .renovacion-grid-datos {
+            grid-template-columns: 1fr !important;
+            gap: 1.25rem !important;
+        }
+        .planes-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+    </style>
 </head>
 
 <body data-menu="/renovar.html">
@@ -102,7 +177,7 @@
                     <div class="renovacion-alumno-card" style="margin-bottom: 1.5rem;">
                         <span class="renovacion-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.65rem;">Alumno</span>
                         <div style="display: flex; align-items: center; gap: 0.9rem;">
-                            <div id="renovacion-avatar" class="avatar-circle" style="width: 44px; height: 44px; border-radius: 50%; background: #e3f2fd; color: #1565c0; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+                            <div id="renovacion-avatar" class="avatar-circle" style="width: 44px; height: 44px; border-radius: 50%; background: #e0f2fe; color: #0284c7; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
                                 JR
                             </div>
                             <div style="font-size: 0.95rem; line-height: 1.35;">
@@ -113,23 +188,27 @@
                         </div>
                     </div>
 
-                    <!-- Grid de 4 datos: Estado, Inicio, Vencimiento, Plan actual -->
-                    <div class="renovacion-grid-4" style="margin-bottom: 1.75rem;">
+                    <!-- Grid de 4 datos: 2 columnas x 2 filas (Mockup HU-08) -->
+                    <div class="renovacion-grid-datos" style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 3.5rem; row-gap: 1.35rem; margin: 1.5rem 0 1.75rem 0;">
+                        <!-- Columna 1, Fila 1: Estado -->
                         <div class="renovacion-item">
-                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Estado</span>
-                            <span id="renovacion-estado-text" style="font-weight: 700; font-size: 0.95rem; color: #c62828;">—</span>
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Estado</span>
+                            <span id="renovacion-estado-text" style="font-weight: 700; font-size: 1.05rem; color: #dc2626; display: block;">—</span>
                         </div>
+                        <!-- Columna 2, Fila 1: Inicio -->
                         <div class="renovacion-item">
-                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Inicio</span>
-                            <span id="renovacion-inicio-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">—</span>
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Inicio</span>
+                            <span id="renovacion-inicio-text" style="font-weight: 600; font-size: 1.05rem; color: #0f172a; display: block;">—</span>
                         </div>
+                        <!-- Columna 1, Fila 2: Vencimiento -->
                         <div class="renovacion-item">
-                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Vencimiento</span>
-                            <span id="renovacion-fin-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">—</span>
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Vencimiento</span>
+                            <span id="renovacion-fin-text" style="font-weight: 600; font-size: 1.05rem; color: #0f172a; display: block;">—</span>
                         </div>
+                        <!-- Columna 2, Fila 2: Plan actual -->
                         <div class="renovacion-item">
-                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Plan actual</span>
-                            <span id="renovacion-plan-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Mensual</span>
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Plan actual</span>
+                            <span id="renovacion-plan-text" style="font-weight: 600; font-size: 1.05rem; color: #0f172a; display: block;">Mensual</span>
                         </div>
                     </div>
 
@@ -138,45 +217,47 @@
                     <input type="hidden" id="renovacion-horario">
                     <input type="hidden" id="renovacion-periodo">
 
-                    <hr class="divider" style="margin: 1.5rem 0;">
+                    <hr class="divider" style="border: none; border-top: 1px solid #e2e8f0; margin: 1.75rem 0;">
 
                     <!-- Periodo de renovación * -->
-                    <div style="margin-bottom: 1.75rem;">
-                        <label style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); display: block; margin-bottom: 0.75rem;">
-                            Periodo de renovación <span style="color: #e53935;">*</span>
+                    <div style="margin-bottom: 2rem;">
+                        <label style="font-weight: 700; font-size: 0.95rem; color: #0f172a; display: block; margin-bottom: 1rem;">
+                            Periodo de renovación <span style="color: #dc2626;">*</span>
                         </label>
 
-                        <div class="planes-grid">
+                        <div class="planes-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <!-- Card 1: Mensual (activo) -->
-                            <div class="plan-card active" data-plan="Mensual" data-meses="1" role="button" tabindex="0">
-                                <div class="plan-card-nombre">Mensual</div>
-                                <div class="plan-card-precio" id="plan-precio-mensual">S/ 150</div>
+                            <div class="plan-card active" data-plan="Mensual" data-meses="1" role="button" tabindex="0" style="border: 2px solid #2563eb; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08);">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #1e40af; margin-bottom: 0.35rem;">Mensual</div>
+                                <div class="plan-card-precio" id="plan-precio-mensual" style="font-size: 0.92rem; color: #2563eb; font-weight: 600;">S/ 150</div>
                             </div>
 
                             <!-- Card 2: Bimensual -->
-                            <div class="plan-card" data-plan="Bimensual" data-meses="2" role="button" tabindex="0">
-                                <div class="plan-card-nombre">Bimensual</div>
-                                <div class="plan-card-precio" id="plan-precio-bimensual">S/ 280</div>
+                            <div class="plan-card" data-plan="Bimensual" data-meses="2" role="button" tabindex="0" style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 0.35rem;">Bimensual</div>
+                                <div class="plan-card-precio" id="plan-precio-bimensual" style="font-size: 0.92rem; color: #64748b; font-weight: 500;">S/ 280</div>
                             </div>
 
                             <!-- Card 3: Trimestral -->
-                            <div class="plan-card" data-plan="Trimestral" data-meses="3" role="button" tabindex="0">
-                                <div class="plan-card-nombre">Trimestral</div>
-                                <div class="plan-card-precio" id="plan-precio-trimestral">S/ 400</div>
+                            <div class="plan-card" data-plan="Trimestral" data-meses="3" role="button" tabindex="0" style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 0.35rem;">Trimestral</div>
+                                <div class="plan-card-precio" id="plan-precio-trimestral" style="font-size: 0.92rem; color: #64748b; font-weight: 500;">S/ 400</div>
                             </div>
 
                             <!-- Card 4: Combo AFF -->
-                            <div class="plan-card" data-plan="Combo AFF" data-meses="combo" role="button" tabindex="0">
-                                <div class="plan-card-nombre">Combo AFF</div>
-                                <div class="plan-card-precio" id="plan-precio-combo">S/ 630</div>
+                            <div class="plan-card" data-plan="Combo AFF" data-meses="combo" role="button" tabindex="0" style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 0.35rem;">Combo AFF</div>
+                                <div class="plan-card-precio" id="plan-precio-combo" style="font-size: 0.92rem; color: #64748b; font-weight: 500;">S/ 630</div>
                             </div>
                         </div>
                     </div>
 
+                    <hr class="divider" style="border: none; border-top: 1px solid #e2e8f0; margin: 1.75rem 0;">
+
                     <!-- Botones Cancelar y Solicitar renovación -->
                     <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
-                        <a href="/mis-matriculas.html" class="btn-cancel" style="padding: 0.75rem 1.25rem; text-decoration: none; color: var(--text-muted); font-weight: 600;">Cancelar</a>
-                        <button type="submit" class="btn-submit" id="renovacion-continuar" style="background: #1a56db; color: #fff; padding: 0.75rem 1.75rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer;">
+                        <a href="/mis-matriculas.html" class="btn-cancel" style="padding: 0.75rem 1.25rem; text-decoration: none; color: #64748b; font-weight: 600; font-size: 0.95rem;">Cancelar</a>
+                        <button type="submit" class="btn-submit" id="renovacion-continuar" style="background: #2563eb; color: #fff; padding: 0.8rem 2rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; font-size: 0.95rem; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);">
                             Solicitar renovación
                         </button>
                     </div>
