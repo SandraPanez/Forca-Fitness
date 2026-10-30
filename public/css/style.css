@@ -2720,3 +2720,85 @@ body {
     background: #047857;
     transform: translateY(-1px);
 }
+
+
+/* ========================================================
+   ESTILOS PARA REDISEÑO DE RENOVACIÓN (MOCKUP HU-08)
+   ======================================================== */
+.renovacion-grid-datos {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    column-gap: 3.5rem !important;
+    row-gap: 1.35rem !important;
+    margin: 1.5rem 0 1.75rem 0 !important;
+}
+
+.renovacion-grid-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1.5rem !important;
+    margin: 1.75rem 0 !important;
+}
+
+.planes-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important;
+}
+
+.plan-card {
+    border: 1.5px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 1.15rem 1.35rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    user-select: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+.plan-card:hover {
+    border-color: #94a3b8 !important;
+    background-color: #f8fafc !important;
+}
+
+.plan-card.active {
+    border: 2px solid #2563eb !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08) !important;
+}
+
+.plan-card-nombre {
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    color: #0f172a !important;
+    margin-bottom: 0.35rem !important;
+}
+
+.plan-card.active .plan-card-nombre {
+    color: #1e40af !important;
+}
+
+.plan-card-precio {
+    font-size: 0.92rem !important;
+    color: #64748b !important;
+    font-weight: 500 !important;
+}
+
+.plan-card.active .plan-card-precio {
+    color: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+@media (max-width: 640px) {
+    .renovacion-grid-datos,
+    .renovacion-grid-4 {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+    .planes-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
