@@ -17,6 +17,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnContinuarRenovacion = document.getElementById('renovacion-continuar');
     const mensajeRenovacion = document.getElementById('renovacion-mensaje');
 
+    // Elementos del Rediseño de Renovación (Mockup HU-08)
+    const avatarEl = document.getElementById('renovacion-avatar');
+    const alumnoNombreEl = document.getElementById('renovacion-alumno-nombre');
+    const alumnoDisciplinaEl = document.getElementById('renovacion-alumno-disciplina');
+    const estadoTextEl = document.getElementById('renovacion-estado-text');
+    const inicioTextEl = document.getElementById('renovacion-inicio-text');
+    const finTextEl = document.getElementById('renovacion-fin-text');
+    const planTextEl = document.getElementById('renovacion-plan-text');
+    const planCards = document.querySelectorAll('.plan-card');
+    const precioMensualEl = document.getElementById('plan-precio-mensual');
+    const precioBimensualEl = document.getElementById('plan-precio-bimensual');
+    const precioTrimestralEl = document.getElementById('plan-precio-trimestral');
+    const precioComboEl = document.getElementById('plan-precio-combo');
+
+    let planSeleccionado = 'Mensual';
+    let precioSeleccionado = null;
+
     // Elementos de Reserva (HU-09)
     const selectReservaDisciplina = document.getElementById('reserva-disciplina-select');
     const selectReservaPeriodo = document.getElementById('reserva-periodo-select');
@@ -116,7 +133,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (btnIrAReservar) btnIrAReservar.addEventListener('click', () => activarTab('reservar'));
 
-    // --- Cargar Renovaciones (HU-08) ---
+    // --- Clics en Tarjetas de Planes (Mockup) ---
+    planCards.forEach(card => {
+        card.addEventListener('click', () => {
+            planCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            planSeleccionado = card.dataset.plan || 'Mensual';
+
+            const tarifaBase = Number(matriculaSeleccionada?.tarifa_congelada || matriculaSeleccionada?.tarifa) || 150;
+            if (planSeleccionado === 'Mensual') {
+                precioSeleccionado = tarifaBase;
+            } else if (planSeleccionado === 'Bimensual') {
+                precioSeleccionado = Math.round(tarifaBase * 2 * 0.93);
+            } else if (planSeleccionado === 'Trimestral') {
+                precioSeleccionado = Math.round(tarifaBase * 3 * 0.89);
+            } else if (planSeleccionado === 'Combo AFF') {
+                precioSeleccionado = 630;
+            }
+        });
+
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
+
+    // --- Cargar Renovaciones (HU-08 Rediseñado) ---
     function mostrarDatosRenovacion(matricula) {
         if (!matricula) return;
         matriculaSeleccionada = matricula;
@@ -127,12 +171,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const hoy = new Date().toLocaleDateString('en-CA');
-        const despuesDelVencimiento = new Date(`${matricula.fecha_fin.slice(0, 10)}T00:00:00Z`).getTime() + 86400000;
+        const fechaFinRaw = matricula.fecha_fin ? matricula.fecha_fin.slice(0, 10) : hoy;
+        const despuesDelVencimiento = new Date(`${fechaFinRaw}T00:00:00Z`).getTime() + 86400000;
         const inicio = new Date(Math.max(new Date(`${hoy}T00:00:00Z`).getTime(), despuesDelVencimiento));
         const fin = new Date(inicio.getTime() + 29 * 86400000);
         if (inputPeriodo) {
             inputPeriodo.value = `${formatearFecha(inicio.toISOString())} - ${formatearFecha(fin.toISOString())}`;
         }
+
+        // Ficha del Alumno (Mockup)
+        const usuario = typeof obtenerUsuario === 'function' ? obtenerUsuario() : null;
+        const nombreCompleto = usuario?.nombre || matricula.nombre || 'Juan Carlos Junior Rondón Pujay';
+        if (alumnoNombreEl) alumnoNombreEl.textContent = nombreCompleto;
+        if (alumnoDisciplinaEl) alumnoDisciplinaEl.textContent = `${matricula.disciplina || 'Disciplina'} - ${matricula.dias || 'Adultos'}`;
+
+        if (avatarEl) {
+            const partes = nombreCompleto.trim().split(/\s+/);
+            const iniciales = partes.length > 1
+                ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+                : (partes[0][0] || 'JR').toUpperCase();
+            avatarEl.textContent = iniciales;
+        }
+
+        // Grid 4 columnas: Estado, Inicio, Vencimiento, Plan actual
+        if (estadoTextEl) {
+            const estado = matricula.estado_vigencia || matricula.estado_matricula || 'Vencida';
+            estadoTextEl.textContent = estado;
+            if (estado === 'Vencida') {
+                estadoTextEl.style.color = '#c62828';
+            } else if (estado === 'Próxima a vencer') {
+                estadoTextEl.style.color = '#f57f17';
+            } else {
+                estadoTextEl.style.color = '#2e7d32';
+            }
+        }
+
+        if (inicioTextEl) {
+            inicioTextEl.textContent = matricula.fecha_inicio
+                ? formatearFecha(matricula.fecha_inicio)
+                : (matricula.fecha_inscripcion ? formatearFecha(matricula.fecha_inscripcion) : '31/08/2026');
+        }
+
+        if (finTextEl) {
+            finTextEl.textContent = matricula.fecha_fin
+                ? formatearFecha(matricula.fecha_fin)
+                : '30/09/2026';
+        }
+
+        if (planTextEl) {
+            planTextEl.textContent = 'Mensual';
+        }
+
+        // Precios en las tarjetas de planes
+        const tarifaBase = Number(matricula.tarifa_congelada || matricula.tarifa) || 150;
+        precioSeleccionado = tarifaBase;
+
+        if (precioMensualEl) precioMensualEl.textContent = `S/ ${tarifaBase}`;
+        if (precioBimensualEl) precioBimensualEl.textContent = `S/ ${Math.round(tarifaBase * 2 * 0.93)}`;
+        if (precioTrimestralEl) precioTrimestralEl.textContent = `S/ ${Math.round(tarifaBase * 3 * 0.89)}`;
+        if (precioComboEl) precioComboEl.textContent = `S/ 630`;
     }
 
     async function cargarDatosUsuario() {
@@ -224,12 +321,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     throw new Error(result.message || 'No se pudo preparar la renovación.');
                 }
                 const data = result.data;
+                const montoFinal = precioSeleccionado || data.monto;
                 const params = new URLSearchParams({
                     matricula: data.matriculaId,
                     nombre: data.nombre,
                     correo: data.correo,
-                    concepto: `Renovación - ${data.disciplinas}`,
-                    monto: String(data.monto),
+                    concepto: `Renovación (${planSeleccionado}) - ${data.disciplinas}`,
+                    monto: String(montoFinal),
                     renovacion: '1'
                 });
                 window.location.href = `/pagos.html?${params.toString()}`;

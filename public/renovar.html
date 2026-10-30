@@ -76,10 +76,11 @@
 
             <hr class="divider" style="margin-bottom: 1.5rem;">
 
-            <!-- Panel 1: Renovar matrícula actual (HU-08) -->
+            <!-- Panel 1: Renovar matrícula actual (HU-08 Rediseñado) -->
             <div id="panel-renovar-actual">
-                <h3 id="renovacion-titulo" style="font-size: 1.15rem; margin-bottom: 0.35rem;">Renovar matrícula existente</h3>
-                <p class="description">Se conserva tu disciplina y horario. La renovación se activa cuando se confirme el pago.</p>
+                <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.35rem;">RENOVACIÓN</p>
+                <h3 id="renovacion-titulo" style="font-size: 1.35rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.35rem 0;">Datos de tu matrícula</h3>
+                <p class="description" style="margin-bottom: 1.25rem;">La matrícula se activa únicamente cuando Tesorería valide el pago.</p>
                 
                 <div id="sin-renovacion-box" style="display: none; padding: 1.5rem; background-color: var(--secondary-color); border-radius: 8px; text-align: center; margin-top: 1rem;">
                     <p style="margin: 0 0 1rem 0; color: var(--text-muted);">No tienes matrículas vencidas o próximas a vencer disponibles para renovar.</p>
@@ -89,21 +90,95 @@
                 </div>
 
                 <form id="renovacion-form" style="margin-top: 1rem;">
-                    <div class="form-group" id="selector-matricula-group" style="display: none; margin-bottom: 1rem;">
+                    <div class="form-group" id="selector-matricula-group" style="display: none; margin-bottom: 1.25rem;">
                         <label for="select-matricula-renovar">Seleccionar matrícula a renovar</label>
                         <select id="select-matricula-renovar">
                         </select>
                     </div>
 
-                    <div class="grid-2-cols">
-                        <div class="form-group"><label for="renovacion-disciplina">Disciplina</label><input id="renovacion-disciplina" readonly></div>
-                        <div class="form-group"><label for="renovacion-horario">Horario actual</label><input id="renovacion-horario" readonly></div>
-                        <div class="form-group"><label for="renovacion-periodo">Periodo de renovación estimado (30 días)</label><input id="renovacion-periodo" readonly></div>
+                    <hr class="divider" style="margin: 1.25rem 0 1.5rem 0;">
+
+                    <!-- Ficha del Alumno (Mockup) -->
+                    <div class="renovacion-alumno-card" style="margin-bottom: 1.5rem;">
+                        <span class="renovacion-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.65rem;">Alumno</span>
+                        <div style="display: flex; align-items: center; gap: 0.9rem;">
+                            <div id="renovacion-avatar" class="avatar-circle" style="width: 44px; height: 44px; border-radius: 50%; background: #e3f2fd; color: #1565c0; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+                                JR
+                            </div>
+                            <div style="font-size: 0.95rem; line-height: 1.35;">
+                                <strong id="renovacion-alumno-nombre" style="color: var(--text-main); font-weight: 700;">—</strong>
+                                <span style="color: #94a3b8; margin: 0 0.35rem;">/</span>
+                                <span id="renovacion-alumno-disciplina" style="color: var(--text-muted);">—</span>
+                            </div>
+                        </div>
                     </div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Si pagas después del vencimiento, el periodo comenzará el día que se confirme el pago.</p>
-                    <div class="form-actions" style="margin-top: 1.5rem;">
-                        <a href="/mis-matriculas.html" class="btn-cancel">Ver mis matrículas</a>
-                        <button type="submit" class="btn-submit" id="renovacion-continuar">Continuar al pago</button>
+
+                    <!-- Grid de 4 datos: Estado, Inicio, Vencimiento, Plan actual -->
+                    <div class="renovacion-grid-4" style="margin-bottom: 1.75rem;">
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Estado</span>
+                            <span id="renovacion-estado-text" style="font-weight: 700; font-size: 0.95rem; color: #c62828;">—</span>
+                        </div>
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Inicio</span>
+                            <span id="renovacion-inicio-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">—</span>
+                        </div>
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Vencimiento</span>
+                            <span id="renovacion-fin-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">—</span>
+                        </div>
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Plan actual</span>
+                            <span id="renovacion-plan-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Mensual</span>
+                        </div>
+                    </div>
+
+                    <!-- Campos ocultos de compatibilidad -->
+                    <input type="hidden" id="renovacion-disciplina">
+                    <input type="hidden" id="renovacion-horario">
+                    <input type="hidden" id="renovacion-periodo">
+
+                    <hr class="divider" style="margin: 1.5rem 0;">
+
+                    <!-- Periodo de renovación * -->
+                    <div style="margin-bottom: 1.75rem;">
+                        <label style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); display: block; margin-bottom: 0.75rem;">
+                            Periodo de renovación <span style="color: #e53935;">*</span>
+                        </label>
+
+                        <div class="planes-grid">
+                            <!-- Card 1: Mensual (activo) -->
+                            <div class="plan-card active" data-plan="Mensual" data-meses="1" role="button" tabindex="0">
+                                <div class="plan-card-nombre">Mensual</div>
+                                <div class="plan-card-precio" id="plan-precio-mensual">S/ 150</div>
+                            </div>
+
+                            <!-- Card 2: Bimensual -->
+                            <div class="plan-card" data-plan="Bimensual" data-meses="2" role="button" tabindex="0">
+                                <div class="plan-card-nombre">Bimensual</div>
+                                <div class="plan-card-precio" id="plan-precio-bimensual">S/ 280</div>
+                            </div>
+
+                            <!-- Card 3: Trimestral -->
+                            <div class="plan-card" data-plan="Trimestral" data-meses="3" role="button" tabindex="0">
+                                <div class="plan-card-nombre">Trimestral</div>
+                                <div class="plan-card-precio" id="plan-precio-trimestral">S/ 400</div>
+                            </div>
+
+                            <!-- Card 4: Combo AFF -->
+                            <div class="plan-card" data-plan="Combo AFF" data-meses="combo" role="button" tabindex="0">
+                                <div class="plan-card-nombre">Combo AFF</div>
+                                <div class="plan-card-precio" id="plan-precio-combo">S/ 630</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones Cancelar y Solicitar renovación -->
+                    <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+                        <a href="/mis-matriculas.html" class="btn-cancel" style="padding: 0.75rem 1.25rem; text-decoration: none; color: var(--text-muted); font-weight: 600;">Cancelar</a>
+                        <button type="submit" class="btn-submit" id="renovacion-continuar" style="background: #1a56db; color: #fff; padding: 0.75rem 1.75rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer;">
+                            Solicitar renovación
+                        </button>
                     </div>
                 </form>
             </div>
