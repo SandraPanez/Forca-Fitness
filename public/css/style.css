@@ -2010,3 +2010,71 @@ body {
     cursor: not-allowed;
     background: #f1f5f9;
 }
+
+
+/* ========================================================
+   ESTILOS PARA REDISEÑO DE RENOVACIÓN (MOCKUP HU-08)
+   ======================================================== */
+.renovacion-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+}
+
+.planes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.plan-card {
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.plan-card:hover {
+    border-color: #90caf9;
+    background: #fafcff;
+}
+
+.plan-card.active {
+    border: 2px solid #1976d2 !important;
+    background: #f0f7ff !important;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.12);
+}
+
+.plan-card-nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main, #1e293b);
+    margin-bottom: 0.25rem;
+}
+
+.plan-card.active .plan-card-nombre {
+    color: #0d47a1 !important;
+}
+
+.plan-card-precio {
+    font-size: 0.9rem;
+    color: var(--text-muted, #64748b);
+    font-weight: 600;
+}
+
+.plan-card.active .plan-card-precio {
+    color: #1565c0 !important;
+}
+
+@media (max-width: 640px) {
+    .renovacion-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.85rem !important;
+    }
+    .planes-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
