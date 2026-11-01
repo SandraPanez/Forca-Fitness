@@ -39,7 +39,7 @@ async function validarRegistro(datos) {
 
   for (const [campo, etiqueta] of Object.entries(etiquetas)) {
     if (typeof datos?.[campo] !== 'string' || !datos[campo].trim()) {
-      rechazar(campo, `${etiqueta}: completa este campo obligatorio.`);
+      rechazar(campo, 'Campo requerido');
     }
     campos[campo] = campo === 'password' ? datos[campo] : datos[campo].trim();
   }
@@ -89,7 +89,7 @@ async function validarRegistro(datos) {
 
   campos.correo_electronico = campos.correo_electronico.toLowerCase();
   if (await authRepository.buscarPorCorreo(campos.correo_electronico)) {
-    rechazar('correo_electronico', 'El correo electrónico ya está registrado.', 409);
+    rechazar('correo_electronico', 'Este personal ya se encuentra registrado', 409);
   }
   return { ...campos, roles: [...datos.roles] };
 }

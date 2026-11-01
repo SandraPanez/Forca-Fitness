@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bajaEnCurso = false;
             continuarBaja.disabled = false;
             cancelarBaja.disabled = false;
-            continuarBaja.textContent = 'Continuar';
+            continuarBaja.textContent = 'Inactivar cuenta';
         }
     });
 
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             guardandoRegistro = false;
             botonConfirmar.disabled = false;
             botonVolver.disabled = false;
-            botonConfirmar.textContent = 'Confirmar';
+            botonConfirmar.textContent = 'Confirmar registro';
         }
     });
     registroModal.addEventListener('click', event => {
@@ -343,11 +343,19 @@ document.addEventListener('DOMContentLoaded', () => {
         rolesRegistro[0].setCustomValidity(
             rolesRegistro.some(input => input.checked) ? '' : 'Selecciona al menos un rol.'
         );
-        if (!registroForm.reportValidity()) return;
+        for (const input of inputsRegistro) {
+            if (input.required && !input.value.trim()) input.setCustomValidity('Campo requerido');
+        }
+        if (!registroForm.reportValidity()) {
+            // "Registrar" queda deshabilitado hasta que se corrija algún dato
+            botonRegistrar.disabled = true;
+            return;
+        }
 
         const datos = Object.fromEntries(new FormData(registroForm));
         datos.roles = rolesRegistro.filter(input => input.checked).map(input => input.value);
         const solicitud = new AbortController();
+        let rechazado = false;
         validacionRegistro = solicitud;
         botonRegistrar.disabled = true;
         botonRegistrar.textContent = 'Validando...';
@@ -364,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok || !result.success) {
                 const mensaje = result.message || 'No se pudieron validar los datos.';
+                rechazado = true;
                 mostrarErrorRegistro(mensaje, result.campo);
                 return;
             }
@@ -379,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             if (validacionRegistro === solicitud) {
                 validacionRegistro = null;
-                botonRegistrar.disabled = false;
+                botonRegistrar.disabled = rechazado;
                 botonRegistrar.textContent = 'Registrar';
             }
         }

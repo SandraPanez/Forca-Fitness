@@ -52,7 +52,7 @@ async function crearPersonal(datos, passwordHash) {
       `SELECT 1 FROM ${SCHEMA}."Usuario" WHERE LOWER("Correo") = LOWER($1) LIMIT 1`,
       [datos.correo_electronico]
     );
-    if (correo.rows.length) throw conflicto('correo_electronico', 'El correo electrónico ya está registrado.');
+    if (correo.rows.length) throw conflicto('correo_electronico', 'Este personal ya se encuentra registrado');
     const documento = await client.query(
       `SELECT 1 FROM ${SCHEMA}."Persona" WHERE "Numero_Documento" = $1 LIMIT 1`, [datos.numero_documento]
     );
@@ -101,7 +101,7 @@ async function crearPersonal(datos, passwordHash) {
       console.error('Error al revertir el alta de personal:', rollbackError);
     }
     if (error.code === '23505' && /correo/i.test(error.constraint || '')) {
-      throw conflicto('correo_electronico', 'El correo electrónico ya está registrado.');
+      throw conflicto('correo_electronico', 'Este personal ya se encuentra registrado');
     }
     throw error;
   } finally {
@@ -224,7 +224,7 @@ async function guardarAccesos(idUsuario, roles, permisosActivos) {
     await client.query('BEGIN');
 
     const usuario = await client.query(
-      `SELECT u."Id_Usuario"
+      `SELECT u."Id_Usuario", u."Id_Persona"
        FROM ${SCHEMA}."Usuario" u
        WHERE u."Id_Usuario" = $1
          AND UPPER(u."Estado_Usuario") = 'ACTIVO'
@@ -271,6 +271,26 @@ async function guardarAccesos(idUsuario, roles, permisosActivos) {
          VALUES ($1, $2)`,
         [idUsuario, rol.Id_Rol]
       );
+    }
+
+    // Quien asume el rol de Profesor necesita su ficha de profesor; sin ella sus pantallas dan error 404.
+    // Se reutiliza la ficha si ya existe y no se quita al retirar el rol.
+    if (roles.includes(ROLES.PROFESOR)) {
+      const idPersona = usuario.rows[0].Id_Persona;
+      if (!idPersona) {
+        throw Object.assign(new Error('El trabajador necesita una ficha personal para asumir el rol de Profesor.'), { status: 400 });
+      }
+      const ficha = await client.query(
+        `SELECT 1 FROM ${SCHEMA}."Profesor" WHERE "Id_Persona" = $1`,
+        [idPersona]
+      );
+      if (!ficha.rows.length) {
+        const idProfesor = await matriculasRepository.generateId(client, 'Profesor', 'Id_Profesor', 'PROF');
+        await client.query(
+          `INSERT INTO ${SCHEMA}."Profesor" ("Id_Profesor", "Id_Persona") VALUES ($1, $2)`,
+          [idProfesor, idPersona]
+        );
+      }
     }
 
     const permisosSeleccionados = new Set(permisosActivos);
