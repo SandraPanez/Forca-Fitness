@@ -41,6 +41,10 @@ async function login(req, res) {
       });
     }
 
+    if (error.message === 'USUARIO_INACTIVO') {
+      return res.status(403).json({ message: 'Tu cuenta está inactiva. Contacta con la administración.' });
+    }
+
     if (error.message === 'USUARIO_PAGO_PENDIENTE') {
       const esEfectivo = String(error.pagoPendiente?.medio_pago || '').toUpperCase() === 'EFECTIVO';
       const mensaje = esEfectivo

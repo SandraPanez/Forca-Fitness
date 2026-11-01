@@ -38,6 +38,20 @@ app.get(
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
 );
 
+app.get(
+  '/administracion-accesos.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion-accesos.html'))
+);
+
+app.get(
+  '/editar-acceso.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'editar-acceso.html'))
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {
@@ -52,7 +66,8 @@ const {
   authRoutes,
   pagosRoutes,
   comprobantesRoutes,
-  perfilRoutes
+  perfilRoutes,
+  personalRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
@@ -62,6 +77,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
 app.use('/api/perfil', perfilRoutes);
+app.use('/api/personal', personalRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

@@ -62,6 +62,8 @@ async function login(correo, password) {
     usuario.Estado_Usuario || ''
   ).toUpperCase();
 
+  if (estadoUsuario === 'INACTIVO') throw new Error('USUARIO_INACTIVO');
+
   if (estadoUsuario !== 'ACTIVO') {
     const pagoPendiente =
       await authRepository.buscarMatriculaPendientePorCorreo(correo);
