@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 
@@ -8,7 +9,7 @@ const AZUL = '#1a4a7a';
 
 // Dibuja el "Recibo virtual" de la academia y devuelve el PDF como stream.
 // Recibe los textos ya formateados: { pagador, cantidad, concepto, fecha }
-function generarReciboPdf(recibo) {
+function generarReciboPdf(recibo = {}) {
   const doc = new PDFDocument({
     size: [ANCHO, ALTO],
     margin: 0,
@@ -18,7 +19,12 @@ function generarReciboPdf(recibo) {
   // Fondo y cabecera
   doc.rect(0, 0, ANCHO, ALTO).fill('#f4f6f6');
   doc.rect(0, 0, ANCHO, 119).fill('#000000');
-  doc.image(path.join(IMAGENES, 'logo_recibo.png'), 33, 13, { width: 93 });
+  const logoPath = path.join(IMAGENES, 'logo_recibo.png');
+  if (fs.existsSync(logoPath)) {
+    try {
+      doc.image(logoPath, 33, 13, { width: 93 });
+    } catch (e) {}
+  }
   doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(27)
     .text('RECIBO VIRTUAL', 164, 40);
   doc.fillColor('#cccccc').font('Helvetica').fontSize(12)
@@ -47,7 +53,12 @@ function generarReciboPdf(recibo) {
 
   // Conformidad: firma del tesorero sobre la línea
   doc.fillColor(AZUL).font('Helvetica-Bold').fontSize(12.5).text('CONFORMIDAD', 60, y + 22);
-  doc.image(path.join(IMAGENES, 'firma_tesorero.png'), 276, y - 20, { width: 147 });
+  const firmaPath = path.join(IMAGENES, 'firma_tesorero.png');
+  if (fs.existsSync(firmaPath)) {
+    try {
+      doc.image(firmaPath, 276, y - 20, { width: 147 });
+    } catch (e) {}
+  }
   doc.moveTo(223, y + 49).lineTo(484, y + 49).lineWidth(1.2).strokeColor('#333333').stroke();
   doc.fillColor('#888888').font('Helvetica').fontSize(11)
     .text('Firma del Tesorero', 223, y + 58, { width: 261, align: 'center' });

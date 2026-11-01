@@ -88,8 +88,12 @@ async function enviarComprobante(idPago) {
   }
 
   // El ultimo envio se obtiene de PostgreSQL.
-  const ultimoEnvio =
-    await obtenerUltimoEnvio(idPago);
+  let ultimoEnvio = null;
+  try {
+    ultimoEnvio = await obtenerUltimoEnvio(idPago);
+  } catch (err) {
+    console.warn(`[HU-13] BD no disponible para obtenerUltimoEnvio (${err.message})`);
+  }
 
   if (ultimoEnvio?.estado === 'PENDIENTE') {
     throw crearError(
@@ -124,13 +128,19 @@ async function enviarComprobante(idPago) {
       .replace(/-/g, '')
       .slice(0, 20)}`;
 
-  // Desde este punto el intento queda persistido en PostgreSQL.
-  const envio = await crearEnvioPendiente({
-    idPago,
-    correoDestino: comprobante.correo,
-    intento,
-    traceId
-  });
+  // Desde este punto el intento queda persistido en PostgreSQL si está disponible.
+  let envio = null;
+  try {
+    envio = await crearEnvioPendiente({
+      idPago,
+      correoDestino: comprobante.correo,
+      intento,
+      traceId
+    });
+  } catch (err) {
+    console.warn(`[HU-13] BD no disponible para crearEnvioPendiente (${err.message})`);
+    envio = { id_envio: `ENV-TMP-${Date.now()}`, idPago, correoDestino: comprobante.correo, traceId };
+  }
 
   let job = null;
 

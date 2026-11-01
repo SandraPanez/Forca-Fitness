@@ -56,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
+
     function mostrarPagoPendiente(pago) {
         const existente = document.getElementById('pending-payment-link');
         if (existente) existente.remove();

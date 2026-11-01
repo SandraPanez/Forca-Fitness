@@ -54,6 +54,7 @@ class MatriculasService {
 
     return {
       valido: true,
+      mes_nombre: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][mes - 1] || '',
       periodo,
       anio,
       mes,
@@ -577,7 +578,29 @@ class MatriculasService {
       if (yaRegistrado.medio_pago === 'EFECTIVO' || String(yaRegistrado.estado_matricula).toUpperCase().includes('CONFIRMACIÓN')) {
         throw new Error(`Ya tienes una solicitud de reserva en efectivo pendiente de confirmación para ${disciplina.nombre} en el periodo ${reg.periodo}. Espera la validación de recepción.`);
       }
-      throw new Error(`Ya tienes una matrícula o reserva en proceso de pago para ${disciplina.nombre} en el periodo ${reg.periodo}.`);
+      // Si ya tiene una reserva en proceso o pendiente de pago, se reutiliza y se envía directamente al cobro
+      if (id_disc_horario) {
+        await db.query(
+          `UPDATE "Academia Forca&Fitness"."Detalles_Matricula"
+           SET "Id_DiscHorario" = $1
+           WHERE "Id_Matricula" = $2`,
+          [id_disc_horario, yaRegistrado.id_matricula]
+        );
+      }
+
+      const monto = Number(disciplina.tarifa || 0);
+      const concepto = `Reserva - ${disciplina.nombre} (${reg.mes_nombre} ${reg.anio})`;
+
+      return {
+        matriculaId: yaRegistrado.id_matricula,
+        nombre: alumno.nombre_completo,
+        correo: alumno.correo,
+        disciplina: disciplina.nombre,
+        monto,
+        periodo: reg.periodo,
+        concepto,
+        reutilizada: true
+      };
     }
 
     const client = await db.pool.connect();
