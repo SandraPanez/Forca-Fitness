@@ -336,6 +336,17 @@ class MatriculasService {
     });
   }
 
+  async getReservasPorUsuario(idUsuario) {
+    if (!idUsuario) {
+      throw new Error('El ID del usuario es obligatorio.');
+    }
+
+    // Igual que en "Mis matrículas": las reservas cuyo periodo ya empezó pasan a Activa antes de consultar.
+    await matriculasRepository.activarReservasIniciadas();
+
+    return matriculasRepository.getReservasPorUsuario(idUsuario);
+  }
+
   async renovarMatricula(idUsuario, idDetalle) {
     if (typeof idDetalle !== 'string' || !idDetalle || idDetalle.length > 10) {
       throw Object.assign(new Error('La matrícula seleccionada no es válida.'), { status: 400 });

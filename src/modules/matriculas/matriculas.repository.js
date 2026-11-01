@@ -680,6 +680,81 @@ class MatriculasRepository {
     return result.rows;
   }
 
+  // Reservas del cliente (HU-10, T-01). No existe una marca de "reserva" en la base: se considera
+  // reserva a la matrícula en estado Reservada, o a la que empieza en un mes posterior al de su
+  // inscripción y tiene el pago aprobado o un pago en efectivo pendiente de confirmación.
+  async getReservasPorUsuario(idUsuario) {
+    const query = `
+      SELECT
+        m."Id_Matricula" AS id_matricula,
+        m."Fecha_Inscripcion" AS fecha_inscripcion,
+        m."Estado_Matricula" AS estado_matricula,
+        dm."Id_DetMatricula" AS id_detalle,
+        d."Id_Disciplinas" AS id_disciplina,
+        d."Nombre_Disciplina" AS disciplina,
+        h."Dias" AS dias,
+        h."Hora_Inicio" AS hora_inicio,
+        h."Hora_Fin" AS hora_fin,
+        dm."Fecha_Inicio" AS fecha_inicio,
+        dm."Fecha_Fin" AS fecha_fin,
+        p."Monto" AS tarifa_congelada,
+        p."Estado_Pago" AS estado_pago,
+        mp."Nombre_Metodo" AS medio_pago
+
+      FROM ${SCHEMA}."Usuario" u
+
+      JOIN ${SCHEMA}."Alumno" a
+        ON a."Id_Persona" = u."Id_Persona"
+
+      JOIN ${SCHEMA}."Matricula" m
+        ON m."Id_alumno" = a."Id_alumno"
+
+      JOIN ${SCHEMA}."Detalles_Matricula" dm
+        ON dm."Id_Matricula" = m."Id_Matricula"
+
+      JOIN ${SCHEMA}."Disciplina_Horario" dh
+        ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+
+      JOIN ${SCHEMA}."Disciplina" d
+        ON d."Id_Disciplinas" = dh."Id_Disciplina"
+
+      LEFT JOIN ${SCHEMA}."Horarios" h
+        ON h."Id_Horario" = dh."Id_Horario"
+
+      LEFT JOIN LATERAL (
+        SELECT pg."Monto", pg."Estado_Pago", pg."Id_MPago"
+        FROM ${SCHEMA}."Pago" pg
+        WHERE pg."Id_Matricula" = m."Id_Matricula"
+        ORDER BY pg."Fecha_Pago" DESC
+        LIMIT 1
+      ) p ON TRUE
+
+      LEFT JOIN ${SCHEMA}."Metodo_Pago" mp
+        ON mp."Id_MPago" = p."Id_MPago"
+
+      WHERE u."Id_Usuario" = $1
+        AND m."Estado_Matricula" <> 'Anulada'
+        AND (
+          m."Estado_Matricula" = 'Reservada'
+          OR (
+            DATE_TRUNC('month', dm."Fecha_Inicio") > DATE_TRUNC('month', m."Fecha_Inscripcion")
+            AND (
+              p."Estado_Pago" = 'APROBADO'
+              OR (p."Estado_Pago" = 'PENDIENTE' AND UPPER(mp."Nombre_Metodo") = 'EFECTIVO')
+            )
+          )
+        )
+
+      ORDER BY
+        dm."Fecha_Inicio" DESC,
+        m."Id_Matricula" DESC
+    `;
+
+    const result = await db.query(query, [idUsuario]);
+
+    return result.rows;
+  }
+
   async getAlumnoPorUsuario(idUsuario, client = db) {
     const query = `
       SELECT

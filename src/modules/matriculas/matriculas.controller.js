@@ -89,6 +89,29 @@ class MatriculasController {
     }
   }
 
+  async getMisReservas(req, res) {
+    try {
+      const reservas = await matriculasService.getReservasPorUsuario(req.user.id);
+
+      return successResponse(
+        res,
+        200,
+        reservas,
+        'Reservas obtenidas correctamente'
+      );
+    } catch (error) {
+      console.error('Error en getMisReservas:', error);
+
+      const isUserError = error.message.includes('obligatorio');
+
+      return errorResponse(
+        res,
+        isUserError ? 400 : 500,
+        error.message || 'Error interno al obtener las reservas'
+      );
+    }
+  }
+
   async renovarMatricula(req, res) {
     try {
       const resultado = await matriculasService.renovarMatricula(req.user.id, req.params.idDetalle);

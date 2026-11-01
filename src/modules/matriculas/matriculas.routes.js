@@ -21,6 +21,14 @@ router.get(
   matriculasController.getMisMatriculas
 );
 
+// GET /api/matriculas/mis-reservas - Reservas del cliente autenticado (HU-10)
+router.get(
+  '/mis-reservas',
+  autenticar,
+  autorizar(PERMISOS.VER_PROPIA_MATRICULA),
+  matriculasController.getMisReservas
+);
+
 // POST /api/matriculas - Guardar los datos de matrícula en la BD (T_08)
 router.post('/', matriculasController.registrarMatricula);
 
