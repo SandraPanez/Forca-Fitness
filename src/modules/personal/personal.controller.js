@@ -23,7 +23,7 @@ async function crearPersonal(req, res) {
   }
   try {
     const resultado = await personalService.crearPersonal(req.body);
-    return res.status(201).json({ success: true, message: 'Trabajador registrado', data: resultado });
+    return res.status(201).json({ success: true, message: 'Personal registrado', data: resultado });
   } catch (error) {
     if (error.status === 400 || error.status === 409) {
       return res.status(error.status).json({ success: false, message: error.message, campo: error.campo });
