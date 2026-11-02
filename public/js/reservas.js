@@ -73,6 +73,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const reservas = result.data || [];
 
+        if (reservas.length === 0) {
+            aviso.textContent = 'No tienes reservas registradas.';
+            return;
+        }
+
         aviso.hidden = true;
         lista.append(...reservas.map(crearTarjeta));
     } catch (error) {
