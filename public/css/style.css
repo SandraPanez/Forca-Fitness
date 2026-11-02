@@ -3193,6 +3193,11 @@ body {
     color: var(--text-muted);
 }
 
+.reserva-ver-estado {
+    align-self: flex-start;
+    padding: 0;
+}
+
 @media (max-width: 768px) {
     .reservas-lista {
         grid-template-columns: 1fr;

@@ -37,10 +37,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             .join(' · ');
 
         tarjeta.querySelector('.reserva-disciplina').textContent = reserva.disciplina;
+        const mensaje = tarjeta.querySelector('.reserva-mensaje');
+        const botonEstado = tarjeta.querySelector('.reserva-ver-estado');
+
         if (etapa) {
             etiqueta.textContent = reserva.etapa;
             etiqueta.classList.add(etapa.clase);
-            tarjeta.querySelector('.reserva-mensaje').textContent = etapa.mensaje;
+            mensaje.textContent = etapa.mensaje;
+
+            // "Ver estado" muestra u oculta la explicación de la etapa de esta reserva
+            botonEstado.addEventListener('click', () => {
+                mensaje.hidden = !mensaje.hidden;
+                botonEstado.textContent = mensaje.hidden ? 'Ver estado' : 'Ocultar estado';
+                botonEstado.setAttribute('aria-expanded', String(!mensaje.hidden));
+            });
+        } else {
+            botonEstado.remove();
         }
         tarjeta.querySelector('[data-campo="horario"]').textContent = horario;
         tarjeta.querySelector('[data-campo="periodo"]').textContent =
