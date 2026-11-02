@@ -8,13 +8,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `${dia}/${mes}/${anio}`;
     }
 
+    // Etiqueta de color y explicación de cada etapa de la reserva
+    const ETAPAS = {
+        'Pendiente de confirmación': {
+            clase: 'etapa-pendiente',
+            mensaje: 'Tu pago en efectivo está pendiente de validación: el tesorero lo confirmará en recepción.'
+        },
+        'Reservada': {
+            clase: 'etapa-reservada',
+            mensaje: 'Tu cupo está asegurado para el periodo reservado.'
+        },
+        'Activa': {
+            clase: 'etapa-activa',
+            mensaje: 'Tu reserva ya está activa: el periodo reservado comenzó.'
+        },
+        'Vencida': {
+            clase: 'etapa-vencida',
+            mensaje: 'El periodo de esta reserva ya terminó.'
+        }
+    };
+
     function crearTarjeta(reserva) {
         const tarjeta = plantilla.content.cloneNode(true);
+        const etapa = ETAPAS[reserva.etapa];
+        const etiqueta = tarjeta.querySelector('.reserva-etiqueta');
         const horario = [reserva.dias, `${reserva.hora_inicio.slice(0, 5)} a ${reserva.hora_fin.slice(0, 5)}`]
             .filter(Boolean)
             .join(' · ');
 
         tarjeta.querySelector('.reserva-disciplina').textContent = reserva.disciplina;
+        if (etapa) {
+            etiqueta.textContent = reserva.etapa;
+            etiqueta.classList.add(etapa.clase);
+            tarjeta.querySelector('.reserva-mensaje').textContent = etapa.mensaje;
+        }
         tarjeta.querySelector('[data-campo="horario"]').textContent = horario;
         tarjeta.querySelector('[data-campo="periodo"]').textContent =
             `${formatearFecha(reserva.fecha_inicio)} al ${formatearFecha(reserva.fecha_fin)}`;
