@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservas realizadas | Forca & Fitness</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+
+<body data-menu="/reservas.html">
+
+    <header id="app-header"></header>
+
+    <main class="container" style="max-width: 1200px;">
+
+        <section class="page-header">
+            <h2 class="title">Reservas realizadas</h2>
+            <p class="description">
+                Consulta en qué etapa se encuentra cada una de tus reservas de cupo.
+            </p>
+        </section>
+
+        <!-- Aquí se muestran las reservas del cliente -->
+        <section id="reservas-lista" class="reservas-lista" aria-live="polite">
+            <p class="reservas-aviso" id="reservas-aviso">Cargando reservas...</p>
+        </section>
+
+    </main>
+
+    <!-- Diseño de cada reserva: se copia una vez por reserva -->
+    <template id="reserva-plantilla">
+        <article class="reserva-card">
+            <header class="reserva-cabecera">
+                <h3 class="reserva-disciplina"></h3>
+                <span class="badge-status reserva-etiqueta"></span>
+            </header>
+            <dl class="reserva-datos">
+                <div>
+                    <dt>Horario</dt>
+                    <dd data-campo="horario"></dd>
+                </div>
+                <div>
+                    <dt>Periodo reservado</dt>
+                    <dd data-campo="periodo"></dd>
+                </div>
+                <div>
+                    <dt>Tarifa pagada</dt>
+                    <dd data-campo="tarifa"></dd>
+                </div>
+            </dl>
+        </article>
+    </template>
+
+    <script src="/js/auth.js"></script>
+
+</body>
+</html>
