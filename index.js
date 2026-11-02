@@ -52,6 +52,13 @@ app.get(
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'editar-acceso.html'))
 );
 
+app.get(
+  '/reservas.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.VER_PROPIA_MATRICULA),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'reservas.html'))
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {
