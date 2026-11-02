@@ -3141,6 +3141,10 @@ body {
     text-align: center;
 }
 
+.reserva-etiqueta:empty {
+    display: none;
+}
+
 .reserva-datos {
     display: grid;
     gap: 0.9rem;
