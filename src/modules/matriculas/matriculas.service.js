@@ -184,7 +184,7 @@ class MatriculasService {
     const disponibles = await matriculasRepository.getDisciplinas();
     for (const id of disciplinas) {
       const disciplina = disponibles.find(item => item.id === id);
-      if (!disciplina) throw new Error('La disciplina seleccionada no existe.');
+      if (!disciplina) throw new Error('La disciplina seleccionada no existe o no tiene un horario configurado.');
       validarEdadParaDisciplina(datosEstudiante.fecha_nacimiento, disciplina.nombre);
     }
 

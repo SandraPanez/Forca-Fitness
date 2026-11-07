@@ -15,7 +15,11 @@ class MatriculasRepository {
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
         "Tarifa" AS tarifa
-      FROM ${SCHEMA}."Disciplina"
+      FROM ${SCHEMA}."Disciplina" d
+      WHERE EXISTS (
+        SELECT 1 FROM ${SCHEMA}."Disciplina_Horario" dh
+        WHERE dh."Id_Disciplina" = d."Id_Disciplinas"
+      )
       ORDER BY "Nombre_Disciplina" ASC
     `;
 
