@@ -115,6 +115,44 @@ class AlumnosService {
       observaciones_medicas: record.observaciones_medicas
     };
   }
+
+  
+  async obtenerHistorialMatriculas(id) {
+    const alumno = await alumnosRepository.findNombreAlumnoById(id);
+    if (!alumno) return null;
+
+    const registros = await alumnosRepository.findHistorialMatriculasByAlumno(id);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const aFecha = (texto) => new Date(`${texto}T00:00:00`);
+
+    const matriculas = registros.map(reg => {
+      const inicio = aFecha(reg.fecha_inicio);
+      const fin = aFecha(reg.fecha_fin);
+
+      let estado;
+      if (inicio > hoy) estado = 'Reservada';
+      else if (fin < hoy) estado = 'Vencida';
+      else estado = 'Activa';
+
+      return {
+        id_detalle: reg.id_detalle,
+        id_matricula: reg.id_matricula,
+        tipo: reg.es_reserva_anticipada ? 'Reserva anticipada' : 'Regular',
+        disciplina: reg.disciplina,
+        horario: `${reg.dias} ${reg.hora_inicio} - ${reg.hora_fin}`,
+        fecha_inicio: reg.fecha_inicio,
+        fecha_fin: reg.fecha_fin,
+        estado
+      };
+    });
+
+    return {
+      alumno: { id: alumno.id, nombre_completo: alumno.nombre_completo },
+      matriculas
+    };
+  }
 }
 
 module.exports = new AlumnosService();

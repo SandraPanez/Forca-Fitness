@@ -17,4 +17,10 @@ router.get("/:id",
   alumnosController.obtenerDetalleAlumno
 );
 
+router.get("/:id/historial-matriculas",
+  autenticar,
+  autorizar(PERMISOS.VER_TODOS_ALUMNOS),
+  alumnosController.obtenerHistorialMatriculas
+);
+
 module.exports = router;

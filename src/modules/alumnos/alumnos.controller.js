@@ -42,6 +42,32 @@ class AlumnosController {
       });
     }
   }
+
+  
+  async obtenerHistorialMatriculas(req, res) {
+    try {
+      const { id } = req.params;
+      const historial = await alumnosService.obtenerHistorialMatriculas(id);
+
+      if (!historial) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alumno no encontrado'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: historial
+      });
+    } catch (error) {
+      console.error('Error en obtenerHistorialMatriculas:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno al obtener el historial de matrículas'
+      });
+    }
+  }
 }
 
 module.exports = new AlumnosController();

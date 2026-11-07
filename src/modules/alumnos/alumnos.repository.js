@@ -117,6 +117,56 @@ class AlumnosRepository {
     const result = await db.query(query, [id, idProfesor]);
     return result.rows[0] || null;
   }
+
+  
+  async findNombreAlumnoById(id) {
+    const query = `
+      SELECT
+        a."Id_alumno" AS id,
+        TRIM(CONCAT_WS(' ', p."Nombre", p."Segundo_Nombre", p."Apellido_Paterno", p."Apellido_Materno")) AS nombre_completo
+      FROM "Academia Forca&Fitness"."Alumno" a
+      JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
+      WHERE a."Id_alumno" = $1
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows[0] || null;
+  }
+
+  // Solo lectura: devuelve cada periodo (inscripción o renovación) del alumno,
+  // de la matrícula más reciente a la más antigua. Nunca modifica ni elimina datos.
+  async findHistorialMatriculasByAlumno(id) {
+    const query = `
+      SELECT
+        dm."Id_DetMatricula" AS id_detalle,
+        m."Id_Matricula" AS id_matricula,
+        d."Nombre_Disciplina" AS disciplina,
+        h."Dias" AS dias,
+        h."Turno" AS turno,
+        TO_CHAR(h."Hora_Inicio", 'HH24:MI') AS hora_inicio,
+        TO_CHAR(h."Hora_Fin", 'HH24:MI') AS hora_fin,
+        TO_CHAR(dm."Fecha_Inicio", 'YYYY-MM-DD') AS fecha_inicio,
+        TO_CHAR(dm."Fecha_Fin", 'YYYY-MM-DD') AS fecha_fin,
+        m."Estado_Matricula" AS estado_matricula,
+        (
+          dm."Fecha_Inicio" = (
+            SELECT MIN(dm_primero."Fecha_Inicio")
+            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_primero
+            WHERE dm_primero."Id_Matricula" = m."Id_Matricula"
+          )
+          AND DATE_TRUNC('month', dm."Fecha_Inicio") > DATE_TRUNC('month', m."Fecha_Inscripcion")
+        ) AS es_reserva_anticipada
+      FROM "Academia Forca&Fitness"."Matricula" m
+      JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+      JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+      JOIN "Academia Forca&Fitness"."Horarios" h ON h."Id_Horario" = dh."Id_Horario"
+      WHERE m."Id_alumno" = $1
+        AND UPPER(m."Estado_Matricula") <> 'PENDIENTE'
+      ORDER BY dm."Fecha_Inicio" DESC, dm."Id_DetMatricula" DESC
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows;
+  }
 }
 
 module.exports = new AlumnosRepository();
