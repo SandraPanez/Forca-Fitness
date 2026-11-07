@@ -19,7 +19,7 @@ router.get("/:id",
 
 router.get("/:id/historial-matriculas",
   autenticar,
-  autorizar(PERMISOS.VER_TODOS_ALUMNOS),
+  autorizar(PERMISOS.VER_HISTORIAL_MATRICULAS),
   alumnosController.obtenerHistorialMatriculas
 );
 
