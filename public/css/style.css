@@ -502,6 +502,12 @@ body {
     transition: all 0.2s ease;
 }
 
+.field-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
 .disciplina-card:hover {
     background-color: var(--hover-bg);
     border-color: var(--primary-color);

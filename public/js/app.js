@@ -9,11 +9,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Fecha de nacimiento sin edad mínima (también se matriculan niños), pero no puede ser futura
-    document.getElementById('fecha_nacimiento').max = today.toLocaleDateString('en-CA');
+    const fechaNacimiento = document.getElementById('fecha_nacimiento');
+    fechaNacimiento.max = today.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
     // 2. Manejo de formulario (Validaciones básicas para T_01/T_06)
     const form = document.getElementById('matriculaForm');
     const errorDiv = document.getElementById('disciplinas-error');
+
+    function actualizarContadorDisciplinas() {
+        const cantidad = document.querySelectorAll('input[name="disciplinas"]:checked').length;
+        const badge = document.getElementById('disciplinas-count');
+        badge.style.display = cantidad ? 'inline-block' : 'none';
+        badge.textContent = `${cantidad} seleccionada${cantidad === 1 ? '' : 's'}`;
+    }
+
+    // Hasta los 12 años solo disciplinas Kids; desde los 13, las generales
+    function actualizarDisciplinasPorEdad() {
+        const edad = calcularEdadMatricula(fechaNacimiento.value);
+        document.getElementById('disciplinas-edad').textContent = edad === null
+            ? 'Ingresa una fecha de nacimiento válida para habilitar las disciplinas.'
+            : edad <= 12 ? 'Hasta los 12 años inclusive puedes matricularte en las disciplinas Kids.'
+                : 'Desde los 13 años puedes matricularte en las disciplinas generales.';
+        document.querySelectorAll('input[name="disciplinas"]').forEach(checkbox => {
+            const nombre = checkbox.closest('label').querySelector('.disciplina-name').textContent;
+            checkbox.disabled = !disciplinaPermitidaPorEdad(edad, nombre);
+            if (checkbox.disabled) checkbox.checked = false;
+            checkbox.closest('label').title = checkbox.disabled ? (edad === null
+                ? 'Ingresa una fecha de nacimiento válida.'
+                : edad <= 12 ? 'Disponible desde los 13 años.' : 'Kids: hasta los 12 años inclusive.') : '';
+        });
+        actualizarContadorDisciplinas();
+    }
+    fechaNacimiento.addEventListener('input', actualizarDisciplinasPorEdad);
+    fechaNacimiento.addEventListener('change', actualizarDisciplinasPorEdad);
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -170,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="disciplina-desc">${d.descripcion}</span>
                             <span class="disciplina-tarifa">Tarifa mensual: S/ ${Number(d.tarifa).toFixed(2)}</span>
                         </div>
-                        <input type="checkbox" name="disciplinas" value="${d.id}">
+                        <input type="checkbox" name="disciplinas" value="${d.id}" aria-describedby="disciplinas-edad" disabled>
                     `;
                     container.appendChild(label);
                 });
@@ -185,21 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Llamar a la API al cargar la página
     cargarDisciplinas().then(() => {
-        // T_05: Lógica para contar disciplinas seleccionadas dinámicamente
-        const checkboxes = document.querySelectorAll('input[name="disciplinas"]');
-        const countBadge = document.getElementById('disciplinas-count');
-
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-                const selectedCount = document.querySelectorAll('input[name="disciplinas"]:checked').length;
-                if (selectedCount > 0) {
-                    countBadge.style.display = 'inline-block';
-                    countBadge.textContent = `${selectedCount} seleccionada${selectedCount > 1 ? 's' : ''}`;
-                } else {
-                    countBadge.style.display = 'none';
-                }
-            });
+        // T_05: contar disciplinas seleccionadas dinámicamente
+        document.querySelectorAll('input[name="disciplinas"]').forEach(cb => {
+            cb.addEventListener('change', actualizarContadorDisciplinas);
         });
+        actualizarDisciplinasPorEdad();
     });
 
     // Lógica para visualizar/ocultar contraseñas
