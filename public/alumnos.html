@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumnos registrados | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+<body>
+    <!-- Header General (Simulado de Menú Principal) -->
+    <header id="app-header"></header>
+
+    <div class="container" style="max-width: 1200px;">
+        <div class="page-header">
+            <h2 class="title">Alumnos registrados</h2>
+            <p class="description">Consulta los alumnos que forman parte de Forca & Fitness.</p>
+        </div>
+
+    <input type="text" id="search-input" class="search-input" placeholder="🔍 Buscar por nombre">
+    <select id="filter-select" class="filter-select">
+        <option value="Todos">Todos</option>
+        <option value="Activa">Activa</option>
+        <option value="Vencida">Vencida</option>
+        <option value="Inhabilitada">Inhabilitada</option>
+    </select>
+
+        <!-- Tabla principal -->
+        <div class="table-container">
+            <table class="alumnos-table">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Estado de matrícula</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="alumnos-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PANEL LATERAL (SIDE DRAWER) T_20 -->
+    <div class="side-panel-overlay" id="side-panel-overlay"></div>
+    <aside class="side-panel" id="side-panel">
+        <div class="side-panel-header">
+            <h3>DETALLE DEL ALUMNO</h3>
+            <button class="btn-close" id="btn-close-panel">✕</button>
+        </div>
+        
+        <div class="side-panel-content" id="side-panel-content">
+            <div class="text-center text-muted mt-4">Cargando información...</div>
+        </div>
+    </aside>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/alumnos.js"></script>
+</body>
+</html>
