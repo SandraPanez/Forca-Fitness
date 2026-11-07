@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --primary-color: #1a4f8b; /* Azul corporativo */
     --secondary-color: #f8f9fa; /* Fondo gris claro */
     --text-main: #333333;
@@ -26,7 +26,7 @@ body {
 }
 
 .logo-img {
-    height: 50px; /* Tamaño ajustado para que se vea proporcionado con el texto */
+    height: 50px; /* TamaÃ±o ajustado para que se vea proporcionado con el texto */
     width: auto;
     object-fit: contain;
 }
@@ -131,7 +131,7 @@ body {
     padding: 2.5rem 1.5rem 4rem;
 }
 
-/* ── Mensaje de estado de pago ─────────────────────────────────── */
+/* â”€â”€ Mensaje de estado de pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .payment-message {
     display: none;
     padding: 1rem 1.25rem;
@@ -163,7 +163,7 @@ body {
     color: #1e40af;
 }
 
-/* Toast de confirmación de tesorería (posición fija) */
+/* Toast de confirmaciÃ³n de tesorerÃ­a (posiciÃ³n fija) */
 .confirm-toast {
     position: fixed;
     bottom: 2rem;
@@ -380,7 +380,7 @@ body {
     cursor: wait;
 }
 
-/* ── Modal de confirmación de pago ─────────────────────────────── */
+/* â”€â”€ Modal de confirmaciÃ³n de pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -923,7 +923,7 @@ body {
    ESTILOS PARA HU-2: LISTA DE ALUMNOS Y SIDE PANEL
    ======================================================== */
 
-/* Toolbar de Búsqueda */
+/* Toolbar de BÃºsqueda */
 .alumnos-toolbar {
     display: flex;
     justify-content: space-between;
@@ -984,36 +984,43 @@ body {
 }
 
 .filter-select {
-    padding: 0.55rem 0.75rem;
+    padding: 0.72rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-family: inherit;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     background-color: var(--white);
     color: var(--text-main);
     cursor: pointer;
-    transition: border-color 0.2s;
+    min-width: 220px;
+    transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+    border-color: #cbd5e1;
 }
 
 .filter-select:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(26, 79, 139, 0.12);
 }
 
 .btn-limpiar-filtro {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.55rem 0.85rem;
+    padding: 0.72rem 1rem;
     background: #f1f5f9;
     color: #475569;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
+    white-space: nowrap;
 }
 
 .btn-limpiar-filtro:hover {
@@ -1848,7 +1855,7 @@ body {
     }
 }
 
-/* ─── Sección "Pagos por aprobar" (Tesorería) ─── */
+/* â”€â”€â”€ SecciÃ³n "Pagos por aprobar" (TesorerÃ­a) â”€â”€â”€ */
 .treasury-page {
     background-color: #f8fafc;
 }
