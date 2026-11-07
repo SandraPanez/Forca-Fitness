@@ -116,7 +116,6 @@ class AlumnosService {
     };
   }
 
-  
   async obtenerHistorialMatriculas(id) {
     const alumno = await alumnosRepository.findNombreAlumnoById(id);
     if (!alumno) return null;
@@ -150,7 +149,29 @@ class AlumnosService {
 
     return {
       alumno: { id: alumno.id, nombre_completo: alumno.nombre_completo },
+      permanencia: this.calcularPermanencia(registros, hoy),
       matriculas
+    };
+  }
+
+  // Resumen rápido: "Desde 2025 - 14 meses en la academia"
+  calcularPermanencia(registros, hoy = new Date()) {
+    if (!registros.length) return null;
+
+    const inicios = registros.map(r => new Date(`${r.fecha_inicio}T00:00:00`));
+    const fines = registros.map(r => new Date(`${r.fecha_fin}T00:00:00`));
+    const primerInicio = new Date(Math.min(...inicios));
+    const ultimoFin = new Date(Math.max(...fines));
+    const referencia = ultimoFin < hoy ? ultimoFin : hoy;
+
+    const dias = Math.max(0, Math.round((referencia - primerInicio) / (1000 * 60 * 60 * 24)));
+    const meses = dias === 0 ? 0 : Math.max(1, Math.round(dias / 30.44));
+    const desde = primerInicio.getFullYear();
+
+    return {
+      desde,
+      meses,
+      texto: `Desde ${desde} - ${meses} ${meses === 1 ? 'mes' : 'meses'} en la academia`
     };
   }
 }
