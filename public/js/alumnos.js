@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const kpiPorVencerVal = document.getElementById('kpi-por-vencer-val');
     const kpiVencidasVal = document.getElementById('kpi-vencidas-val');
 
-    let alumnosCache = [];
+    let alumnosCache = [];    // El historial de matrículas solo lo consulta el Director
+    const esDirector = obtenerRolesUsuario().includes('DIRECTOR');
 
     const closePanel = () => {
         overlay.classList.remove('active');
@@ -148,12 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td class="text-right">
                     <button class="btn-link" data-id="${escapeHtml(alumno.id)}" title="Ver vigencia de matrícula y detalles">Ver detalle</button>
+                    ${esDirector ? `<a class="btn-link btn-historial" href="/historial-matriculas.html?alumno=${encodeURIComponent(alumno.id)}" title="Ver historial de matrículas">Ver historial de matrículas</a>` : ''}
                 </td>
             `;
             tbody.appendChild(tr);
         });
 
-        tbody.querySelectorAll('.btn-link').forEach((button) => {
+        tbody.querySelectorAll('button.btn-link').forEach((button) => {
             button.addEventListener('click', () => loadStudentDetails(button.dataset.id));
         });
     };
