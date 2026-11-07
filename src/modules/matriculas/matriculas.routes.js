@@ -21,4 +21,12 @@ router.get(
 // POST /api/matriculas - Guardar los datos de matrícula en la BD (T_08)
 router.post('/', matriculasController.registrarMatricula);
 
+// POST /api/matriculas/mis-matriculas/:idDetalle/renovar - Preparar la renovación (HU-08)
+router.post(
+  '/mis-matriculas/:idDetalle/renovar',
+  autenticar,
+  autorizar(PERMISOS.REGISTRAR_MATRICULA),
+  matriculasController.renovarMatricula
+);
+
 module.exports = router;

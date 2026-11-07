@@ -26,6 +26,10 @@
             </p>
         </section>
 
+        <div id="pago-pendiente-banner" class="login-success" style="display: none;" role="status">
+            Tu solicitud de pago en efectivo fue registrada. El tesorero confirmará el pago y tu matrícula se activará al aprobarse.
+        </div>
+
         <div class="table-container">
             <table class="alumnos-table">
                 <thead>
@@ -48,6 +52,18 @@
         </div>
 
     </main>
+
+    <div class="modal-overlay" id="modal-renovar" role="dialog" aria-modal="true" aria-labelledby="modal-renovar-titulo">
+        <div class="modal">
+            <h3 id="modal-renovar-titulo">Renovar matrícula</h3>
+            <p id="modal-renovar-detalle"></p>
+            <p id="modal-renovar-error" class="error-message" role="alert" style="display: none;"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="modal-renovar-cancelar">Cancelar</button>
+                <button type="button" class="btn-submit" id="modal-renovar-continuar">Continuar al pago</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/auth.js"></script>
     <script src="/js/mis-matriculas.js"></script>

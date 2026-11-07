@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const tbody = document.getElementById('mis-matriculas-tbody');
 
+    if (new URLSearchParams(window.location.search).get('pago') === 'pendiente') {
+        document.getElementById('pago-pendiente-banner').style.display = 'block';
+    }
+
     try {
         const response = await authFetch('/api/matriculas/mis-matriculas');
         const result = await response.json();
@@ -48,15 +52,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 matricula.dias_restantes
             );
 
-            const renovacion = estado === 'Próxima a vencer' && matricula.id_disciplina
+            const renovacion = matricula.puede_renovar && matricula.id_detalle
                 ? `
                     <div style="margin-top: 0.5rem;">
-                        <a
-                            class="btn-link"
-                            href="/disciplinas.html?disciplina=${encodeURIComponent(matricula.id_disciplina)}&matricula=${encodeURIComponent(matricula.id_matricula)}"
-                        >
-                            Renovar
-                        </a>
+                        <button type="button" class="btn-link btn-renovar" data-detalle="${escapeHtml(matricula.id_detalle)}" data-disciplina="${escapeHtml(disciplina)}" data-fin="${escapeHtml(matricula.fecha_fin || '')}">Renovar</button>
                     </div>
                 `
                 : '';
@@ -77,6 +76,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             tbody.appendChild(fila);
         });
 
+        activarRenovacion(tbody);
+
     } catch (error) {
         console.error('Error cargando matrículas:', error);
 
@@ -91,6 +92,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
+// HU-08: confirmar la renovación y pasar al pago
+function activarRenovacion(tbody) {
+    const modal = document.getElementById('modal-renovar');
+    const detalle = document.getElementById('modal-renovar-detalle');
+    const error = document.getElementById('modal-renovar-error');
+    const continuar = document.getElementById('modal-renovar-continuar');
+    let idDetalle = null;
+    const cerrar = () => { modal.style.display = 'none'; };
+
+    tbody.addEventListener('click', event => {
+        const boton = event.target.closest('.btn-renovar');
+        if (!boton) return;
+        idDetalle = boton.dataset.detalle;
+        // Si aún está vigente, el nuevo periodo empieza al día siguiente del vencimiento
+        const fin = new Date(`${boton.dataset.fin.substring(0, 10)}T00:00:00`);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const inicio = new Date(Math.max(hoy, fin.getTime() + 86400000));
+        const termino = new Date(inicio.getTime() + 30 * 86400000);
+        const fmt = d => d.toLocaleDateString('es-PE');
+        detalle.textContent = `${boton.dataset.disciplina}: nuevo periodo del ${fmt(inicio)} al ${fmt(termino)}. Mantienes tu mismo horario si hay cupo.`;
+        error.style.display = 'none';
+        continuar.disabled = false;
+        modal.style.display = 'flex';
+    });
+    document.getElementById('modal-renovar-cancelar').addEventListener('click', cerrar);
+
+    continuar.addEventListener('click', async () => {
+        continuar.disabled = true;
+        try {
+            const response = await authFetch(`/api/matriculas/mis-matriculas/${encodeURIComponent(idDetalle)}/renovar`, { method: 'POST' });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'No se pudo preparar la renovación.');
+            const data = result.data;
+            window.location.href = '/pagos.html?' + new URLSearchParams({
+                matricula: data.matriculaId,
+                nombre: data.nombre,
+                correo: data.correo,
+                concepto: `Renovación - ${data.disciplinas}`,
+                monto: String(data.monto)
+            });
+        } catch (err) {
+            error.textContent = err.message;
+            error.style.display = 'block';
+            continuar.disabled = false;
+        }
+    });
+}
+
+
 function formatearFecha(fecha) {
     const [anio, mes, dia] = fecha.substring(0, 10).split('-');
 
@@ -103,7 +154,7 @@ function obtenerClaseEstado(estado) {
         return 'badge-activa';
     }
 
-    if (estado === 'Próxima a vencer') {
+    if (estado === 'Próxima a vencer' || estado === 'Pendiente de pago') {
         return 'badge-proxima';
     }
 
