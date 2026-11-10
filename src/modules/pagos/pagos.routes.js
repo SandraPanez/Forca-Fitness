@@ -34,6 +34,13 @@ router.get(
   pagosController.obtenerBalanceFinanciero
 );
 router.get(
+  '/balance/:idPago',
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.obtenerDetalleOperacionBalance
+);
+router.get(
   '/efectivo/pendientes',
   autenticar,
   autorizar(PERMISOS.GESTIONAR_PAGOS),

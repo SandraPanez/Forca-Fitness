@@ -52,6 +52,32 @@ class PagosController {
         }
     }
 
+    async obtenerDetalleOperacionBalance(req, res) {
+        try {
+            const { idPago } = req.params;
+            const data = await pagosService.obtenerDetalleOperacionBalance(idPago);
+            if (!data) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Operación financiera no encontrada o no aprobada'
+                });
+            }
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            if (error.message?.startsWith('VALIDACION:')) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message.replace(/^VALIDACION:\s*/, '')
+                });
+            }
+            console.error('Error al consultar detalle de operación:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudo consultar el detalle de la operación'
+            });
+        }
+    }
+
     async listarEfectivoPendientes(req, res) {
         try {
             const data = await pagosService.listarEfectivoPendientes();

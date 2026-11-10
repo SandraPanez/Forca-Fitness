@@ -735,15 +735,53 @@
     }
 
     .modal-detalle-footer {
-        padding: 1.25rem 1.75rem;
+        padding: 1.15rem 1.75rem;
         border-top: 1px solid #e2e8f0;
         background: #fafafa;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
         gap: 0.75rem;
         border-bottom-left-radius: 14px;
         border-bottom-right-radius: 14px;
+    }
+
+    .modal-footer-note {
+        font-size: 0.78rem;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .modal-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .modal-readonly-pill {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        padding: 0.28rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .detalle-section-heading {
+        grid-column: 1 / -1;
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #1a4f8b;
+        padding-bottom: 0.4rem;
+        margin-top: 0.35rem;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .btn-cerrar-detalle {
@@ -1293,7 +1331,7 @@
          MODAL: VER DETALLE DE OPERACIÓN (CRITERIO 3)
          Estrictamente en MODO CONSULTA (Sin editar ni borrar)
          ======================================================== -->
-    <div id="modal-detalle-operacion" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-detalle-title">
+    <div id="modal-detalle-operacion" class="modal-overlay" style="display: none;" hidden role="dialog" aria-modal="true" aria-labelledby="modal-detalle-title">
         <div class="modal-card-detalle">
             <!-- Encabezado del modal -->
             <div class="modal-detalle-header">
@@ -1304,88 +1342,123 @@
                         <p class="modal-detalle-sub">Registro de cobro verificado en sistema</p>
                     </div>
                 </div>
-                <button type="button" id="btn-cerrar-detalle-x" class="btn-close-modal" aria-label="Cerrar detalle">✕</button>
+                <div class="modal-header-actions">
+                    <span class="modal-readonly-pill">🔒 Solo lectura</span>
+                    <button type="button" id="btn-cerrar-detalle-x" class="btn-close-modal" aria-label="Cerrar detalle">✕</button>
+                </div>
             </div>
 
-            <!-- Cuerpo del modal (solo lectura) -->
+            <!-- Cuerpo del modal (estrictamente solo lectura) -->
             <div class="modal-detalle-body">
                 <!-- Aviso de solo consulta -->
                 <div class="readonly-notice">
                     <span class="readonly-notice-icon">ℹ️</span>
                     <div>
                         <strong>Modo de consulta y verificación:</strong>
-                        Esta interfaz permite examinar la transacción de forma transparente. No se admiten modificaciones, alteraciones de monto ni eliminaciones de operaciones registradas.
+                        Esta vista muestra la información oficial de la operación en modo solo lectura. No se permiten ediciones, ajustes de montos ni eliminaciones.
                     </div>
                 </div>
 
                 <!-- Grilla de datos informativos -->
                 <div class="detalle-grid">
+                    <div class="detalle-section-heading">I. Información de Transacción y Auditoría</div>
+
                     <div class="detalle-item">
-                        <span class="detalle-item-label">N° de Operación</span>
-                        <div id="det-id-operacion" class="detalle-item-value">—</div>
+                        <span class="detalle-item-label">Código de Pago</span>
+                        <div id="det-id-pago" class="detalle-item-value" aria-readonly="true">—</div>
                     </div>
 
                     <div class="detalle-item">
-                        <span class="detalle-item-label">Fecha y Hora</span>
-                        <div id="det-fecha-hora" class="detalle-item-value">—</div>
+                        <span class="detalle-item-label">N° Registro de Cobro</span>
+                        <div id="det-id-operacion" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Fecha y Hora de Confirmación</span>
+                        <div id="det-fecha-hora" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Fecha de Solicitud</span>
+                        <div id="det-fecha-solicitud" class="detalle-item-value" aria-readonly="true">—</div>
                     </div>
 
                     <div class="detalle-item">
                         <span class="detalle-item-label">Estado de la Operación</span>
-                        <div id="det-estado" class="detalle-item-value">
+                        <div id="det-estado" class="detalle-item-value" aria-readonly="true">
                             <span style="color: #059669; font-weight: 700;">✓ APROBADO</span>
                         </div>
                     </div>
 
                     <div class="detalle-item">
                         <span class="detalle-item-label">Medio de Pago</span>
-                        <div id="det-medio-pago" class="detalle-item-value">—</div>
-                    </div>
-
-                    <div class="detalle-item">
-                        <span class="detalle-item-label">Alumno</span>
-                        <div id="det-alumno" class="detalle-item-value">—</div>
-                    </div>
-
-                    <div class="detalle-item">
-                        <span class="detalle-item-label">DNI / Documento</span>
-                        <div id="det-dni" class="detalle-item-value">—</div>
-                    </div>
-
-                    <div class="detalle-item">
-                        <span class="detalle-item-label">Código de Matrícula</span>
-                        <div id="det-matricula" class="detalle-item-value">—</div>
+                        <div id="det-medio-pago" class="detalle-item-value" aria-readonly="true">—</div>
                     </div>
 
                     <div class="detalle-item">
                         <span class="detalle-item-label">N° Comprobante / Recibo</span>
-                        <div id="det-comprobante" class="detalle-item-value">—</div>
+                        <div id="det-comprobante" class="detalle-item-value" aria-readonly="true">—</div>
                     </div>
 
-                    <div class="detalle-item full-width">
-                        <span class="detalle-item-label">Disciplina(s) / Concepto</span>
-                        <div id="det-disciplinas" class="detalle-item-value">—</div>
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Confirmado / Registrado por</span>
+                        <div id="det-registrado-por" class="detalle-item-value" aria-readonly="true">—</div>
                     </div>
 
                     <div class="detalle-item full-width">
                         <span class="detalle-item-label">Referencia de Transacción</span>
-                        <div id="det-referencia" class="detalle-item-value" style="font-family: monospace; font-size: 0.88rem;">—</div>
+                        <div id="det-referencia" class="detalle-item-value" style="font-family: monospace; font-size: 0.88rem;" aria-readonly="true">—</div>
                     </div>
+
+                    <div class="detalle-section-heading">II. Datos del Alumno y Matrícula</div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Alumno</span>
+                        <div id="det-alumno" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Documento de Identidad</span>
+                        <div id="det-dni" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Correo Electrónico</span>
+                        <div id="det-correo" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Código de Matrícula</span>
+                        <div id="det-matricula" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Disciplina(s) / Concepto</span>
+                        <div id="det-disciplinas" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Vigencia de Matrícula</span>
+                        <div id="det-vigencia" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-section-heading">III. Importe Verificado</div>
 
                     <div class="detalle-item full-width">
                         <span class="detalle-item-label">Monto Total Cobrado</span>
-                        <div id="det-monto" class="detalle-item-value highlight-monto">S/ 0.00</div>
+                        <div id="det-monto" class="detalle-item-value highlight-monto" aria-readonly="true">S/ 0.00</div>
                     </div>
 
                     <div class="detalle-item full-width">
                         <span class="detalle-item-label">Monto en Letras</span>
-                        <div id="det-monto-letras" class="detalle-item-value" style="font-style: italic; color: #475569;">—</div>
+                        <div id="det-monto-letras" class="detalle-item-value" style="font-style: italic; color: #475569;" aria-readonly="true">—</div>
                     </div>
                 </div>
             </div>
 
             <!-- Pie del modal: Solo botón de cierre (Sin botones de modificación ni eliminación) -->
             <div class="modal-detalle-footer">
+                <span class="modal-footer-note">🔒 Operación inmutable — solo verificación</span>
                 <button type="button" id="btn-cerrar-detalle" class="btn-cerrar-detalle">
                     Cerrar consulta
                 </button>

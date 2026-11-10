@@ -206,6 +206,9 @@ function inicializarBalanceView() {
         aplicarFiltroTextoTabla();
     });
 
+    // Inicializar modal de detalle en modo consulta (Criterio 3)
+    inicializarEventosDetalle();
+
     // Carga inicial del balance para el periodo predeterminado
     consultarBalancePorPeriodo();
 }
@@ -620,4 +623,137 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
             </tr>
         `;
     }).join('');
+}
+
+// ────────────────────────────────────────────────────────────
+// 5. VISTA DE DETALLE DE OPERACIÓN (MODO SOLO LECTURA - CA 3)
+// ────────────────────────────────────────────────────────────
+let elementoDisparadorDetalle = null;
+
+function inicializarEventosDetalle() {
+    const tbody = document.getElementById('balance-tbody');
+    const modal = document.getElementById('modal-detalle-operacion');
+    const btnCerrar = document.getElementById('btn-cerrar-detalle');
+    const btnCerrarX = document.getElementById('btn-cerrar-detalle-x');
+
+    tbody?.addEventListener('click', (event) => {
+        const boton = event.target.closest?.('.btn-action-detalle[data-pago-id]');
+        if (!boton) return;
+        elementoDisparadorDetalle = boton;
+        const idPago = boton.dataset.pagoId;
+        if (idPago) {
+            abrirDetalleOperacion(idPago);
+        }
+    });
+
+    btnCerrar?.addEventListener('click', cerrarModalDetalle);
+    btnCerrarX?.addEventListener('click', cerrarModalDetalle);
+
+    modal?.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            cerrarModalDetalle();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal && modal.style.display !== 'none' && !modal.hidden) {
+            cerrarModalDetalle();
+        }
+    });
+}
+
+function formatearFechaHoraCompleta(fechaStr) {
+    if (!fechaStr) return '—';
+    const { fecha, hora } = formatearFechaHoraOperacion(fechaStr);
+    if (fecha === '—') return '—';
+    return hora ? `${fecha} — ${hora}` : fecha;
+}
+
+function poblarModalDetalle(op) {
+    if (!op) return;
+
+    const setText = (id, valor) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = valor ?? '—';
+    };
+
+    const esMp = op.medio_pago === 'MERCADO_PAGO';
+    const medioTexto = esMp ? '🌐 Mercado Pago' : '💵 Efectivo';
+    const docTexto = `${op.tipo_documento || 'DNI'}: ${op.dni || '—'}`;
+
+    setText('det-id-pago', op.id_pago || '—');
+    setText('det-id-operacion', op.id_registro || op.id_pago || '—');
+    setText('det-fecha-hora', formatearFechaHoraCompleta(op.fecha_operacion));
+    setText('det-fecha-solicitud', formatearFechaHoraCompleta(op.fecha_solicitud || op.fecha_operacion));
+    setText('det-medio-pago', medioTexto);
+    setText('det-comprobante', op.numero_recibo || '—');
+    setText('det-registrado-por', op.registrado_por || (esMp ? 'Pasarela Mercado Pago' : 'Tesorería'));
+    setText('det-referencia', op.referencia || '—');
+
+    setText('det-alumno', op.alumno || '—');
+    setText('det-dni', docTexto);
+    setText('det-correo', op.correo || '—');
+    setText('det-matricula', op.id_matricula || '—');
+    setText('det-disciplinas', op.disciplinas || 'Mensualidad');
+    setText('det-vigencia', op.periodo_matricula || '—');
+
+    setText('det-monto', formatearMoneda(op.monto));
+    setText('det-monto-letras', op.monto_letras || '—');
+
+    const estadoEl = document.getElementById('det-estado');
+    if (estadoEl) {
+        const estadoUpper = String(op.estado_pago || 'APROBADO').toUpperCase();
+        estadoEl.innerHTML = `<span style="color: #059669; font-weight: 700;">✓ ${escapeHtml(estadoUpper)}</span>`;
+    }
+}
+
+async function abrirDetalleOperacion(idPago) {
+    const modal = document.getElementById('modal-detalle-operacion');
+    if (!modal) return;
+
+    const cached = operacionesPeriodo.find(item => item.id_pago === idPago) || null;
+    if (cached) {
+        poblarModalDetalle(cached);
+        modal.hidden = false;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        document.getElementById('btn-cerrar-detalle')?.focus?.();
+    }
+
+    try {
+        const response = await authFetch(`/api/pagos/balance/${encodeURIComponent(idPago)}`);
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.success || !payload.data) {
+            if (!cached) {
+                throw new Error(payload.message || 'No se pudo cargar el detalle de la operación.');
+            }
+            return;
+        }
+
+        poblarModalDetalle(payload.data);
+        if (!cached) {
+            modal.hidden = false;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            document.getElementById('btn-cerrar-detalle')?.focus?.();
+        }
+    } catch (error) {
+        console.error('[BALANCE] Error al consultar detalle de operación:', error);
+        if (!cached) {
+            mostrarMensajeBalance(error.message || 'No se pudo obtener el detalle de la operación.');
+        }
+    }
+}
+
+function cerrarModalDetalle() {
+    const modal = document.getElementById('modal-detalle-operacion');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    if (elementoDisparadorDetalle && typeof elementoDisparadorDetalle.focus === 'function') {
+        elementoDisparadorDetalle.focus();
+    }
+    elementoDisparadorDetalle = null;
 }
