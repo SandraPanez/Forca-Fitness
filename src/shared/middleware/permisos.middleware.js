@@ -34,6 +34,29 @@ function autorizar(permiso) {
   };
 }
 
+function autorizarRol(rolesPermitidos) {
+  const permitidos = (Array.isArray(rolesPermitidos) ? rolesPermitidos : [rolesPermitidos])
+    .map(r => String(r).toUpperCase());
+
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        message: 'Usuario no autenticado'
+      });
+    }
+
+    const tieneRol = (req.user.roles || []).some(rol => permitidos.includes(String(rol).toUpperCase()));
+    if (!tieneRol) {
+      return res.status(403).json({
+        message: 'Acceso restringido: requiere rol de Tesorero'
+      });
+    }
+
+    return next();
+  };
+}
+
 module.exports = {
-  autorizar
+  autorizar,
+  autorizarRol
 };

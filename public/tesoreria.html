@@ -10,10 +10,18 @@
 <body class="treasury-page">
   <header id="app-header"></header>
   <main class="treasury-container">
-    <div class="page-header">
-      <p class="subtitle">TESORERÍA</p>
-      <h2 class="title">Gestión de cobros</h2>
-      <p class="description">Consulta solicitudes, confirma pagos en efectivo y revisa el historial de cobros.</p>
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <p class="subtitle">TESORERÍA</p>
+        <h2 class="title">Gestión de cobros</h2>
+        <p class="description">Consulta solicitudes, confirma pagos en efectivo y revisa el historial de cobros.</p>
+      </div>
+      <!-- Acceso a Balance financiero (Exclusivo Tesorero) -->
+      <div id="tesorero-balance-action" style="display: none;">
+        <a href="/balance.html" id="btn-balance-financiero" class="btn-balance-nav" title="Consultar balance de ingresos y pagos">
+          <span>📊</span> Balance financiero
+        </a>
+      </div>
     </div>
 
     <!-- Sección "Pagos por aprobar" - Pagos en efectivo pendientes de confirmación -->
