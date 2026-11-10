@@ -1,6 +1,76 @@
 const db = require('../../shared/config/database');
 const { randomUUID } = require('node:crypto');
 
+// Proyección compartida de solo lectura para listar operaciones de balance y consultar su detalle individual
+const BALANCE_OPERACION_SELECT_FROM = `
+    SELECT
+        p."Id_Pago" AS id_pago,
+        cobro."Id_Registro" AS id_registro,
+        p."Id_Matricula" AS id_matricula,
+        p."Monto"::NUMERIC(10,2) AS monto,
+        UPPER(p."Estado_Pago") AS estado_pago,
+        p."Fecha_Pago" AS fecha_solicitud,
+        COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_operacion,
+        UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago,
+        mp."Nombre_Metodo" AS metodo_nombre,
+        COALESCE(NULLIF(TRIM(cobro."Referencia_Operacion"), ''), NULLIF(TRIM(mptx."Mp_Payment_Id"), ''), '') AS referencia,
+        TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') ||
+            per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
+        COALESCE(doc."Tipo_Documento", 'DNI') AS tipo_documento,
+        per."Numero_Documento" AS dni,
+        (
+            SELECT mc."Contacto"
+            FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
+            WHERE mc."Id_Persona" = a."Id_Persona"
+              AND UPPER(mc."Tipo_Contacto") = 'CORREO'
+            LIMIT 1
+        ) AS correo,
+        COALESCE(det.disciplinas, 'Mensualidad') AS disciplinas,
+        det.periodo AS periodo_matricula,
+        CASE
+            WHEN UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) = 'MERCADO_PAGO' THEN 'Pasarela Mercado Pago'
+            ELSE COALESCE(
+                NULLIF(TRIM(COALESCE(per_reg."Nombre", '') || ' ' || COALESCE(per_reg."Apellido_Paterno", '')), ''),
+                u_reg."Correo",
+                'Tesorería'
+            )
+        END AS registrado_por,
+        (
+            SELECT COUNT(DISTINCT rc."Id_Pago")
+            FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+            WHERE UPPER(rc."Resultado") = 'APROBADO'
+              AND rc."Fecha_Hora" <= COALESCE(cobro."Fecha_Hora", p."Fecha_Pago")
+              AND DATE_TRUNC('year', rc."Fecha_Hora" AT TIME ZONE 'America/Lima') =
+                  DATE_TRUNC('year', COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')
+        )::int AS correlativo
+    FROM "Academia Forca&Fitness"."Pago" p
+    JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+    JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+    JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+    JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+    LEFT JOIN "Academia Forca&Fitness"."Documento_Identificacion" doc ON doc."Id_Documento" = per."Id_Documento"
+    LEFT JOIN "Academia Forca&Fitness"."Usuario" u_reg ON u_reg."Id_Usuario" = p."Id_Usuario_Registro"
+    LEFT JOIN "Academia Forca&Fitness"."Persona" per_reg ON per_reg."Id_Persona" = u_reg."Id_Persona"
+    LEFT JOIN LATERAL (
+        SELECT rc."Id_Registro", rc."Fecha_Hora", rc."Referencia_Operacion"
+        FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+        WHERE rc."Id_Pago" = p."Id_Pago"
+          AND UPPER(rc."Resultado") = 'APROBADO'
+        ORDER BY rc."Fecha_Hora" DESC
+        LIMIT 1
+    ) cobro ON TRUE
+    LEFT JOIN "Academia Forca&Fitness"."Mercado_Pago" mptx ON mptx."Id_Pago" = p."Id_Pago"
+    LEFT JOIN LATERAL (
+        SELECT
+            STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina") AS disciplinas,
+            TO_CHAR(MIN(dm."Fecha_Inicio"), 'DD/MM/YYYY') || ' - ' || TO_CHAR(MAX(dm."Fecha_Fin"), 'DD/MM/YYYY') AS periodo
+        FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+        JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+        WHERE dm."Id_Matricula" = m."Id_Matricula"
+    ) det ON TRUE
+`;
+
 class PagosRepository {
 
     async listarCobros({ estado, medio, busqueda }) {
@@ -621,15 +691,13 @@ class PagosRepository {
         return result.rows;
     }
 
-    /**
-     * Consulta los pagos aprobados dentro de un rango de fechas (zona horaria America/Lima)
-     * para calcular el balance de ingresos y listar las operaciones del periodo.
-     */
-    async obtenerBalancePorPeriodo({ fechaInicio, fechaFin, medio }) {
+    _construirFiltroBalance({ fechaInicio, fechaFin, medio }, soloAprobados = true) {
         const condiciones = [
-            `UPPER(p."Estado_Pago") = 'APROBADO'`,
             `(COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')::date BETWEEN $1::date AND $2::date`
         ];
+        if (soloAprobados) {
+            condiciones.unshift(`UPPER(p."Estado_Pago") = 'APROBADO'`);
+        }
         const valores = [fechaInicio, fechaFin];
 
         if (medio) {
@@ -637,59 +705,80 @@ class PagosRepository {
             condiciones.push(`UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) = $${valores.length}`);
         }
 
+        return { whereSql: `WHERE ${condiciones.join(' AND ')}`, valores };
+    }
+
+    /**
+     * Consulta agregada en PostgreSQL para calcular el resumen financiero del periodo
+     * (total de ingresos aprobados, desglose por medio de pago y conteo de operaciones).
+     */
+    async obtenerResumenBalancePorPeriodo({ fechaInicio, fechaFin, medio }) {
+        const { whereSql, valores } = this._construirFiltroBalance({ fechaInicio, fechaFin, medio }, false);
+
         const query = `
-            SELECT
-                p."Id_Pago" AS id_pago,
-                cobro."Id_Registro" AS id_registro,
-                p."Id_Matricula" AS id_matricula,
-                p."Monto"::NUMERIC(10,2) AS monto,
-                UPPER(p."Estado_Pago") AS estado_pago,
-                COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_operacion,
-                UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago,
-                mp."Nombre_Metodo" AS metodo_nombre,
-                COALESCE(NULLIF(TRIM(cobro."Referencia_Operacion"), ''), NULLIF(TRIM(mptx."Mp_Payment_Id"), ''), '') AS referencia,
-                TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') ||
-                    per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
-                per."Numero_Documento" AS dni,
-                COALESCE(det.disciplinas, 'Mensualidad') AS disciplinas,
-                det.periodo AS periodo_matricula,
-                (
-                    SELECT COUNT(DISTINCT rc."Id_Pago")
-                    FROM "Academia Forca&Fitness"."Registro_Cobro" rc
-                    WHERE UPPER(rc."Resultado") = 'APROBADO'
-                      AND rc."Fecha_Hora" <= COALESCE(cobro."Fecha_Hora", p."Fecha_Pago")
-                      AND DATE_TRUNC('year', rc."Fecha_Hora" AT TIME ZONE 'America/Lima') =
-                          DATE_TRUNC('year', COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')
-                )::int AS correlativo
-            FROM "Academia Forca&Fitness"."Pago" p
-            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
-            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
-            JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
-            JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
-            LEFT JOIN LATERAL (
-                SELECT rc."Id_Registro", rc."Fecha_Hora", rc."Referencia_Operacion"
-                FROM "Academia Forca&Fitness"."Registro_Cobro" rc
-                WHERE rc."Id_Pago" = p."Id_Pago"
-                  AND UPPER(rc."Resultado") = 'APROBADO'
-                ORDER BY rc."Fecha_Hora" DESC
-                LIMIT 1
-            ) cobro ON TRUE
-            LEFT JOIN "Academia Forca&Fitness"."Mercado_Pago" mptx ON mptx."Id_Pago" = p."Id_Pago"
-            LEFT JOIN LATERAL (
+            WITH operaciones_periodo AS (
                 SELECT
-                    STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina") AS disciplinas,
-                    TO_CHAR(MIN(dm."Fecha_Inicio"), 'DD/MM/YYYY') || ' - ' || TO_CHAR(MAX(dm."Fecha_Fin"), 'DD/MM/YYYY') AS periodo
-                FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
-                JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
-                JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
-                WHERE dm."Id_Matricula" = m."Id_Matricula"
-            ) det ON TRUE
-            WHERE ${condiciones.join(' AND ')}
+                    p."Id_Pago" AS id_pago,
+                    p."Monto"::NUMERIC(10,2) AS monto,
+                    UPPER(p."Estado_Pago") AS estado_pago,
+                    UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago
+                FROM "Academia Forca&Fitness"."Pago" p
+                JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+                LEFT JOIN LATERAL (
+                    SELECT rc."Fecha_Hora"
+                    FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+                    WHERE rc."Id_Pago" = p."Id_Pago"
+                      AND UPPER(rc."Resultado") = 'APROBADO'
+                    ORDER BY rc."Fecha_Hora" DESC
+                    LIMIT 1
+                ) cobro ON TRUE
+                ${whereSql}
+            )
+            SELECT
+                COALESCE(SUM(monto) FILTER (WHERE estado_pago = 'APROBADO'), 0)::NUMERIC(12,2) AS total_ingresos,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'APROBADO')::int AS total_operaciones,
+                COALESCE(SUM(monto) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'EFECTIVO'), 0)::NUMERIC(12,2) AS ingresos_efectivo,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'EFECTIVO')::int AS operaciones_efectivo,
+                COALESCE(SUM(monto) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'MERCADO_PAGO'), 0)::NUMERIC(12,2) AS ingresos_mercado_pago,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'MERCADO_PAGO')::int AS operaciones_mercado_pago,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'PENDIENTE')::int AS operaciones_pendientes,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago IN ('ANULADO', 'RECHAZADO'))::int AS operaciones_no_completadas
+            FROM operaciones_periodo;
+        `;
+
+        const result = await db.query(query, valores);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Consulta los ingresos y pagos aprobados dentro de un rango de fechas (zona horaria America/Lima).
+     */
+    async obtenerBalancePorPeriodo({ fechaInicio, fechaFin, medio }) {
+        const { whereSql, valores } = this._construirFiltroBalance({ fechaInicio, fechaFin, medio }, true);
+
+        const query = `
+            ${BALANCE_OPERACION_SELECT_FROM}
+            ${whereSql}
             ORDER BY COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") DESC
         `;
 
         const result = await db.query(query, valores);
         return result.rows;
+    }
+
+    /**
+     * Recupera el detalle completo en modo consulta de una operación financiera aprobada por su Id_Pago.
+     */
+    async obtenerDetalleOperacionPorId(idPago) {
+        const query = `
+            ${BALANCE_OPERACION_SELECT_FROM}
+            WHERE p."Id_Pago" = $1
+              AND UPPER(p."Estado_Pago") = 'APROBADO'
+            LIMIT 1
+        `;
+
+        const result = await db.query(query, [idPago]);
+        return result.rows[0] || null;
     }
 }
 

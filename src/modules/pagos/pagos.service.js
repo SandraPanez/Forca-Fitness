@@ -397,8 +397,61 @@ function calcularResumenBalance(operaciones) {
         ingresos_efectivo: Number((efectivoCentimos / 100).toFixed(2)),
         operaciones_efectivo: operacionesEfectivo,
         ingresos_mercado_pago: Number((mpCentimos / 100).toFixed(2)),
-        operaciones_mercado_pago: operacionesMp
+        operaciones_mercado_pago: operacionesMp,
+        operaciones_pendientes: 0,
+        operaciones_no_completadas: 0
     };
+}
+
+function mapearOperacionBalance(row) {
+    const montoNumero = Number(row.monto || 0);
+    const medioNorm = normalizarMedioPago(row.medio_pago);
+    return {
+        id_pago: row.id_pago,
+        id_registro: row.id_registro || row.id_pago,
+        id_matricula: row.id_matricula,
+        alumno: row.alumno || 'Alumno registrado',
+        tipo_documento: row.tipo_documento || 'DNI',
+        dni: row.dni || '—',
+        correo: row.correo || '—',
+        disciplinas: row.disciplinas || 'Mensualidad',
+        periodo_matricula: row.periodo_matricula || null,
+        medio_pago: medioNorm,
+        metodo_nombre: row.metodo_nombre || (medioNorm === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo'),
+        estado_pago: row.estado_pago || 'APROBADO',
+        fecha_solicitud: row.fecha_solicitud || row.fecha_operacion,
+        fecha_operacion: row.fecha_operacion,
+        referencia: row.referencia || '—',
+        registrado_por: row.registrado_por || (medioNorm === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'Tesorería'),
+        numero_recibo: formatearNumeroRecibo(row),
+        monto: Number(montoNumero.toFixed(2)),
+        monto_letras: row.monto_letras || construirMontoLetras(montoNumero)
+    };
+}
+
+function obtenerMockOperacionesBalance() {
+    return MOCK_ALUMNOS_PAGOS.flatMap(alu =>
+        (alu.pagos || []).map(p => ({
+            id_pago: p.id_pago,
+            id_registro: p.id_pago,
+            id_matricula: p.id_matricula,
+            monto: p.monto,
+            estado_pago: p.estado_pago,
+            fecha_solicitud: p.fecha_pago,
+            fecha_operacion: p.fecha_pago,
+            medio_pago: normalizarMedioPago(p.medio_pago),
+            metodo_nombre: p.medio_pago === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo',
+            referencia: p.referencia || '—',
+            alumno: alu.nombre_completo,
+            tipo_documento: 'DNI',
+            dni: alu.dni,
+            correo: alu.correo,
+            disciplinas: p.disciplinas || 'Mensualidad',
+            registrado_por: p.medio_pago === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'Tesorería',
+            numero_recibo: p.numero_recibo,
+            monto_letras: p.monto_letras
+        }))
+    );
 }
 
 class PagosService {
@@ -499,6 +552,7 @@ class PagosService {
 
     /**
      * Consulta el balance de ingresos y las operaciones aprobadas dentro de un periodo dado.
+     * Utiliza las consultas agregadas y de detalle en PostgreSQL.
      */
     async obtenerBalanceFinanciero({ fechaInicio, fechaFin, medio } = {}) {
         if (!esFechaIsoValida(fechaInicio) || !esFechaIsoValida(fechaFin)) {
@@ -514,34 +568,26 @@ class PagosService {
         }
 
         let rows;
+        let resumenPg = null;
+
         try {
-            rows = await pagosRepository.obtenerBalancePorPeriodo({
-                fechaInicio,
-                fechaFin,
-                medio: medioNormalizado
-            });
+            const [resumenBd, operacionesBd] = await Promise.all([
+                pagosRepository.obtenerResumenBalancePorPeriodo({
+                    fechaInicio,
+                    fechaFin,
+                    medio: medioNormalizado
+                }),
+                pagosRepository.obtenerBalancePorPeriodo({
+                    fechaInicio,
+                    fechaFin,
+                    medio: medioNormalizado
+                })
+            ]);
+            resumenPg = resumenBd;
+            rows = operacionesBd;
         } catch (error) {
             console.warn(`[PAGOS] BD inaccesible al consultar balance (${error.message}). Usando dataset de contingencia.`);
-            const operacionesMock = MOCK_ALUMNOS_PAGOS.flatMap(alu =>
-                (alu.pagos || []).map(p => ({
-                    id_pago: p.id_pago,
-                    id_registro: p.id_pago,
-                    id_matricula: p.id_matricula,
-                    monto: p.monto,
-                    estado_pago: p.estado_pago,
-                    fecha_operacion: p.fecha_pago,
-                    medio_pago: normalizarMedioPago(p.medio_pago),
-                    metodo_nombre: p.medio_pago === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo',
-                    referencia: p.referencia || '—',
-                    alumno: alu.nombre_completo,
-                    dni: alu.dni,
-                    disciplinas: p.disciplinas || 'Mensualidad',
-                    numero_recibo: p.numero_recibo,
-                    monto_letras: p.monto_letras
-                }))
-            );
-
-            rows = operacionesMock.filter(op => {
+            rows = obtenerMockOperacionesBalance().filter(op => {
                 if (String(op.estado_pago).toUpperCase() !== 'APROBADO') return false;
                 const fechaOp = fechaLimaIso(op.fecha_operacion);
                 if (!fechaOp || fechaOp < fechaInicio || fechaOp > fechaFin) return false;
@@ -550,29 +596,20 @@ class PagosService {
             }).sort((a, b) => new Date(b.fecha_operacion) - new Date(a.fecha_operacion));
         }
 
-        const operaciones = rows.map(row => {
-            const montoNumero = Number(row.monto || 0);
-            const medioNorm = normalizarMedioPago(row.medio_pago);
-            return {
-                id_pago: row.id_pago,
-                id_registro: row.id_registro || row.id_pago,
-                id_matricula: row.id_matricula,
-                alumno: row.alumno || 'Alumno registrado',
-                dni: row.dni || '—',
-                disciplinas: row.disciplinas || 'Mensualidad',
-                periodo_matricula: row.periodo_matricula || null,
-                medio_pago: medioNorm,
-                metodo_nombre: row.metodo_nombre || (medioNorm === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo'),
-                estado_pago: row.estado_pago || 'APROBADO',
-                fecha_operacion: row.fecha_operacion,
-                referencia: row.referencia || '—',
-                numero_recibo: formatearNumeroRecibo(row),
-                monto: Number(montoNumero.toFixed(2)),
-                monto_letras: row.monto_letras || construirMontoLetras(montoNumero)
-            };
-        });
+        const operaciones = rows.map(mapearOperacionBalance);
 
-        const resumen = calcularResumenBalance(operaciones);
+        const resumen = resumenPg
+            ? {
+                total_ingresos: Number(resumenPg.total_ingresos || 0),
+                total_operaciones: Number(resumenPg.total_operaciones || 0),
+                ingresos_efectivo: Number(resumenPg.ingresos_efectivo || 0),
+                operaciones_efectivo: Number(resumenPg.operaciones_efectivo || 0),
+                ingresos_mercado_pago: Number(resumenPg.ingresos_mercado_pago || 0),
+                operaciones_mercado_pago: Number(resumenPg.operaciones_mercado_pago || 0),
+                operaciones_pendientes: Number(resumenPg.operaciones_pendientes || 0),
+                operaciones_no_completadas: Number(resumenPg.operaciones_no_completadas || 0)
+            }
+            : calcularResumenBalance(operaciones);
 
         return {
             periodo: {
@@ -583,6 +620,31 @@ class PagosService {
             resumen,
             operaciones
         };
+    }
+
+    /**
+     * Recupera el detalle en modo consulta de una operación financiera aprobada por su Id_Pago.
+     */
+    async obtenerDetalleOperacionBalance(idPago) {
+        if (!idPago || !String(idPago).trim()) {
+            throw new Error('VALIDACION:El identificador de la operación es obligatorio.');
+        }
+
+        let row = null;
+        try {
+            row = await pagosRepository.obtenerDetalleOperacionPorId(String(idPago).trim());
+        } catch (error) {
+            console.warn(`[PAGOS] BD inaccesible al consultar detalle (${error.message}). Buscando en contingencia.`);
+            row = obtenerMockOperacionesBalance().find(
+                op => op.id_pago === idPago && String(op.estado_pago).toUpperCase() === 'APROBADO'
+            ) || null;
+        }
+
+        if (!row) {
+            return null;
+        }
+
+        return mapearOperacionBalance(row);
     }
 
     async listarEfectivoPendientes() {
