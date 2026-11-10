@@ -142,6 +142,7 @@ function inicializarBalanceView() {
     const inputInicio = document.getElementById('fecha-inicio');
     const inputFin = document.getElementById('fecha-fin');
     const selectMedio = document.getElementById('filtro-medio');
+    const selectOrden = document.getElementById('orden-operaciones');
     const inputBuscar = document.getElementById('input-buscar-operacion');
     const botonesPreset = document.querySelectorAll('.btn-preset[data-preset]');
 
@@ -197,8 +198,11 @@ function inicializarBalanceView() {
         consultarBalancePorPeriodo();
     });
 
-    // Búsqueda rápida en tiempo real sobre las operaciones del periodo consultado
+    // Búsqueda rápida y ordenamiento sobre las operaciones del periodo consultado
     inputBuscar?.addEventListener('input', () => {
+        aplicarFiltroTextoTabla();
+    });
+    selectOrden?.addEventListener('change', () => {
         aplicarFiltroTextoTabla();
     });
 
@@ -282,15 +286,19 @@ async function consultarBalancePorPeriodo() {
         const { periodo, resumen, desglose, operaciones } = payload.data || {};
         operacionesPeriodo = Array.isArray(operaciones) ? operaciones : [];
 
+        actualizarBannerPeriodo(periodo || { fechaInicio, fechaFin, medio }, resumen);
         actualizarTarjetasResumen(resumen, periodo || { fechaInicio, fechaFin });
         renderizarDesgloseBalance(resumen, desglose);
         aplicarFiltroTextoTabla();
     } catch (error) {
         console.error('[BALANCE] Error al consultar periodo:', error);
         operacionesPeriodo = [];
+        actualizarBannerPeriodo({ fechaInicio, fechaFin, medio }, null);
         actualizarTarjetasResumen(null, { fechaInicio, fechaFin });
         renderizarDesgloseBalance(null, null);
         mostrarMensajeBalance(error.message || 'Ocurrió un error al consultar el balance.');
+        const tfoot = document.getElementById('balance-tfoot');
+        if (tfoot) tfoot.style.display = 'none';
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
@@ -306,6 +314,49 @@ async function consultarBalancePorPeriodo() {
             btnConsultar.disabled = false;
             btnConsultar.innerHTML = '<span>🔍</span> Consultar balance';
         }
+    }
+}
+
+function actualizarBannerPeriodo(periodo, resumen) {
+    const textoEl = document.getElementById('periodo-activo-texto');
+    const medioEl = document.getElementById('periodo-activo-medio');
+    const pendEl = document.getElementById('periodo-activo-pendientes');
+    const actEl = document.getElementById('periodo-activo-actualizacion');
+
+    if (textoEl && periodo?.fechaInicio && periodo?.fechaFin) {
+        textoEl.innerHTML = `📅 Mostrando balance del <strong>${escapeHtml(formatearFechaCorta(periodo.fechaInicio))}</strong> al <strong>${escapeHtml(formatearFechaCorta(periodo.fechaFin))}</strong>`;
+    }
+
+    if (medioEl) {
+        const etiquetasMedio = {
+            EFECTIVO: '💵 Solo Efectivo',
+            MERCADO_PAGO: '🌐 Solo Mercado Pago'
+        };
+        medioEl.textContent = etiquetasMedio[periodo?.medio] || '💳 Todos los medios de pago';
+    }
+
+    if (pendEl) {
+        const noAprobadas = Number(resumen?.operaciones_pendientes || 0) + Number(resumen?.operaciones_no_completadas || 0);
+        if (noAprobadas > 0) {
+            pendEl.textContent = `ℹ️ ${noAprobadas} ${noAprobadas === 1 ? 'operación pendiente/anulada' : 'operaciones pendientes/anuladas'} excluidas del ingreso`;
+            pendEl.style.display = 'inline-flex';
+        } else {
+            pendEl.style.display = 'none';
+        }
+    }
+
+    if (actEl) {
+        const horaActual = new Intl.DateTimeFormat('es-PE', {
+            timeZone: 'America/Lima',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(new Date());
+        actEl.textContent = `Actualizado: ${horaActual}`;
     }
 }
 
@@ -437,47 +488,67 @@ function renderizarDesgloseBalance(resumen, desglose) {
     }
 }
 
+function ordenarOperaciones(operaciones, criterio) {
+    const copia = [...operaciones];
+    switch (criterio) {
+        case 'fecha_asc':
+            return copia.sort((a, b) => new Date(a.fecha_operacion) - new Date(b.fecha_operacion));
+        case 'monto_desc':
+            return copia.sort((a, b) => Number(b.monto || 0) - Number(a.monto || 0));
+        case 'monto_asc':
+            return copia.sort((a, b) => Number(a.monto || 0) - Number(b.monto || 0));
+        case 'fecha_desc':
+        default:
+            return copia.sort((a, b) => new Date(b.fecha_operacion) - new Date(a.fecha_operacion));
+    }
+}
+
 function aplicarFiltroTextoTabla() {
     const termino = (document.getElementById('input-buscar-operacion')?.value || '').trim().toLowerCase();
+    const criterioOrden = document.getElementById('orden-operaciones')?.value || 'fecha_desc';
 
-    if (!termino) {
-        renderizarTablaOperaciones(operacionesPeriodo, false);
-        return;
-    }
+    const base = termino
+        ? operacionesPeriodo.filter((op) => {
+            const campos = [
+                op.alumno,
+                op.dni,
+                op.id_matricula,
+                op.disciplinas,
+                op.numero_recibo,
+                op.referencia,
+                op.id_pago,
+                op.registrado_por
+            ];
+            return campos.some(c => String(c || '').toLowerCase().includes(termino));
+        })
+        : operacionesPeriodo;
 
-    const filtradas = operacionesPeriodo.filter((op) => {
-        const campos = [
-            op.alumno,
-            op.dni,
-            op.id_matricula,
-            op.disciplinas,
-            op.numero_recibo,
-            op.referencia,
-            op.id_pago
-        ];
-        return campos.some(c => String(c || '').toLowerCase().includes(termino));
-    });
-
-    renderizarTablaOperaciones(filtradas, true);
+    const ordenadas = ordenarOperaciones(base, criterioOrden);
+    renderizarTablaOperaciones(ordenadas, Boolean(termino));
 }
 
 function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
     const tbody = document.getElementById('balance-tbody');
+    const tfoot = document.getElementById('balance-tfoot');
+    const tfootLabel = document.getElementById('tfoot-label');
+    const tfootMonto = document.getElementById('tfoot-total-monto');
     const badgeCount = document.getElementById('badge-operaciones-count');
 
+    const n = operaciones.length;
+    const subtotalCentimos = operaciones.reduce(
+        (acc, op) => acc + Math.round(Number(op.monto || 0) * 100),
+        0
+    );
+    const subtotal = subtotalCentimos / 100;
+
     if (badgeCount) {
-        const n = operaciones.length;
-        const subtotalCentimos = operaciones.reduce(
-            (acc, op) => acc + Math.round(Number(op.monto || 0) * 100),
-            0
-        );
-        const subtotal = subtotalCentimos / 100;
         badgeCount.textContent = `${n} ${n === 1 ? 'registro' : 'registros'} • ${formatearMoneda(subtotal)}`;
     }
 
     if (!tbody) return;
 
     if (!operaciones.length) {
+        if (tfoot) tfoot.style.display = 'none';
         const mensajeVacio = tieneFiltroTexto
             ? '🔍 Ninguna operación del periodo coincide con el criterio de búsqueda.'
             : '📭 No se registraron ingresos ni pagos aprobados en el periodo seleccionado.';
@@ -491,6 +562,13 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
         return;
     }
 
+    if (tfoot && tfootLabel && tfootMonto) {
+        const prefijo = tieneFiltroTexto ? 'Subtotal filtrado' : 'Total del periodo mostrado';
+        tfootLabel.textContent = `${prefijo} (${n} ${n === 1 ? 'operación' : 'operaciones'})`;
+        tfootMonto.textContent = formatearMoneda(subtotal);
+        tfoot.style.display = '';
+    }
+
     tbody.innerHTML = operaciones.map((op) => {
         const { fecha, hora } = formatearFechaHoraOperacion(op.fecha_operacion);
         const iniciales = obtenerIniciales(op.alumno);
@@ -498,6 +576,10 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
         const badgeMedio = esMp
             ? '<span class="badge-method badge-method-mp">🌐 Mercado Pago</span>'
             : '<span class="badge-method badge-method-cash">💵 Efectivo</span>';
+        const docTipo = op.tipo_documento || 'DNI';
+        const vigenciaHtml = op.periodo_matricula
+            ? `<span class="user-meta-sub">Vigencia: ${escapeHtml(op.periodo_matricula)}</span>`
+            : '';
 
         return `
             <tr>
@@ -510,15 +592,19 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
                         <div class="user-avatar-sm">${escapeHtml(iniciales)}</div>
                         <div>
                             <p class="user-name-title">${escapeHtml(op.alumno)}</p>
-                            <p class="user-meta-sub">DNI: ${escapeHtml(op.dni || '—')}</p>
+                            <p class="user-meta-sub">${escapeHtml(docTipo)}: ${escapeHtml(op.dni || '—')}</p>
                         </div>
                     </div>
                 </td>
                 <td>
                     <strong>${escapeHtml(op.id_matricula)}</strong>
                     <span class="user-meta-sub">${escapeHtml(op.disciplinas || 'Mensualidad')}</span>
+                    ${vigenciaHtml}
                 </td>
-                <td>${badgeMedio}</td>
+                <td>
+                    ${badgeMedio}
+                    <span class="user-meta-sub">${escapeHtml(op.registrado_por || 'Tesorería')}</span>
+                </td>
                 <td>
                     <strong>${escapeHtml(op.numero_recibo || '—')}</strong>
                     <span class="user-meta-sub">Ref: ${escapeHtml(op.referencia || '—')}</span>

@@ -932,6 +932,89 @@
         border-color: #fde68a;
     }
 
+    /* Banner informativo del periodo consultado */
+    .period-active-banner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 0.85rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.86rem;
+        color: #1e3a8a;
+    }
+
+    .period-active-info {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+    }
+
+    .period-active-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .period-active-meta {
+        font-size: 0.78rem;
+        color: #475569;
+        font-weight: 500;
+    }
+
+    /* Controles de búsqueda y ordenamiento en tabla */
+    .balance-table-tools {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .balance-sort-select {
+        height: 38px;
+        padding: 0 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.84rem;
+        color: #1e293b;
+        background: #ffffff;
+        cursor: pointer;
+    }
+
+    .balance-sort-select:focus {
+        outline: none;
+        border-color: #1a4f8b;
+    }
+
+    .balance-table tfoot td {
+        background: #f8fafc;
+        border-top: 2px solid #cbd5e1;
+        border-bottom: none;
+        padding: 0.95rem 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .tfoot-total-amount {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #065f46;
+        white-space: nowrap;
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
         .balance-kpi-grid {
@@ -961,7 +1044,7 @@
     }
     </style>
 </head>
-<body class="treasury-page" data-menu="/tesoreria.html">
+<body class="treasury-page" data-menu="/balance.html">
     <header id="app-header"></header>
 
     <main class="balance-container">
@@ -1039,6 +1122,16 @@
             </form>
             <div id="balance-message" class="balance-message" role="status" aria-live="polite" hidden></div>
         </section>
+
+        <!-- Indicador del periodo actualmente consultado -->
+        <div id="periodo-activo-banner" class="period-active-banner" aria-live="polite">
+            <div class="period-active-info">
+                <span id="periodo-activo-texto">📅 Consultando periodo seleccionado...</span>
+                <span id="periodo-activo-medio" class="period-active-tag">Todos los medios</span>
+                <span id="periodo-activo-pendientes" class="period-active-tag" style="display: none;"></span>
+            </div>
+            <span id="periodo-activo-actualizacion" class="period-active-meta"></span>
+        </div>
 
         <!-- Tarjetas de Balance Financiero (KPIs de Criterio 2) -->
         <section class="balance-kpi-grid" aria-label="Resumen de balance financiero">
@@ -1140,9 +1233,17 @@
                     <span id="badge-operaciones-count" class="badge-count">0 registros</span>
                 </h3>
 
-                <div class="balance-search-box">
-                    <span class="balance-search-icon">🔍</span>
-                    <input type="search" id="input-buscar-operacion" class="balance-search-input" placeholder="Buscar por alumno, DNI o N° recibo...">
+                <div class="balance-table-tools">
+                    <select id="orden-operaciones" class="balance-sort-select" aria-label="Ordenar operaciones">
+                        <option value="fecha_desc">Más recientes primero</option>
+                        <option value="fecha_asc">Más antiguos primero</option>
+                        <option value="monto_desc">Mayor monto primero</option>
+                        <option value="monto_asc">Menor monto primero</option>
+                    </select>
+                    <div class="balance-search-box">
+                        <span class="balance-search-icon">🔍</span>
+                        <input type="search" id="input-buscar-operacion" class="balance-search-input" placeholder="Buscar por alumno, DNI o N° recibo...">
+                    </div>
                 </div>
             </div>
 
@@ -1166,6 +1267,13 @@
                             </td>
                         </tr>
                     </tbody>
+                    <tfoot id="balance-tfoot" style="display: none;">
+                        <tr>
+                            <td colspan="5" id="tfoot-label">Total del periodo</td>
+                            <td class="tfoot-total-amount" id="tfoot-total-monto">S/ 0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </section>
