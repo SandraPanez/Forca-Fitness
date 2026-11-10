@@ -27,6 +27,31 @@ class PagosController {
         }
     }
 
+    async obtenerBalanceFinanciero(req, res) {
+        try {
+            const { fechaInicio, fechaFin, medio } = req.query;
+            const data = await pagosService.obtenerBalanceFinanciero({
+                fechaInicio,
+                fechaFin,
+                medio
+            });
+            return res.status(200).json({ success: true, data });
+        } catch (error) {
+            const esValidacion = error.message?.startsWith('VALIDACION:');
+            if (esValidacion) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message.replace(/^VALIDACION:\s*/, '')
+                });
+            }
+            console.error('Error al consultar balance financiero:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudo consultar el balance financiero'
+            });
+        }
+    }
+
     async listarEfectivoPendientes(req, res) {
         try {
             const data = await pagosService.listarEfectivoPendientes();

@@ -1,5 +1,6 @@
 const { MercadoPagoConfig, Preference, Payment, MerchantOrder } = require('mercadopago');
 const pagosRepository = require('./pagos.repository');
+const { montoEnLetras } = require('../../shared/utils/monto-letras.util');
 
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN
@@ -321,6 +322,85 @@ const MOCK_ALUMNOS_PAGOS = [
     }
 ];
 
+function esFechaIsoValida(valor) {
+    if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+        return false;
+    }
+    const [anio, mes, dia] = valor.split('-').map(Number);
+    const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+    return (
+        fecha.getUTCFullYear() === anio &&
+        fecha.getUTCMonth() === mes - 1 &&
+        fecha.getUTCDate() === dia
+    );
+}
+
+function fechaLimaIso(fechaInput) {
+    const fecha = new Date(fechaInput);
+    if (Number.isNaN(fecha.getTime())) return '';
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Lima',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(fecha);
+}
+
+function normalizarMedioPago(medio) {
+    if (!medio) return '';
+    const norm = String(medio).trim().toUpperCase().replace(/\s+/g, '_');
+    return norm;
+}
+
+function formatearNumeroRecibo(row) {
+    if (row.numero_recibo) return row.numero_recibo;
+    const fecha = new Date(row.fecha_operacion || Date.now());
+    const anio = Number.isNaN(fecha.getTime())
+        ? new Date().getFullYear()
+        : Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Lima', year: 'numeric' }).format(fecha));
+    const correlativo = row.correlativo && Number(row.correlativo) > 0
+        ? String(row.correlativo).padStart(4, '0')
+        : (String(row.id_pago || '').replace(/\D/g, '').slice(-4).padStart(4, '0') || '0001');
+    return `CP-${anio}-${correlativo}`;
+}
+
+function construirMontoLetras(monto) {
+    try {
+        return montoEnLetras(monto);
+    } catch {
+        return `${Number(monto || 0).toFixed(2)} soles`;
+    }
+}
+
+function calcularResumenBalance(operaciones) {
+    let totalCentimos = 0;
+    let efectivoCentimos = 0;
+    let operacionesEfectivo = 0;
+    let mpCentimos = 0;
+    let operacionesMp = 0;
+
+    for (const op of operaciones) {
+        const centimos = Math.round(Number(op.monto || 0) * 100);
+        totalCentimos += centimos;
+        if (op.medio_pago === 'EFECTIVO') {
+            efectivoCentimos += centimos;
+            operacionesEfectivo += 1;
+        } else if (op.medio_pago === 'MERCADO_PAGO') {
+            mpCentimos += centimos;
+            operacionesMp += 1;
+        }
+    }
+
+    return {
+        total_ingresos: Number((totalCentimos / 100).toFixed(2)),
+        total_operaciones: operaciones.length,
+        ingresos_efectivo: Number((efectivoCentimos / 100).toFixed(2)),
+        operaciones_efectivo: operacionesEfectivo,
+        ingresos_mercado_pago: Number((mpCentimos / 100).toFixed(2)),
+        operaciones_mercado_pago: operacionesMp
+    };
+}
+
 class PagosService {
     async listarCobrosPorAlumno(filtros = {}) {
         let listaAlumnos = [];
@@ -415,6 +495,94 @@ class PagosService {
             }
             return filtrados;
         }
+    }
+
+    /**
+     * Consulta el balance de ingresos y las operaciones aprobadas dentro de un periodo dado.
+     */
+    async obtenerBalanceFinanciero({ fechaInicio, fechaFin, medio } = {}) {
+        if (!esFechaIsoValida(fechaInicio) || !esFechaIsoValida(fechaFin)) {
+            throw new Error('VALIDACION:Debes indicar un rango de fechas válido (AAAA-MM-DD).');
+        }
+        if (fechaInicio > fechaFin) {
+            throw new Error('VALIDACION:La fecha de inicio no puede ser posterior a la fecha de fin.');
+        }
+
+        const medioNormalizado = normalizarMedioPago(medio);
+        if (medioNormalizado && !['EFECTIVO', 'MERCADO_PAGO'].includes(medioNormalizado)) {
+            throw new Error('VALIDACION:El medio de pago indicado no es válido.');
+        }
+
+        let rows;
+        try {
+            rows = await pagosRepository.obtenerBalancePorPeriodo({
+                fechaInicio,
+                fechaFin,
+                medio: medioNormalizado
+            });
+        } catch (error) {
+            console.warn(`[PAGOS] BD inaccesible al consultar balance (${error.message}). Usando dataset de contingencia.`);
+            const operacionesMock = MOCK_ALUMNOS_PAGOS.flatMap(alu =>
+                (alu.pagos || []).map(p => ({
+                    id_pago: p.id_pago,
+                    id_registro: p.id_pago,
+                    id_matricula: p.id_matricula,
+                    monto: p.monto,
+                    estado_pago: p.estado_pago,
+                    fecha_operacion: p.fecha_pago,
+                    medio_pago: normalizarMedioPago(p.medio_pago),
+                    metodo_nombre: p.medio_pago === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo',
+                    referencia: p.referencia || '—',
+                    alumno: alu.nombre_completo,
+                    dni: alu.dni,
+                    disciplinas: p.disciplinas || 'Mensualidad',
+                    numero_recibo: p.numero_recibo,
+                    monto_letras: p.monto_letras
+                }))
+            );
+
+            rows = operacionesMock.filter(op => {
+                if (String(op.estado_pago).toUpperCase() !== 'APROBADO') return false;
+                const fechaOp = fechaLimaIso(op.fecha_operacion);
+                if (!fechaOp || fechaOp < fechaInicio || fechaOp > fechaFin) return false;
+                if (medioNormalizado && op.medio_pago !== medioNormalizado) return false;
+                return true;
+            }).sort((a, b) => new Date(b.fecha_operacion) - new Date(a.fecha_operacion));
+        }
+
+        const operaciones = rows.map(row => {
+            const montoNumero = Number(row.monto || 0);
+            const medioNorm = normalizarMedioPago(row.medio_pago);
+            return {
+                id_pago: row.id_pago,
+                id_registro: row.id_registro || row.id_pago,
+                id_matricula: row.id_matricula,
+                alumno: row.alumno || 'Alumno registrado',
+                dni: row.dni || '—',
+                disciplinas: row.disciplinas || 'Mensualidad',
+                periodo_matricula: row.periodo_matricula || null,
+                medio_pago: medioNorm,
+                metodo_nombre: row.metodo_nombre || (medioNorm === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo'),
+                estado_pago: row.estado_pago || 'APROBADO',
+                fecha_operacion: row.fecha_operacion,
+                referencia: row.referencia || '—',
+                numero_recibo: formatearNumeroRecibo(row),
+                monto: Number(montoNumero.toFixed(2)),
+                monto_letras: row.monto_letras || construirMontoLetras(montoNumero)
+            };
+        });
+
+        const resumen = calcularResumenBalance(operaciones);
+
+        return {
+            periodo: {
+                fechaInicio,
+                fechaFin,
+                medio: medioNormalizado || null
+            },
+            resumen,
+            operaciones
+        };
     }
 
     async listarEfectivoPendientes() {

@@ -620,6 +620,77 @@ class PagosRepository {
         const result = await db.query(query);
         return result.rows;
     }
+
+    /**
+     * Consulta los pagos aprobados dentro de un rango de fechas (zona horaria America/Lima)
+     * para calcular el balance de ingresos y listar las operaciones del periodo.
+     */
+    async obtenerBalancePorPeriodo({ fechaInicio, fechaFin, medio }) {
+        const condiciones = [
+            `UPPER(p."Estado_Pago") = 'APROBADO'`,
+            `(COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')::date BETWEEN $1::date AND $2::date`
+        ];
+        const valores = [fechaInicio, fechaFin];
+
+        if (medio) {
+            valores.push(String(medio).trim().toUpperCase().replace(/\s+/g, '_'));
+            condiciones.push(`UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) = $${valores.length}`);
+        }
+
+        const query = `
+            SELECT
+                p."Id_Pago" AS id_pago,
+                cobro."Id_Registro" AS id_registro,
+                p."Id_Matricula" AS id_matricula,
+                p."Monto"::NUMERIC(10,2) AS monto,
+                UPPER(p."Estado_Pago") AS estado_pago,
+                COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_operacion,
+                UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago,
+                mp."Nombre_Metodo" AS metodo_nombre,
+                COALESCE(NULLIF(TRIM(cobro."Referencia_Operacion"), ''), NULLIF(TRIM(mptx."Mp_Payment_Id"), ''), '') AS referencia,
+                TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') ||
+                    per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
+                per."Numero_Documento" AS dni,
+                COALESCE(det.disciplinas, 'Mensualidad') AS disciplinas,
+                det.periodo AS periodo_matricula,
+                (
+                    SELECT COUNT(DISTINCT rc."Id_Pago")
+                    FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+                    WHERE UPPER(rc."Resultado") = 'APROBADO'
+                      AND rc."Fecha_Hora" <= COALESCE(cobro."Fecha_Hora", p."Fecha_Pago")
+                      AND DATE_TRUNC('year', rc."Fecha_Hora" AT TIME ZONE 'America/Lima') =
+                          DATE_TRUNC('year', COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')
+                )::int AS correlativo
+            FROM "Academia Forca&Fitness"."Pago" p
+            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+            JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+            JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+            LEFT JOIN LATERAL (
+                SELECT rc."Id_Registro", rc."Fecha_Hora", rc."Referencia_Operacion"
+                FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+                WHERE rc."Id_Pago" = p."Id_Pago"
+                  AND UPPER(rc."Resultado") = 'APROBADO'
+                ORDER BY rc."Fecha_Hora" DESC
+                LIMIT 1
+            ) cobro ON TRUE
+            LEFT JOIN "Academia Forca&Fitness"."Mercado_Pago" mptx ON mptx."Id_Pago" = p."Id_Pago"
+            LEFT JOIN LATERAL (
+                SELECT
+                    STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina") AS disciplinas,
+                    TO_CHAR(MIN(dm."Fecha_Inicio"), 'DD/MM/YYYY') || ' - ' || TO_CHAR(MAX(dm."Fecha_Fin"), 'DD/MM/YYYY') AS periodo
+                FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+                WHERE dm."Id_Matricula" = m."Id_Matricula"
+            ) det ON TRUE
+            WHERE ${condiciones.join(' AND ')}
+            ORDER BY COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") DESC
+        `;
+
+        const result = await db.query(query, valores);
+        return result.rows;
+    }
 }
 
 module.exports = new PagosRepository();
