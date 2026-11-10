@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     --primary-color: #1a4f8b; /* Azul corporativo */
     --secondary-color: #f8f9fa; /* Fondo gris claro */
     --text-main: #333333;
@@ -3100,4 +3100,27 @@ body {
     .planes-grid {
         grid-template-columns: 1fr !important;
     }
+}
+
+/* Botón de acceso directo a Balance financiero (Exclusivo Tesorero) */
+.btn-balance-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #1a4f8b;
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(26, 79, 139, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-balance-nav:hover {
+    background: #153e6d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(26, 79, 139, 0.25);
+    color: #ffffff !important;
 }
