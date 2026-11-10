@@ -1,6 +1,11 @@
 const { MercadoPagoConfig, Preference, Payment, MerchantOrder } = require('mercadopago');
 const pagosRepository = require('./pagos.repository');
 const { montoEnLetras } = require('../../shared/utils/monto-letras.util');
+const {
+    calcularBalanceCompleto,
+    normalizarMedioPago,
+    fechaLimaIso
+} = require('./balance.calculator');
 
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN
@@ -335,23 +340,6 @@ function esFechaIsoValida(valor) {
     );
 }
 
-function fechaLimaIso(fechaInput) {
-    const fecha = new Date(fechaInput);
-    if (Number.isNaN(fecha.getTime())) return '';
-    return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Lima',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(fecha);
-}
-
-function normalizarMedioPago(medio) {
-    if (!medio) return '';
-    const norm = String(medio).trim().toUpperCase().replace(/\s+/g, '_');
-    return norm;
-}
-
 function formatearNumeroRecibo(row) {
     if (row.numero_recibo) return row.numero_recibo;
     const fecha = new Date(row.fecha_operacion || Date.now());
@@ -370,37 +358,6 @@ function construirMontoLetras(monto) {
     } catch {
         return `${Number(monto || 0).toFixed(2)} soles`;
     }
-}
-
-function calcularResumenBalance(operaciones) {
-    let totalCentimos = 0;
-    let efectivoCentimos = 0;
-    let operacionesEfectivo = 0;
-    let mpCentimos = 0;
-    let operacionesMp = 0;
-
-    for (const op of operaciones) {
-        const centimos = Math.round(Number(op.monto || 0) * 100);
-        totalCentimos += centimos;
-        if (op.medio_pago === 'EFECTIVO') {
-            efectivoCentimos += centimos;
-            operacionesEfectivo += 1;
-        } else if (op.medio_pago === 'MERCADO_PAGO') {
-            mpCentimos += centimos;
-            operacionesMp += 1;
-        }
-    }
-
-    return {
-        total_ingresos: Number((totalCentimos / 100).toFixed(2)),
-        total_operaciones: operaciones.length,
-        ingresos_efectivo: Number((efectivoCentimos / 100).toFixed(2)),
-        operaciones_efectivo: operacionesEfectivo,
-        ingresos_mercado_pago: Number((mpCentimos / 100).toFixed(2)),
-        operaciones_mercado_pago: operacionesMp,
-        operaciones_pendientes: 0,
-        operaciones_no_completadas: 0
-    };
 }
 
 function mapearOperacionBalance(row) {
@@ -597,19 +554,7 @@ class PagosService {
         }
 
         const operaciones = rows.map(mapearOperacionBalance);
-
-        const resumen = resumenPg
-            ? {
-                total_ingresos: Number(resumenPg.total_ingresos || 0),
-                total_operaciones: Number(resumenPg.total_operaciones || 0),
-                ingresos_efectivo: Number(resumenPg.ingresos_efectivo || 0),
-                operaciones_efectivo: Number(resumenPg.operaciones_efectivo || 0),
-                ingresos_mercado_pago: Number(resumenPg.ingresos_mercado_pago || 0),
-                operaciones_mercado_pago: Number(resumenPg.operaciones_mercado_pago || 0),
-                operaciones_pendientes: Number(resumenPg.operaciones_pendientes || 0),
-                operaciones_no_completadas: Number(resumenPg.operaciones_no_completadas || 0)
-            }
-            : calcularResumenBalance(operaciones);
+        const calculo = calcularBalanceCompleto(operaciones, resumenPg);
 
         return {
             periodo: {
@@ -617,7 +562,12 @@ class PagosService {
                 fechaFin,
                 medio: medioNormalizado || null
             },
-            resumen,
+            resumen: calculo.resumen,
+            desglose: {
+                medios: calculo.desglose_medios,
+                conceptos: calculo.desglose_conceptos,
+                flujo_diario: calculo.flujo_diario
+            },
             operaciones
         };
     }

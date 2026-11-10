@@ -279,15 +279,17 @@ async function consultarBalancePorPeriodo() {
             throw new Error(payload.message || 'No se pudo consultar el balance del periodo seleccionado.');
         }
 
-        const { periodo, resumen, operaciones } = payload.data || {};
+        const { periodo, resumen, desglose, operaciones } = payload.data || {};
         operacionesPeriodo = Array.isArray(operaciones) ? operaciones : [];
 
         actualizarTarjetasResumen(resumen, periodo || { fechaInicio, fechaFin });
+        renderizarDesgloseBalance(resumen, desglose);
         aplicarFiltroTextoTabla();
     } catch (error) {
         console.error('[BALANCE] Error al consultar periodo:', error);
         operacionesPeriodo = [];
         actualizarTarjetasResumen(null, { fechaInicio, fechaFin });
+        renderizarDesgloseBalance(null, null);
         mostrarMensajeBalance(error.message || 'Ocurrió un error al consultar el balance.');
         if (tbody) {
             tbody.innerHTML = `
@@ -310,11 +312,16 @@ async function consultarBalancePorPeriodo() {
 function actualizarTarjetasResumen(resumen, periodo) {
     const r = resumen || {
         total_ingresos: 0,
+        balance_neto: 0,
+        balance_neto_letras: 'Cero y 00/100 soles',
         total_operaciones: 0,
+        ticket_promedio: 0,
         ingresos_efectivo: 0,
         operaciones_efectivo: 0,
+        porcentaje_efectivo: 0,
         ingresos_mercado_pago: 0,
-        operaciones_mercado_pago: 0
+        operaciones_mercado_pago: 0,
+        porcentaje_mercado_pago: 0
     };
 
     const setText = (id, text) => {
@@ -324,16 +331,109 @@ function actualizarTarjetasResumen(resumen, periodo) {
 
     setText('kpi-total-ingresos', formatearMoneda(r.total_ingresos));
     setText('kpi-total-operaciones', String(r.total_operaciones));
+    setText(
+        'kpi-ops-sub',
+        r.total_operaciones > 0
+            ? `Ticket prom.: ${formatearMoneda(r.ticket_promedio)}`
+            : 'Pagos aprobados'
+    );
     setText('kpi-ingresos-efectivo', formatearMoneda(r.ingresos_efectivo));
-    setText('kpi-ops-efectivo', `${r.operaciones_efectivo} ${r.operaciones_efectivo === 1 ? 'transacción' : 'transacciones'}`);
+    setText(
+        'kpi-ops-efectivo',
+        `${r.operaciones_efectivo} ${r.operaciones_efectivo === 1 ? 'transacción' : 'transacciones'} (${r.porcentaje_efectivo ?? 0}%)`
+    );
     setText('kpi-ingresos-mp', formatearMoneda(r.ingresos_mercado_pago));
-    setText('kpi-ops-mp', `${r.operaciones_mercado_pago} ${r.operaciones_mercado_pago === 1 ? 'transacción' : 'transacciones'}`);
+    setText(
+        'kpi-ops-mp',
+        `${r.operaciones_mercado_pago} ${r.operaciones_mercado_pago === 1 ? 'transacción' : 'transacciones'} (${r.porcentaje_mercado_pago ?? 0}%)`
+    );
 
     if (periodo?.fechaInicio && periodo?.fechaFin) {
         setText(
             'kpi-rango-sub',
             `Del ${formatearFechaCorta(periodo.fechaInicio)} al ${formatearFechaCorta(periodo.fechaFin)}`
         );
+    }
+}
+
+function renderizarDesgloseBalance(resumen, desglose) {
+    const r = resumen || {
+        balance_neto: 0,
+        balance_neto_letras: 'Cero y 00/100 soles',
+        ingresos_efectivo: 0,
+        ingresos_mercado_pago: 0,
+        porcentaje_efectivo: 0,
+        porcentaje_mercado_pago: 0,
+        cuadra_con_bd: true
+    };
+    const conceptos = desglose?.conceptos || [];
+    const flujoDiario = desglose?.flujo_diario || [];
+
+    const pctEfectivo = Math.max(0, Math.min(100, Number(r.porcentaje_efectivo || 0)));
+    const pctMp = Math.max(0, Math.min(100, Number(r.porcentaje_mercado_pago || 0)));
+
+    const barEfectivo = document.getElementById('bar-efectivo');
+    const barMp = document.getElementById('bar-mp');
+    const legEfectivo = document.getElementById('leg-efectivo');
+    const legMp = document.getElementById('leg-mp');
+
+    if (barEfectivo) barEfectivo.style.width = `${pctEfectivo}%`;
+    if (barMp) barMp.style.width = `${pctMp}%`;
+    if (legEfectivo) legEfectivo.textContent = `${pctEfectivo}% (${formatearMoneda(r.ingresos_efectivo)})`;
+    if (legMp) legMp.textContent = `${pctMp}% (${formatearMoneda(r.ingresos_mercado_pago)})`;
+
+    const listaConceptos = document.getElementById('desglose-conceptos-list');
+    if (listaConceptos) {
+        if (!conceptos.length) {
+            listaConceptos.innerHTML = `
+                <li class="breakdown-row" style="justify-content: center; color: #64748b;">
+                    Sin ingresos por disciplina en este periodo
+                </li>
+            `;
+        } else {
+            listaConceptos.innerHTML = conceptos.map(item => `
+                <li class="breakdown-row">
+                    <div class="breakdown-row-label">
+                        <span>${escapeHtml(item.concepto)}</span>
+                        <span class="breakdown-row-meta">${item.operaciones} ${item.operaciones === 1 ? 'operación' : 'operaciones'} • ${item.porcentaje}% del total</span>
+                    </div>
+                    <span class="breakdown-row-val">${escapeHtml(formatearMoneda(item.total))}</span>
+                </li>
+            `).join('');
+        }
+    }
+
+    const listaDiario = document.getElementById('flujo-diario-list');
+    if (listaDiario) {
+        if (!flujoDiario.length) {
+            listaDiario.innerHTML = `
+                <li class="breakdown-row" style="justify-content: center; color: #64748b;">
+                    Sin movimientos diarios en este periodo
+                </li>
+            `;
+        } else {
+            listaDiario.innerHTML = flujoDiario.map(dia => `
+                <li class="breakdown-row">
+                    <div class="breakdown-row-label">
+                        <span>${escapeHtml(formatearFechaCorta(dia.fecha))} (${dia.cantidad_operaciones} ${dia.cantidad_operaciones === 1 ? 'op.' : 'ops.'})</span>
+                        <span class="breakdown-row-meta">Efec.: ${escapeHtml(formatearMoneda(dia.ingresos_efectivo))} | MP: ${escapeHtml(formatearMoneda(dia.ingresos_mercado_pago))}</span>
+                    </div>
+                    <span class="breakdown-row-val">${escapeHtml(formatearMoneda(dia.total_dia))}</span>
+                </li>
+            `).join('');
+        }
+    }
+
+    const netAmountEl = document.getElementById('net-balance-amount');
+    const netLettersEl = document.getElementById('net-balance-letras');
+    const badgeConcilEl = document.getElementById('badge-conciliacion');
+
+    if (netAmountEl) netAmountEl.textContent = formatearMoneda(r.balance_neto ?? r.total_ingresos);
+    if (netLettersEl) netLettersEl.textContent = r.balance_neto_letras || 'Cero y 00/100 soles';
+    if (badgeConcilEl) {
+        const cuadra = r.cuadra_con_bd !== false;
+        badgeConcilEl.className = cuadra ? 'reconcile-badge' : 'reconcile-badge warning';
+        badgeConcilEl.textContent = cuadra ? '✓ Conciliado' : '⚠️ Diferencia detectada';
     }
 }
 
@@ -367,7 +467,12 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
 
     if (badgeCount) {
         const n = operaciones.length;
-        badgeCount.textContent = `${n} ${n === 1 ? 'registro' : 'registros'}`;
+        const subtotalCentimos = operaciones.reduce(
+            (acc, op) => acc + Math.round(Number(op.monto || 0) * 100),
+            0
+        );
+        const subtotal = subtotalCentimos / 100;
+        badgeCount.textContent = `${n} ${n === 1 ? 'registro' : 'registros'} • ${formatearMoneda(subtotal)}`;
     }
 
     if (!tbody) return;

@@ -764,6 +764,174 @@
         border-color: #94a3b8;
     }
 
+    /* Desglose Analítico y Cuadre de Balance */
+    .balance-analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .analytics-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.35rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .analytics-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .analytics-card-title {
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .channel-bar {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        overflow: hidden;
+        display: flex;
+    }
+
+    .channel-bar-cash {
+        background: #10b981;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .channel-bar-mp {
+        background: #0284c7;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .channel-legend {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.8rem;
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .legend-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 0.35rem;
+    }
+
+    .breakdown-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: 185px;
+        overflow-y: auto;
+    }
+
+    .breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.7rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.83rem;
+    }
+
+    .breakdown-row-label {
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .breakdown-row-meta {
+        font-size: 0.74rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .breakdown-row-val {
+        font-weight: 700;
+        color: #059669;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .net-balance-footer {
+        margin-top: auto;
+        padding: 0.8rem 1rem;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .net-balance-title {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 700;
+        color: #1e40af;
+        display: block;
+    }
+
+    .net-balance-letters {
+        font-size: 0.78rem;
+        color: #475569;
+        font-style: italic;
+    }
+
+    .net-balance-amount {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1a4f8b;
+    }
+
+    .reconcile-badge {
+        font-size: 0.74rem;
+        font-weight: 700;
+        padding: 0.2rem 0.55rem;
+        border-radius: 12px;
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .reconcile-badge.warning {
+        background: #fffbeb;
+        color: #b45309;
+        border-color: #fde68a;
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
         .balance-kpi-grid {
@@ -771,6 +939,9 @@
         }
         .period-form-grid {
             grid-template-columns: 1fr 1fr;
+        }
+        .balance-analytics-grid {
+            grid-template-columns: 1fr;
         }
     }
 
@@ -887,7 +1058,7 @@
                 <div class="balance-kpi-info">
                     <span id="kpi-total-operaciones" class="balance-kpi-val">0</span>
                     <span class="balance-kpi-lbl">Operaciones</span>
-                    <span class="balance-kpi-sub">Pagos aprobados</span>
+                    <span class="balance-kpi-sub" id="kpi-ops-sub">Pagos aprobados</span>
                 </div>
             </div>
 
@@ -910,6 +1081,55 @@
                     <span class="balance-kpi-sub" id="kpi-ops-mp">0 transacciones</span>
                 </div>
             </div>
+        </section>
+
+        <!-- Desglose del cálculo del balance financiero -->
+        <section class="balance-analytics-grid" aria-label="Cálculo detallado y desglose del balance">
+            <!-- Distribución por medio y disciplinas -->
+            <article class="analytics-card">
+                <div class="analytics-card-header">
+                    <h3 class="analytics-card-title"><span>📊</span> Distribución por Medio y Disciplina</h3>
+                </div>
+
+                <div>
+                    <div class="channel-bar" role="img" aria-label="Proporción entre Efectivo y Mercado Pago">
+                        <div id="bar-efectivo" class="channel-bar-cash" style="width: 0%;"></div>
+                        <div id="bar-mp" class="channel-bar-mp" style="width: 0%;"></div>
+                    </div>
+                    <div class="channel-legend" style="margin-top: 0.55rem;">
+                        <span><span class="legend-dot" style="background: #10b981;"></span>Efectivo: <strong id="leg-efectivo">0%</strong></span>
+                        <span><span class="legend-dot" style="background: #0284c7;"></span>Mercado Pago: <strong id="leg-mp">0%</strong></span>
+                    </div>
+                </div>
+
+                <ul id="desglose-conceptos-list" class="breakdown-list">
+                    <li class="breakdown-row" style="justify-content: center; color: #64748b;">
+                        Sin ingresos registrados en este periodo
+                    </li>
+                </ul>
+            </article>
+
+            <!-- Flujo diario y cuadre del balance neto -->
+            <article class="analytics-card">
+                <div class="analytics-card-header">
+                    <h3 class="analytics-card-title"><span>📆</span> Flujo Diario y Balance Neto</h3>
+                    <span id="badge-conciliacion" class="reconcile-badge">✓ Conciliado</span>
+                </div>
+
+                <ul id="flujo-diario-list" class="breakdown-list">
+                    <li class="breakdown-row" style="justify-content: center; color: #64748b;">
+                        Sin movimientos diarios en este periodo
+                    </li>
+                </ul>
+
+                <div class="net-balance-footer">
+                    <div>
+                        <span class="net-balance-title">Balance neto del periodo</span>
+                        <span id="net-balance-letras" class="net-balance-letters">Cero y 00/100 soles</span>
+                    </div>
+                    <span id="net-balance-amount" class="net-balance-amount">S/ 0.00</span>
+                </div>
+            </article>
         </section>
 
         <!-- Lista de operaciones incluidas en el periodo seleccionado (Criterio 2) -->
