@@ -78,6 +78,18 @@ class PagosController {
         }
     }
 
+    /**
+     * Bloquea explícitamente cualquier intento de creación, edición o eliminación
+     * sobre el apartado de Balance financiero (solo consulta).
+     */
+    restringirMutacionBalance(req, res) {
+        res.set('Allow', 'GET');
+        return res.status(405).json({
+            success: false,
+            message: 'Acción restringida: desde el balance financiero solo se permite consultar transacciones; no se pueden editar montos ni eliminar registros.'
+        });
+    }
+
     async listarEfectivoPendientes(req, res) {
         try {
             const data = await pagosService.listarEfectivoPendientes();

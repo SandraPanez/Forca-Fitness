@@ -40,6 +40,14 @@ router.get(
   autorizar(PERMISOS.CONSULTAR_BALANCE),
   pagosController.obtenerDetalleOperacionBalance
 );
+// Restricción explícita de solo lectura: bloquear edición, modificación o borrado sobre balance
+router.all(
+  ['/balance', '/balance/:idPago'],
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.restringirMutacionBalance
+);
 router.get(
   '/efectivo/pendientes',
   autenticar,

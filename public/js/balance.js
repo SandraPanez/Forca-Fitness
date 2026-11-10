@@ -7,7 +7,7 @@
  * completamente de los registros financieros de la academia."
  */
 
-let operacionesPeriodo = [];
+let operacionesPeriodo = Object.freeze([]);
 let consultaEnCurso = false;
 
 // ────────────────────────────────────────────────────────────
@@ -287,7 +287,9 @@ async function consultarBalancePorPeriodo() {
         }
 
         const { periodo, resumen, desglose, operaciones } = payload.data || {};
-        operacionesPeriodo = Array.isArray(operaciones) ? operaciones : [];
+        operacionesPeriodo = Object.freeze(
+            (Array.isArray(operaciones) ? operaciones : []).map(op => Object.freeze({ ...op }))
+        );
 
         actualizarBannerPeriodo(periodo || { fechaInicio, fechaFin, medio }, resumen);
         actualizarTarjetasResumen(resumen, periodo || { fechaInicio, fechaFin });
@@ -295,7 +297,7 @@ async function consultarBalancePorPeriodo() {
         aplicarFiltroTextoTabla();
     } catch (error) {
         console.error('[BALANCE] Error al consultar periodo:', error);
-        operacionesPeriodo = [];
+        operacionesPeriodo = Object.freeze([]);
         actualizarBannerPeriodo({ fechaInicio, fechaFin, medio }, null);
         actualizarTarjetasResumen(null, { fechaInicio, fechaFin });
         renderizarDesgloseBalance(null, null);

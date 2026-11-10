@@ -11,6 +11,29 @@ CREATE INDEX IF NOT EXISTS "IDX_Pago_Estado_Fecha"
 CREATE INDEX IF NOT EXISTS "IDX_RegistroCobro_Pago_Resultado_Fecha"
     ON "Academia Forca&Fitness"."Registro_Cobro" ("Id_Pago", "Resultado", "Fecha_Hora" DESC);
 
+-- 1.1 Protección de inmutabilidad en base de datos para pagos aprobados y montos
+CREATE OR REPLACE FUNCTION "Academia Forca&Fitness".impedir_alteracion_pago_aprobado()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'No está permitido eliminar transacciones de pago registradas.';
+    END IF;
+    IF UPPER(OLD."Estado_Pago") = 'APROBADO' THEN
+        RAISE EXCEPTION 'Las transacciones aprobadas son inmutables y no pueden modificarse.';
+    END IF;
+    IF NEW."Monto" IS DISTINCT FROM OLD."Monto" THEN
+        RAISE EXCEPTION 'El monto de una transacción de pago no puede ser editado.';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS "TR_Pago_Inmutable_Aprobado"
+    ON "Academia Forca&Fitness"."Pago";
+CREATE TRIGGER "TR_Pago_Inmutable_Aprobado"
+    BEFORE UPDATE OR DELETE ON "Academia Forca&Fitness"."Pago"
+    FOR EACH ROW EXECUTE FUNCTION "Academia Forca&Fitness".impedir_alteracion_pago_aprobado();
+
 -- ============================================================================
 -- 2. CONSULTA AGREGADA: RESUMEN FINANCIERO DEL PERIODO SELECCIONADO
 -- Parámetros: $1 = fechaInicio (DATE), $2 = fechaFin (DATE), [$3 = medio_pago]

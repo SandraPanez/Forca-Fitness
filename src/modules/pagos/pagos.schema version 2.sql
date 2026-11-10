@@ -250,6 +250,28 @@ CREATE TRIGGER "TR_Registro_Cobro_Inmutable"
 BEFORE UPDATE OR DELETE ON "Registro_Cobro"
 FOR EACH ROW EXECUTE FUNCTION impedir_cambios_registro_cobro();
 
+CREATE OR REPLACE FUNCTION impedir_alteracion_pago_aprobado()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'No está permitido eliminar transacciones de pago registradas.';
+    END IF;
+    IF UPPER(OLD."Estado_Pago") = 'APROBADO' THEN
+        RAISE EXCEPTION 'Las transacciones aprobadas son inmutables y no pueden modificarse.';
+    END IF;
+    IF NEW."Monto" IS DISTINCT FROM OLD."Monto" THEN
+        RAISE EXCEPTION 'El monto de una transacción de pago no puede ser editado.';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS "TR_Pago_Inmutable_Aprobado"
+ON "Pago";
+CREATE TRIGGER "TR_Pago_Inmutable_Aprobado"
+BEFORE UPDATE OR DELETE ON "Pago"
+FOR EACH ROW EXECUTE FUNCTION impedir_alteracion_pago_aprobado();
+
 -- ==========================================================
 -- 9. ÍNDICES DE RENDIMIENTO (Optimización de consultas)
 -- ==========================================================
