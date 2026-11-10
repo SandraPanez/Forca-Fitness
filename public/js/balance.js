@@ -209,6 +209,9 @@ function inicializarBalanceView() {
     // Inicializar modal de detalle en modo consulta (Criterio 3)
     inicializarEventosDetalle();
 
+    // Configurar navegación de retorno hacia la interfaz de pagos (Criterio 4)
+    inicializarNavegacionRetorno();
+
     // Carga inicial del balance para el periodo predeterminado
     consultarBalancePorPeriodo();
 }
@@ -758,4 +761,29 @@ function cerrarModalDetalle() {
         elementoDisparadorDetalle.focus();
     }
     elementoDisparadorDetalle = null;
+}
+
+// ────────────────────────────────────────────────────────────
+// 6. NAVEGACIÓN DE RETORNO HACIA LA INTERFAZ DE PAGOS (CA 4)
+// ────────────────────────────────────────────────────────────
+const RUTA_INTERFAZ_PAGOS = '/tesoreria.html';
+
+function inicializarNavegacionRetorno() {
+    const controlesRetorno = document.querySelectorAll('[data-nav-volver="pagos"]');
+    controlesRetorno.forEach((control) => {
+        control.addEventListener('click', (event) => {
+            if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || (typeof event.button === 'number' && event.button !== 0))) {
+                return;
+            }
+            volverAInterfazPagos(event);
+        });
+    });
+}
+
+function volverAInterfazPagos(event) {
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
+    cerrarModalDetalle();
+    window.location.href = RUTA_INTERFAZ_PAGOS;
 }

@@ -1089,16 +1089,16 @@
         <!-- Barra superior de navegación y retorno -->
         <div class="balance-top-bar">
             <div class="balance-breadcrumb">
-                <a href="/tesoreria.html">Tesorería</a>
+                <a href="/tesoreria.html" id="breadcrumb-pagos" data-nav-volver="pagos">Pagos</a>
                 <span>›</span>
-                <span>Estado Financiero</span>
+                <span>Tesorería</span>
                 <span>›</span>
-                <strong>Balance</strong>
+                <strong>Balance financiero</strong>
             </div>
 
             <!-- Botón Volver a la interfaz de pagos (Criterio 4) -->
-            <a href="/tesoreria.html" id="btn-volver-pagos-top" class="btn-volver-pagos" title="Regresar a la gestión de cobros y pagos">
-                ← Volver a Pagos
+            <a href="/tesoreria.html" id="btn-volver-pagos-top" class="btn-volver-pagos" data-nav-volver="pagos" aria-label="Volver a la interfaz de pagos" title="Volver a la interfaz de pagos">
+                ← Volver
             </a>
         </div>
 
@@ -1321,7 +1321,7 @@
             <span class="balance-footer-info">
                 Forca &amp; Fitness • Sistema de Gestión y Balance Financiero de Tesorería
             </span>
-            <a href="/tesoreria.html" id="btn-volver-pagos-bottom" class="btn-volver-pagos">
+            <a href="/tesoreria.html" id="btn-volver-pagos-bottom" class="btn-volver-pagos" data-nav-volver="pagos" aria-label="Volver a la interfaz de pagos" title="Regresar a la gestión de cobros y pagos">
                 ← Volver a la interfaz de pagos
             </a>
         </div>
