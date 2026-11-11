@@ -8,7 +8,11 @@ const BALANCE_OPERACION_SELECT_FROM = `
         p."Id_Pago" AS id_pago,
         cobro."Id_Registro" AS id_registro,
         p."Id_Matricula" AS id_matricula,
-        p."Monto"::NUMERIC(10,2) AS monto,
+        COALESCE(cobro."Monto", p."Monto")::NUMERIC(10,2) AS monto,
+        COALESCE(cobro."Monto_Original", p."Monto")::NUMERIC(10,2) AS monto_original,
+        cobro."Tipo_Descuento" AS tipo_descuento,
+        cobro."Valor_Descuento"::NUMERIC(10,2) AS valor_descuento,
+        COALESCE(cobro."Monto_Descuento", 0)::NUMERIC(10,2) AS monto_descuento,
         UPPER(p."Estado_Pago") AS estado_pago,
         p."Fecha_Pago" AS fecha_solicitud,
         COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_operacion,
@@ -53,7 +57,15 @@ const BALANCE_OPERACION_SELECT_FROM = `
     LEFT JOIN "Academia Forca&Fitness"."Usuario" u_reg ON u_reg."Id_Usuario" = p."Id_Usuario_Registro"
     LEFT JOIN "Academia Forca&Fitness"."Persona" per_reg ON per_reg."Id_Persona" = u_reg."Id_Persona"
     LEFT JOIN LATERAL (
-        SELECT rc."Id_Registro", rc."Fecha_Hora", rc."Referencia_Operacion"
+        SELECT
+            rc."Id_Registro",
+            rc."Fecha_Hora",
+            rc."Referencia_Operacion",
+            rc."Monto",
+            rc."Monto_Original",
+            rc."Tipo_Descuento",
+            rc."Valor_Descuento",
+            rc."Monto_Descuento"
         FROM "Academia Forca&Fitness"."Registro_Cobro" rc
         WHERE rc."Id_Pago" = p."Id_Pago"
           AND UPPER(rc."Resultado") = 'APROBADO'
@@ -779,13 +791,13 @@ class PagosRepository {
             WITH operaciones_periodo AS (
                 SELECT
                     p."Id_Pago" AS id_pago,
-                    p."Monto"::NUMERIC(10,2) AS monto,
+                    COALESCE(cobro."Monto", p."Monto")::NUMERIC(10,2) AS monto,
                     UPPER(p."Estado_Pago") AS estado_pago,
                     UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago
                 FROM "Academia Forca&Fitness"."Pago" p
                 JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
                 LEFT JOIN LATERAL (
-                    SELECT rc."Fecha_Hora"
+                    SELECT rc."Fecha_Hora", rc."Monto"
                     FROM "Academia Forca&Fitness"."Registro_Cobro" rc
                     WHERE rc."Id_Pago" = p."Id_Pago"
                       AND UPPER(rc."Resultado") = 'APROBADO'

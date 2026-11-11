@@ -362,6 +362,8 @@ function construirMontoLetras(monto) {
 
 function mapearOperacionBalance(row) {
     const montoNumero = Number(row.monto || 0);
+    const montoOriginalNumero = Number(row.monto_original ?? row.monto ?? 0);
+    const montoDescuentoNumero = Number(row.monto_descuento || 0);
     const medioNorm = normalizarMedioPago(row.medio_pago);
     return {
         id_pago: row.id_pago,
@@ -381,6 +383,10 @@ function mapearOperacionBalance(row) {
         referencia: row.referencia || '—',
         registrado_por: row.registrado_por || (medioNorm === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'Tesorería'),
         numero_recibo: formatearNumeroRecibo(row),
+        monto_original: Number(montoOriginalNumero.toFixed(2)),
+        tipo_descuento: row.tipo_descuento || null,
+        valor_descuento: row.valor_descuento == null ? null : Number(Number(row.valor_descuento).toFixed(2)),
+        monto_descuento: Number(montoDescuentoNumero.toFixed(2)),
         monto: Number(montoNumero.toFixed(2)),
         monto_letras: row.monto_letras || construirMontoLetras(montoNumero)
     };
