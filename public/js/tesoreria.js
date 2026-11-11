@@ -233,38 +233,23 @@ document.addEventListener('DOMContentLoaded', () => {
   modalApplyDiscount.addEventListener('click', () => {
     const tipo = modalDiscountType.value;
     const valor = Number(modalDiscountValue.value);
-    const precioValido = Number.isFinite(pendingPaymentAmount) && pendingPaymentAmount > 0;
 
     if (!tipo || !modalDiscountConfirmation.checked) return;
 
-    if (!precioValido) {
-      modalDiscountMessage.textContent = 'No se pudo determinar el precio original del pago.';
+    try {
+      appliedDiscount = calcularDescuento({
+        precioOriginal: pendingPaymentAmount,
+        tipo,
+        valor
+      });
+    } catch (error) {
+      modalDiscountMessage.textContent = error.message;
       return;
     }
 
-    const valorValido = Number.isFinite(valor) && valor > 0;
-    const valorEnCentimos = Math.round(valor * 100);
-    const precisionValida = Math.abs(valor * 100 - valorEnCentimos) < 1e-8;
-    const valorDentroDelLimite = tipo === 'PORCENTAJE'
-      ? valor <= 100
-      : valor <= pendingPaymentAmount;
-
-    if (!valorValido || !precisionValida || !valorDentroDelLimite) {
-      modalDiscountMessage.textContent = tipo === 'PORCENTAJE'
-        ? 'Ingresa un porcentaje mayor que 0 y no mayor que 100, con hasta 2 decimales.'
-        : 'Ingresa un monto mayor que 0 y no mayor que el precio original, con hasta 2 decimales.';
-      return;
-    }
-
-    const descuento = tipo === 'PORCENTAJE'
-      ? Math.round(pendingPaymentAmount * valor) / 100
-      : Math.round(valor * 100) / 100;
-    const montoFinal = Math.round((pendingPaymentAmount - descuento) * 100) / 100;
-
-    appliedDiscount = { tipo, valor, descuento, montoFinal };
-    modalOriginalPrice.textContent = `S/ ${pendingPaymentAmount.toFixed(2)}`;
-    modalDiscountAmount.textContent = `- S/ ${descuento.toFixed(2)}`;
-    modalFinalPrice.textContent = `S/ ${montoFinal.toFixed(2)}`;
+    modalOriginalPrice.textContent = `S/ ${appliedDiscount.precioOriginal.toFixed(2)}`;
+    modalDiscountAmount.textContent = `- S/ ${appliedDiscount.descuento.toFixed(2)}`;
+    modalFinalPrice.textContent = `S/ ${appliedDiscount.montoFinal.toFixed(2)}`;
     modalDiscountSummary.hidden = false;
     modalDiscountMessage.textContent = 'Descuento aplicado a la vista previa.';
     modalDiscountIntegrationNote.hidden = false;
