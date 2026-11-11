@@ -1,5 +1,12 @@
 function calcularDescuento({ precioOriginal, tipo, valor }) {
   const normalizarCentimos = (monto, nombre) => {
+    if (
+      typeof monto !== 'number' &&
+      (typeof monto !== 'string' || monto.trim() === '')
+    ) {
+      throw new Error(`${nombre} debe ser un número válido.`);
+    }
+
     const numero = Number(monto);
     if (!Number.isFinite(numero)) {
       throw new Error(`${nombre} debe ser un número válido.`);

@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalOriginalPrice = document.getElementById('modal-original-price');
   const modalDiscountAmount = document.getElementById('modal-discount-amount');
   const modalFinalPrice = document.getElementById('modal-final-price');
-  const modalDiscountIntegrationNote = document.getElementById('modal-discount-integration-note');
   const modalDemoNote = document.getElementById('modal-demo-note');
 
   let pendingMatriculaToConfirm = null;
@@ -184,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
     modalApplyDiscount.disabled = true;
     modalDiscountMessage.textContent = '';
     modalDiscountSummary.hidden = true;
-    modalDiscountIntegrationNote.hidden = true;
     modalConfirmBtn.disabled = pendingIsDemo;
     modalConfirmBtn.textContent = pendingIsDemo ? 'Prueba local (no se registra)' : 'Sí, confirmar pago';
   }
@@ -192,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function limpiarDescuentoAplicado() {
     appliedDiscount = null;
     modalDiscountSummary.hidden = true;
-    modalDiscountIntegrationNote.hidden = true;
     modalConfirmBtn.disabled = pendingIsDemo;
     modalConfirmBtn.textContent = pendingIsDemo ? 'Prueba local (no se registra)' : 'Sí, confirmar pago';
     modalDiscountMessage.textContent = '';
@@ -252,8 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
     modalFinalPrice.textContent = `S/ ${appliedDiscount.montoFinal.toFixed(2)}`;
     modalDiscountSummary.hidden = false;
     modalDiscountMessage.textContent = 'Descuento aplicado a la vista previa.';
-    modalDiscountIntegrationNote.hidden = false;
-    modalConfirmBtn.disabled = true;
+    modalConfirmBtn.disabled = pendingIsDemo;
+    modalConfirmBtn.textContent = pendingIsDemo
+      ? 'Prueba local (no se registra)'
+      : 'Confirmar cobro con descuento';
   });
 
   function cerrarModal() {
@@ -282,7 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_matricula: pendingMatriculaToConfirm,
-          referencia_operacion: modalReferencia.value.trim() || null
+          referencia_operacion: modalReferencia.value.trim() || null,
+          descuento: appliedDiscount
+            ? { tipo: appliedDiscount.tipo, valor: appliedDiscount.valor }
+            : null
         })
       });
       const result = await response.json();
@@ -290,7 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
       cerrarModal();
       // Recargar ambas secciones
       await Promise.all([cargarPendientes(), cargarCobros()]);
-      showToast('Pago confirmado correctamente. La matrícula del alumno ha sido activada.', 'success');
+      showToast(
+        result.message || 'Pago confirmado correctamente. La matrícula del alumno ha sido activada.',
+        'success'
+      );
       // Redirigir al comprobante si está disponible
       if (result.data?.Id_Pago) {
         setTimeout(() => {

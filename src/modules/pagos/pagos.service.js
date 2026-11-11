@@ -784,7 +784,16 @@ class PagosService {
         return { ...estado, estado_pago: estado.estado_pago || resultado?.estadoPago || transacciones[0].estado_pago };
     }
 
-    async confirmarEfectivo(idMatricula, referenciaOperacion, idUsuario) {
+    async confirmarEfectivo(idMatricula, referenciaOperacion, idUsuario, descuento = null) {
+        if (descuento) {
+            return pagosRepository.confirmarPagoEfectivo(
+                idMatricula,
+                idUsuario,
+                referenciaOperacion,
+                descuento
+            );
+        }
+
         try {
             return await pagosRepository.confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion);
         } catch (error) {

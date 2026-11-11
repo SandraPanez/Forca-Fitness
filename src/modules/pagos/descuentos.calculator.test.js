@@ -79,7 +79,7 @@ describe('Cálculo de descuentos', () => {
   });
 
   it('rechaza descuentos no positivos, no numéricos o con más de dos decimales', () => {
-    for (const valor of [0, -1, 'invalido', 1.001]) {
+    for (const valor of [0, -1, 'invalido', '', true, 1.001]) {
       assert.throws(() => calcularDescuento({
         precioOriginal: 120,
         tipo: 'MONTO_FIJO',
