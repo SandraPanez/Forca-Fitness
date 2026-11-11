@@ -370,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // HU: Vista "Por alumno" y "Balance financiero" (Exclusiva para rol TESORERO)
   // ────────────────────────────────────────────────────────────
   const esTesorero = rolesUsuario.includes('TESORERO');
+  const directorPendingPaymentsAction = document.getElementById('director-pending-payments-action');
   const tabTodos = document.getElementById('tab-todos');
   const tabPorAlumno = document.getElementById('tab-por-alumno');
   const vistaTodosCobros = document.getElementById('vista-todos-cobros');
@@ -380,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tesoreroBalanceAction) {
       tesoreroBalanceAction.style.display = 'inline-flex';
     }
+
     if (tabPorAlumno) {
       tabPorAlumno.style.display = 'inline-block';
     }
@@ -404,6 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarAlumnosConPagos();
       }
     });
+  }
+
+  if (esDirector && directorPendingPaymentsAction) {
+    directorPendingPaymentsAction.style.display = 'inline-flex';
   }
 
   // Elementos de la sección "Por alumno"
