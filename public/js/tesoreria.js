@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const rolesUsuario = obtenerRolesUsuario(usuario);
   const rolesPermitidos = ['DIRECTOR', 'TESORERO'];
   const esDirector = rolesUsuario.includes('DIRECTOR');
+  const demoDescuentoLocal = esDirector
+    && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+    && new URLSearchParams(window.location.search).get('demoDescuento') === '1';
 
   const tieneAcceso = rolesUsuario.some((rol) =>
     rolesPermitidos.includes(rol)
@@ -42,10 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalDiscountAmount = document.getElementById('modal-discount-amount');
   const modalFinalPrice = document.getElementById('modal-final-price');
   const modalDiscountIntegrationNote = document.getElementById('modal-discount-integration-note');
+  const modalDemoNote = document.getElementById('modal-demo-note');
 
   let pendingMatriculaToConfirm = null;
   let pendingButtonToDisable = null;
   let pendingPaymentAmount = 0;
+  let pendingIsDemo = false;
   let appliedDiscount = null;
 
   // Toast flotante (esquina inferior derecha)
@@ -87,7 +92,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await authFetch('/api/pagos/efectivo/pendientes');
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'No se pudieron cargar las solicitudes pendientes.');
-      renderPendientes(result.data);
+      const pendientes = demoDescuentoLocal
+        ? [...result.data, {
+          id_pago: 'DEMO-PAGO-LOCAL',
+          id_matricula: 'DEMO-MAT-LOCAL',
+          monto: '120.00',
+          fecha_pago: new Date().toISOString(),
+          fecha_vencimiento: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          alumno: 'Alumno de prueba (no real)',
+          disciplinas: 'Mensualidad de demostración',
+          es_demo: true
+        }]
+        : result.data;
+      renderPendientes(pendientes);
     } catch (error) {
       pendingTbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${escapeHtml(error.message)}</td></tr>`;
       showMessage(error.message, 'error', pendingMessage);
@@ -113,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>
           <strong>${escapeHtml(p.alumno)}</strong>
           <small class="treasury-muted">${escapeHtml(p.id_matricula)}</small>
+          ${p.es_demo ? '<small class="treasury-muted">PRUEBA LOCAL · no guardada</small>' : ''}
         </td>
         <td>${escapeHtml(p.disciplinas || 'Mensualidad')}</td>
         <td><strong>S/ ${Number(p.monto).toFixed(2)}</strong></td>
@@ -128,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data-matricula="${escapeHtml(p.id_matricula)}"
             data-alumno="${escapeHtml(p.alumno)}"
             data-monto="${escapeHtml(p.monto)}"
+            data-demo="${p.es_demo ? 'true' : 'false'}"
             type="button"
           >
             ✓ Confirmar pago
@@ -145,10 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingMatriculaToConfirm = btn.dataset.matricula;
     pendingButtonToDisable = btn;
     pendingPaymentAmount = Number(btn.dataset.monto);
+    pendingIsDemo = btn.dataset.demo === 'true';
     modalAlumnoName.textContent = btn.dataset.alumno || 'este alumno';
     modalReferencia.value = '';
     limpiarDescuento();
     modalDiscountPanel.hidden = !esDirector;
+    modalDemoNote.hidden = !pendingIsDemo;
     confirmModal.removeAttribute('hidden');
     confirmModal.style.display = 'flex';
   }
@@ -164,16 +185,16 @@ document.addEventListener('DOMContentLoaded', () => {
     modalDiscountMessage.textContent = '';
     modalDiscountSummary.hidden = true;
     modalDiscountIntegrationNote.hidden = true;
-    modalConfirmBtn.disabled = false;
-    modalConfirmBtn.textContent = 'Sí, confirmar pago';
+    modalConfirmBtn.disabled = pendingIsDemo;
+    modalConfirmBtn.textContent = pendingIsDemo ? 'Prueba local (no se registra)' : 'Sí, confirmar pago';
   }
 
   function limpiarDescuentoAplicado() {
     appliedDiscount = null;
     modalDiscountSummary.hidden = true;
     modalDiscountIntegrationNote.hidden = true;
-    modalConfirmBtn.disabled = false;
-    modalConfirmBtn.textContent = 'Sí, confirmar pago';
+    modalConfirmBtn.disabled = pendingIsDemo;
+    modalConfirmBtn.textContent = pendingIsDemo ? 'Prueba local (no se registra)' : 'Sí, confirmar pago';
     modalDiscountMessage.textContent = '';
   }
 
@@ -256,6 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingMatriculaToConfirm = null;
     pendingButtonToDisable = null;
     pendingPaymentAmount = 0;
+    pendingIsDemo = false;
+    modalDemoNote.hidden = true;
     limpiarDescuento();
   }
 
@@ -265,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   modalConfirmBtn.addEventListener('click', async () => {
-    if (!pendingMatriculaToConfirm) return;
+    if (!pendingMatriculaToConfirm || pendingIsDemo) return;
     modalConfirmBtn.disabled = true;
     modalConfirmBtn.textContent = 'Confirmando...';
     try {
