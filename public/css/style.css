@@ -3102,6 +3102,125 @@ body {
     }
 }
 
+/* Reservas realizadas (HU-10) */
+.reservas-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.reservas-aviso {
+    grid-column: 1 / -1;
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.reserva-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.reserva-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.reserva-disciplina {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--primary-color);
+}
+
+.reserva-etiqueta {
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.reserva-etiqueta:empty {
+    display: none;
+}
+
+.reserva-datos {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0;
+}
+
+.reserva-datos dt {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+}
+
+.reserva-datos dd {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.etapa-pendiente {
+    background-color: #fff8e1;
+    color: #b26a00;
+    border: 1px solid #ffe082;
+}
+
+.etapa-reservada {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+}
+
+.etapa-activa {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+.etapa-vencida {
+    background-color: #f5f5f5;
+    color: #616161;
+    border: 1px solid #e0e0e0;
+}
+
+.reserva-mensaje {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.reserva-ver-estado {
+    align-self: flex-start;
+    padding: 0;
+}
+
+@media (max-width: 768px) {
+    .reservas-lista {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .reserva-card {
+        padding: 1.25rem;
+    }
+
+    .reserva-cabecera {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+    }
+}
+
 /* Botón de acceso directo a Balance financiero (Exclusivo Tesorero) */
 .btn-balance-nav {
     display: inline-flex;

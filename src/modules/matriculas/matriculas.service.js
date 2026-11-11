@@ -336,6 +336,49 @@ class MatriculasService {
     });
   }
 
+  async getReservasPorUsuario(idUsuario) {
+    if (!idUsuario) {
+      throw new Error('El ID del usuario es obligatorio.');
+    }
+
+    // Igual que en "Mis matrículas": las reservas cuyo periodo ya empezó pasan a Activa antes de consultar.
+    await matriculasRepository.activarReservasIniciadas();
+
+    const reservas = await matriculasRepository.getReservasPorUsuario(idUsuario);
+
+    return reservas.map(reserva => ({ ...reserva, etapa: this.determinarEtapaReserva(reserva) }));
+  }
+
+  // Etapa de una reserva (HU-10):
+  // - Pendiente de confirmación: pago en efectivo que el tesorero aún no valida.
+  // - Reservada: pago aprobado y el periodo todavía no empieza (cupo asegurado).
+  // - Activa: llegó la fecha de inicio del periodo reservado.
+  // - Vencida: el periodo reservado ya terminó.
+  determinarEtapaReserva(reserva) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const fechaInicio = new Date(reserva.fecha_inicio);
+    fechaInicio.setHours(0, 0, 0, 0);
+    const fechaFin = new Date(reserva.fecha_fin);
+    fechaFin.setHours(0, 0, 0, 0);
+
+    const estadoMatricula = String(reserva.estado_matricula).toUpperCase();
+    const efectivoPendiente = String(reserva.estado_pago).toUpperCase() === 'PENDIENTE' &&
+      String(reserva.medio_pago).toUpperCase() === 'EFECTIVO';
+
+    if (efectivoPendiente && !['RESERVADA', 'ACTIVA'].includes(estadoMatricula)) {
+      return 'Pendiente de confirmación';
+    }
+    if (fechaFin < hoy) {
+      return 'Vencida';
+    }
+    if (estadoMatricula === 'ACTIVA' || fechaInicio <= hoy) {
+      return 'Activa';
+    }
+    return 'Reservada';
+  }
+
   async renovarMatricula(idUsuario, idDetalle) {
     if (typeof idDetalle !== 'string' || !idDetalle || idDetalle.length > 10) {
       throw Object.assign(new Error('La matrícula seleccionada no es válida.'), { status: 400 });
