@@ -399,6 +399,38 @@
       <div class="modal-card-icon">💵</div>
       <h3 class="modal-title">¿Confirmar pago en efectivo?</h3>
       <p class="modal-desc">¿Estás seguro de que deseas confirmar la recepción del pago en efectivo de <strong id="modal-alumno-name">este alumno</strong>?</p>
+      <section id="modal-discount-panel" class="discount-panel" aria-label="Aplicar descuento" hidden>
+        <h4>Descuento autorizado por Dirección</h4>
+        <p>Solo el Director puede confirmar cambios en el precio.</p>
+        <div class="discount-fields">
+          <div class="form-group">
+            <label for="modal-discount-type">Tipo de descuento</label>
+            <select id="modal-discount-type">
+              <option value="">Selecciona un tipo</option>
+              <option value="PORCENTAJE">Porcentaje (%)</option>
+              <option value="MONTO_FIJO">Monto fijo (S/)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="modal-discount-value">Valor autorizado</label>
+            <input id="modal-discount-value" type="number" min="0.01" step="0.01" placeholder="Ingresa el valor" disabled>
+          </div>
+        </div>
+        <label class="discount-confirmation" for="modal-discount-confirmation">
+          <input id="modal-discount-confirmation" type="checkbox">
+          <span>Confirmo que este cambio de precio está autorizado.</span>
+        </label>
+        <button id="modal-apply-discount" class="btn-apply-discount" type="button" disabled>Aplicar descuento</button>
+        <p id="modal-discount-message" class="discount-message" role="status" aria-live="polite"></p>
+        <dl id="modal-discount-summary" class="discount-summary" aria-live="polite" hidden>
+          <div><dt>Precio original</dt><dd id="modal-original-price">S/ 0.00</dd></div>
+          <div><dt>Descuento aplicado</dt><dd id="modal-discount-amount">- S/ 0.00</dd></div>
+          <div class="discount-total"><dt>Total por pagar</dt><dd id="modal-final-price">S/ 0.00</dd></div>
+        </dl>
+        <p id="modal-discount-integration-note" class="discount-integration-note" hidden>
+          La confirmación del cobro con descuento estará disponible al completar la integración del pago.
+        </p>
+      </section>
       <div class="form-group" style="text-align: left; margin: 1rem 0;">
         <label for="modal-referencia" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: #475569;">Referencia o N° de recibo <span class="text-muted">(opcional)</span></label>
         <input id="modal-referencia" type="text" placeholder="Ej. Recibo N° 0042, Caja central..." maxlength="100" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const usuario = obtenerUsuario();
   const rolesUsuario = obtenerRolesUsuario(usuario);
   const rolesPermitidos = ['DIRECTOR', 'TESORERO'];
+  const esDirector = rolesUsuario.includes('DIRECTOR');
 
   const tieneAcceso = rolesUsuario.some((rol) =>
     rolesPermitidos.includes(rol)
@@ -30,9 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalReferencia = document.getElementById('modal-referencia');
   const modalCancel = document.getElementById('modal-cancel');
   const modalConfirmBtn = document.getElementById('modal-confirm');
+  const modalDiscountPanel = document.getElementById('modal-discount-panel');
+  const modalDiscountType = document.getElementById('modal-discount-type');
+  const modalDiscountValue = document.getElementById('modal-discount-value');
+  const modalDiscountConfirmation = document.getElementById('modal-discount-confirmation');
+  const modalApplyDiscount = document.getElementById('modal-apply-discount');
+  const modalDiscountMessage = document.getElementById('modal-discount-message');
+  const modalDiscountSummary = document.getElementById('modal-discount-summary');
+  const modalOriginalPrice = document.getElementById('modal-original-price');
+  const modalDiscountAmount = document.getElementById('modal-discount-amount');
+  const modalFinalPrice = document.getElementById('modal-final-price');
+  const modalDiscountIntegrationNote = document.getElementById('modal-discount-integration-note');
 
   let pendingMatriculaToConfirm = null;
   let pendingButtonToDisable = null;
+  let pendingPaymentAmount = 0;
+  let appliedDiscount = null;
 
   // Toast flotante (esquina inferior derecha)
   const showToast = (text, type = 'success', duration = 4500) => {
@@ -113,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             class="btn-approve-cash"
             data-matricula="${escapeHtml(p.id_matricula)}"
             data-alumno="${escapeHtml(p.alumno)}"
+            data-monto="${escapeHtml(p.monto)}"
             type="button"
           >
             ✓ Confirmar pago
@@ -129,17 +144,119 @@ document.addEventListener('DOMContentLoaded', () => {
   function abrirModalConfirmacion(btn) {
     pendingMatriculaToConfirm = btn.dataset.matricula;
     pendingButtonToDisable = btn;
+    pendingPaymentAmount = Number(btn.dataset.monto);
     modalAlumnoName.textContent = btn.dataset.alumno || 'este alumno';
     modalReferencia.value = '';
+    limpiarDescuento();
+    modalDiscountPanel.hidden = !esDirector;
     confirmModal.removeAttribute('hidden');
     confirmModal.style.display = 'flex';
   }
+
+  function limpiarDescuento() {
+    appliedDiscount = null;
+    modalDiscountType.value = '';
+    modalDiscountValue.value = '';
+    modalDiscountValue.disabled = true;
+    modalDiscountValue.removeAttribute('max');
+    modalDiscountConfirmation.checked = false;
+    modalApplyDiscount.disabled = true;
+    modalDiscountMessage.textContent = '';
+    modalDiscountSummary.hidden = true;
+    modalDiscountIntegrationNote.hidden = true;
+    modalConfirmBtn.disabled = false;
+    modalConfirmBtn.textContent = 'Sí, confirmar pago';
+  }
+
+  function limpiarDescuentoAplicado() {
+    appliedDiscount = null;
+    modalDiscountSummary.hidden = true;
+    modalDiscountIntegrationNote.hidden = true;
+    modalConfirmBtn.disabled = false;
+    modalConfirmBtn.textContent = 'Sí, confirmar pago';
+    modalDiscountMessage.textContent = '';
+  }
+
+  function actualizarBotonAplicarDescuento() {
+    modalApplyDiscount.disabled = !(
+      modalDiscountType.value &&
+      modalDiscountValue.value &&
+      modalDiscountConfirmation.checked
+    );
+  }
+
+  modalDiscountType.addEventListener('change', () => {
+    const tipo = modalDiscountType.value;
+    modalDiscountValue.disabled = !tipo;
+    modalDiscountValue.value = '';
+    if (tipo) {
+      modalDiscountValue.max = tipo === 'PORCENTAJE' ? '100' : String(pendingPaymentAmount);
+    } else {
+      modalDiscountValue.removeAttribute('max');
+    }
+    modalDiscountValue.placeholder = tipo === 'PORCENTAJE' ? 'Ej. 20' : 'Ej. 15.00';
+    modalDiscountConfirmation.checked = false;
+    limpiarDescuentoAplicado();
+    actualizarBotonAplicarDescuento();
+  });
+
+  modalDiscountValue.addEventListener('input', () => {
+    limpiarDescuentoAplicado();
+    actualizarBotonAplicarDescuento();
+  });
+  modalDiscountConfirmation.addEventListener('change', () => {
+    if (!modalDiscountConfirmation.checked) limpiarDescuentoAplicado();
+    actualizarBotonAplicarDescuento();
+  });
+
+  modalApplyDiscount.addEventListener('click', () => {
+    const tipo = modalDiscountType.value;
+    const valor = Number(modalDiscountValue.value);
+    const precioValido = Number.isFinite(pendingPaymentAmount) && pendingPaymentAmount > 0;
+
+    if (!tipo || !modalDiscountConfirmation.checked) return;
+
+    if (!precioValido) {
+      modalDiscountMessage.textContent = 'No se pudo determinar el precio original del pago.';
+      return;
+    }
+
+    const valorValido = Number.isFinite(valor) && valor > 0;
+    const valorEnCentimos = Math.round(valor * 100);
+    const precisionValida = Math.abs(valor * 100 - valorEnCentimos) < 1e-8;
+    const valorDentroDelLimite = tipo === 'PORCENTAJE'
+      ? valor <= 100
+      : valor <= pendingPaymentAmount;
+
+    if (!valorValido || !precisionValida || !valorDentroDelLimite) {
+      modalDiscountMessage.textContent = tipo === 'PORCENTAJE'
+        ? 'Ingresa un porcentaje mayor que 0 y no mayor que 100, con hasta 2 decimales.'
+        : 'Ingresa un monto mayor que 0 y no mayor que el precio original, con hasta 2 decimales.';
+      return;
+    }
+
+    const descuento = tipo === 'PORCENTAJE'
+      ? Math.round(pendingPaymentAmount * valor) / 100
+      : Math.round(valor * 100) / 100;
+    const montoFinal = Math.round((pendingPaymentAmount - descuento) * 100) / 100;
+
+    appliedDiscount = { tipo, valor, descuento, montoFinal };
+    modalOriginalPrice.textContent = `S/ ${pendingPaymentAmount.toFixed(2)}`;
+    modalDiscountAmount.textContent = `- S/ ${descuento.toFixed(2)}`;
+    modalFinalPrice.textContent = `S/ ${montoFinal.toFixed(2)}`;
+    modalDiscountSummary.hidden = false;
+    modalDiscountMessage.textContent = 'Descuento aplicado a la vista previa.';
+    modalDiscountIntegrationNote.hidden = false;
+    modalConfirmBtn.disabled = true;
+  });
 
   function cerrarModal() {
     confirmModal.setAttribute('hidden', '');
     confirmModal.style.display = 'none';
     pendingMatriculaToConfirm = null;
     pendingButtonToDisable = null;
+    pendingPaymentAmount = 0;
+    limpiarDescuento();
   }
 
   modalCancel.addEventListener('click', cerrarModal);

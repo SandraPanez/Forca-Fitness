@@ -2321,6 +2321,149 @@ body {
     text-align: center;
 }
 
+.modal-card:has(.discount-panel:not([hidden])) {
+    max-width: 560px;
+    text-align: left;
+}
+
+.modal-card:has(.discount-panel:not([hidden])) .modal-card-icon,
+.modal-card:has(.discount-panel:not([hidden])) .modal-title,
+.modal-card:has(.discount-panel:not([hidden])) > .modal-desc {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.discount-panel {
+    margin: 1.25rem 0;
+    padding: 1.1rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #eff6ff;
+}
+
+.discount-panel h4 {
+    margin: 0 0 0.3rem;
+    color: #1e3a8a;
+    font-size: 1rem;
+}
+
+.discount-panel > p:first-of-type {
+    margin: 0 0 1rem;
+    color: #475569;
+    font-size: 0.85rem;
+}
+
+.discount-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.discount-fields .form-group {
+    margin: 0;
+}
+
+.discount-fields label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.discount-fields input,
+.discount-fields select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #fff;
+    color: #0f172a;
+    font: inherit;
+}
+
+.discount-confirmation {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.9rem 0;
+    color: #334155;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.discount-confirmation input {
+    margin-top: 0.15rem;
+}
+
+.btn-apply-discount {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-radius: 8px;
+    background: #1d4ed8;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-apply-discount:hover:not(:disabled) {
+    background: #1e40af;
+}
+
+.btn-apply-discount:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.discount-message {
+    min-height: 1.25rem;
+    margin: 0.6rem 0 0;
+    color: #b91c1c;
+    font-size: 0.85rem;
+}
+
+.discount-summary {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.discount-summary div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+
+.discount-summary dt,
+.discount-summary dd {
+    margin: 0;
+}
+
+.discount-summary dd {
+    font-weight: 600;
+}
+
+.discount-summary .discount-total {
+    margin-top: 0.35rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid #e2e8f0;
+    color: #166534;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.discount-integration-note {
+    margin: 0.7rem 0 0;
+    color: #92400e;
+    font-size: 0.82rem;
+}
+
 .modal-card-icon {
     font-size: 2.5rem;
     margin-bottom: 0.75rem;
@@ -2367,6 +2510,12 @@ body {
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
+}
+
+@media (max-width: 520px) {
+    .discount-fields {
+        grid-template-columns: 1fr;
+    }
 }
 
 .btn-confirm-action {
