@@ -123,6 +123,9 @@ async function ejecutarTareasPeriodicas() {
 const expirationCheck = setInterval(ejecutarTareasPeriodicas, EXPIRATION_CHECK_INTERVAL);
 expirationCheck.unref();
 
+// HU-20: recordatorios de vencimiento por correo (una vez al día).
+require('./src/modules/notificaciones/recordatorios-vencimiento.job').iniciarJobRecordatoriosVencimiento();
+
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
   ejecutarTareasPeriodicas();
