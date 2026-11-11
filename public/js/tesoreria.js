@@ -483,6 +483,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const receiptRef = document.getElementById('receipt-ref');
   const receiptTotal = document.getElementById('receipt-total');
   const receiptTotalLetters = document.getElementById('receipt-total-letters');
+  const receiptDiscountBreakdown = document.getElementById('receipt-discount-breakdown');
+  const receiptOriginalPrice = document.getElementById('receipt-original-price');
+  const receiptDiscountApplied = document.getElementById('receipt-discount-applied');
 
   // Configurar apertura/cierre dinámico de cada filtro
   function toggleFilterBox(checkbox, box) {
@@ -842,6 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
     receiptRef.textContent = pago.referencia || '—';
     receiptTotal.textContent = `S/ ${Number(pago.monto).toFixed(2)}`;
     receiptTotalLetters.textContent = pago.monto_letras || `${Number(pago.monto).toFixed(2)} SOLES`;
+    receiptDiscountBreakdown.hidden = true;
 
     // Intentar consultar endpoint oficial para sincronizar correlativo si existe
     try {
@@ -851,6 +855,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (comp.data) {
           receiptNumber.textContent = comp.data.numero;
           receiptTotalLetters.textContent = comp.data.total_letras;
+          receiptTotal.textContent = comp.data.total;
+          if (Number(comp.data.monto_descuento) > 0) {
+            receiptDiscountBreakdown.hidden = false;
+            receiptOriginalPrice.textContent = `S/ ${Number(comp.data.monto_original).toFixed(2)}`;
+            const tipo = comp.data.tipo_descuento === 'PORCENTAJE'
+              ? ` (${Number(comp.data.valor_descuento)}%)`
+              : '';
+            receiptDiscountApplied.textContent =
+              `${tipo} - S/ ${Number(comp.data.monto_descuento).toFixed(2)}`;
+          }
         }
       }
     } catch (err) {

@@ -29,6 +29,11 @@ async function obtenerComprobante(idPago) {
           id_pago: p.id_pago,
           estado_pago: p.estado_pago || 'APROBADO',
           monto: p.monto,
+          monto_cobrado: p.monto_cobrado ?? p.monto,
+          monto_original: p.monto_original ?? p.monto,
+          tipo_descuento: p.tipo_descuento || null,
+          valor_descuento: p.valor_descuento ?? null,
+          monto_descuento: p.monto_descuento ?? 0,
           metodo_pago: p.medio_pago,
           referencia: p.referencia || '—',
           fecha_emision: p.fecha_pago || new Date(),
@@ -53,6 +58,11 @@ async function obtenerComprobante(idPago) {
           p."Id_Pago" AS id_pago,
           p."Estado_Pago" AS estado_pago,
           p."Monto" AS monto,
+          p."Monto" AS monto_cobrado,
+          p."Monto" AS monto_original,
+          NULL::VARCHAR AS tipo_descuento,
+          NULL::NUMERIC AS valor_descuento,
+          0::NUMERIC AS monto_descuento,
           COALESCE(p."Fecha_Pago", CURRENT_TIMESTAMP) AS fecha_emision,
           UPPER(COALESCE(mp."Nombre_Metodo", 'EFECTIVO')) AS metodo_pago,
           TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
@@ -102,7 +112,10 @@ async function obtenerComprobante(idPago) {
     ...opciones
   }).format(emision);
 
-  const montoNumero = Number(pago.monto) || 0;
+  const montoOriginal = Number(pago.monto_original ?? pago.monto) || 0;
+  const montoDescuento = Number(pago.monto_descuento) || 0;
+  const montoNumero = Number(pago.monto_cobrado ?? pago.monto) || 0;
+  const tieneDescuento = montoDescuento > 0;
   let cantidad;
   try {
     cantidad = montoEnLetras(montoNumero);
@@ -130,6 +143,12 @@ async function obtenerComprobante(idPago) {
     concepto: `Mensualidad ${periodo}`.trim(),
     metodo_pago: METODOS[pago.metodo_pago] || pago.metodo_pago || 'Efectivo',
     referencia: pago.referencia || '—',
+    monto_original: montoOriginal,
+    tipo_descuento: pago.tipo_descuento || null,
+    valor_descuento: pago.valor_descuento === null || pago.valor_descuento === undefined
+      ? null
+      : Number(pago.valor_descuento),
+    monto_descuento: montoDescuento,
     total: `S/ ${montoNumero.toFixed(2)}`,
     total_letras: cantidad,
     estado_pago: pago.estado_pago || 'APROBADO',
@@ -139,7 +158,12 @@ async function obtenerComprobante(idPago) {
       pagador: pago.alumno || 'Alumno registrado',
       cantidad,
       concepto: conceptoTexto,
-      fecha: formato({ day: '2-digit', month: '2-digit', year: '2-digit' })
+      fecha: formato({ day: '2-digit', month: '2-digit', year: '2-digit' }),
+      monto_original: tieneDescuento ? `S/ ${montoOriginal.toFixed(2)}` : null,
+      detalle_descuento: tieneDescuento
+        ? `Descuento${pago.tipo_descuento === 'PORCENTAJE' ? ` (${Number(pago.valor_descuento)}%)` : ''}: - S/ ${montoDescuento.toFixed(2)}`
+        : null,
+      total_pagado: `S/ ${montoNumero.toFixed(2)}`
     }
   };
 }
