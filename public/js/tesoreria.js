@@ -250,20 +250,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ────────────────────────────────────────────────────────────
-  // HU: Vista "Por alumno" (Exclusiva para rol TESORERO)
+  // HU: Vista "Por alumno" y "Balance financiero" (Exclusiva para rol TESORERO)
   // ────────────────────────────────────────────────────────────
   const esTesorero = rolesUsuario.includes('TESORERO');
   const tabTodos = document.getElementById('tab-todos');
   const tabPorAlumno = document.getElementById('tab-por-alumno');
   const vistaTodosCobros = document.getElementById('vista-todos-cobros');
   const vistaPorAlumno = document.getElementById('vista-por-alumno');
+  const tesoreroBalanceAction = document.getElementById('tesorero-balance-action');
 
-  let todosLosAlumnos = [];
-  let alumnoSeleccionadoActual = null;
-  let pagoSeleccionadoActual = null;
-
-  if (esTesorero && tabPorAlumno) {
-    tabPorAlumno.style.display = 'inline-block';
+  if (esTesorero) {
+    if (tesoreroBalanceAction) {
+      tesoreroBalanceAction.style.display = 'inline-flex';
+    }
+    if (tabPorAlumno) {
+      tabPorAlumno.style.display = 'inline-block';
+    }
 
     tabTodos.addEventListener('click', () => {
       tabTodos.classList.add('active');

@@ -8,7 +8,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterSelect = document.getElementById('filter-select') || document.querySelector('.filter-select');
     const btnPorVencer = document.getElementById('btn-por-vencer');
     const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro');
-    let alumnosCache = [];
+
+    // KPI Cards
+    const kpiCardTotal = document.getElementById('kpi-card-total');
+    const kpiCardActivas = document.getElementById('kpi-card-activas');
+    const kpiCardPorVencer = document.getElementById('kpi-card-por-vencer');
+    const kpiCardVencidas = document.getElementById('kpi-card-vencidas');
+    const kpiTotalVal = document.getElementById('kpi-total-val');
+    const kpiActivasVal = document.getElementById('kpi-activas-val');
+    const kpiPorVencerVal = document.getElementById('kpi-por-vencer-val');
+    const kpiVencidasVal = document.getElementById('kpi-vencidas-val');
+
+    let alumnosCache = [];    // El historial de matrículas solo lo consulta el Director
+    const esDirector = obtenerRolesUsuario().includes('DIRECTOR');
 
     const closePanel = () => {
         overlay.classList.remove('active');
@@ -21,6 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+
+    const formatearFecha = (fechaStr) => {
+        if (!fechaStr) return 'No registrada';
+        const parts = fechaStr.slice(0, 10).split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return fechaStr;
+    };
 
     const getBadgeClass = (estado) => {
         switch (estado) {
@@ -56,36 +77,85 @@ document.addEventListener('DOMContentLoaded', () => {
         return '';
     };
 
+    const updateKpis = () => {
+        const total = alumnosCache.length;
+        const activas = alumnosCache.filter(a => a.estado_matricula === 'Activa').length;
+        const porVencer = alumnosCache.filter(a => a.estado_matricula === 'Próxima a vencer' || a.por_vencer).length;
+        const vencidas = alumnosCache.filter(a => a.estado_matricula === 'Vencida').length;
+
+        if (kpiTotalVal) kpiTotalVal.textContent = total;
+        if (kpiActivasVal) kpiActivasVal.textContent = activas;
+        if (kpiPorVencerVal) kpiPorVencerVal.textContent = porVencer;
+        if (kpiVencidasVal) kpiVencidasVal.textContent = vencidas;
+
+        const optPorVencer = filterSelect?.querySelector('option[value="Por vencer"]');
+        if (optPorVencer) {
+            optPorVencer.textContent = `⚠️ Matrículas por vencer (${porVencer})`;
+        }
+    };
+
+    const setActiveKpiCard = (status) => {
+        document.querySelectorAll('.kpi-card').forEach(card => card.classList.remove('active'));
+        if (status === 'Todos') kpiCardTotal?.classList.add('active');
+        else if (status === 'Activa') kpiCardActivas?.classList.add('active');
+        else if (status === 'Por vencer') kpiCardPorVencer?.classList.add('active');
+        else if (status === 'Vencida') kpiCardVencidas?.classList.add('active');
+    };
+
     const renderTable = (alumnos) => {
         tbody.innerHTML = '';
         if (!alumnos.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted" style="padding: 2.5rem 1rem;">No se encontraron alumnos con el criterio seleccionado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: 2.5rem 1rem;">No se encontraron alumnos con el criterio seleccionado.</td></tr>';
             return;
         }
 
         alumnos.forEach((alumno) => {
             const badgeClass = getBadgeClass(alumno.estado_matricula);
             const diasTexto = getDiasText(alumno);
+            const fechaVenc = formatearFecha(alumno.fecha_vencimiento);
+            const disciplinasArr = Array.isArray(alumno.disciplinas) && alumno.disciplinas.length
+                ? alumno.disciplinas
+                : ['General'];
+
+            const disciplinasHtml = disciplinasArr
+                .map(d => `<span class="badge-disciplina-pill">${escapeHtml(d)}</span>`)
+                .join('');
+
+            const esVencida = alumno.estado_matricula === 'Vencida';
+            const esPorVencer = alumno.estado_matricula === 'Próxima a vencer' || alumno.por_vencer;
+            const fechaClase = esVencida ? 'vencida' : (esPorVencer ? 'alerta' : '');
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
                     <div class="alumno-row">
                         <div class="avatar-circle">${escapeHtml(alumno.iniciales || 'AL')}</div>
-                        <span class="font-medium">${escapeHtml(alumno.nombres)} ${escapeHtml(alumno.apellido_paterno)} ${escapeHtml(alumno.apellido_materno)}</span>
+                        <span class="font-medium" style="color: #0f172a; font-weight: 600;">
+                            ${escapeHtml(alumno.nombres)} ${escapeHtml(alumno.apellido_paterno)} ${escapeHtml(alumno.apellido_materno)}
+                        </span>
                     </div>
                 </td>
                 <td>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        ${disciplinasHtml}
+                    </div>
+                </td>
+                <td>
+                    <span class="fecha-vencimiento-text ${fechaClase}">${escapeHtml(fechaVenc)}</span>
+                </td>
+                <td>
                     <span class="badge-status ${badgeClass}">${escapeHtml(alumno.estado_matricula)}</span>
-                    ${diasTexto ? `<span class="dias-text">${escapeHtml(diasTexto)}</span>` : ''}
+                    ${diasTexto ? `<span class="dias-text" style="display: block; margin-top: 0.2rem;">${escapeHtml(diasTexto)}</span>` : ''}
                 </td>
                 <td class="text-right">
                     <button class="btn-link" data-id="${escapeHtml(alumno.id)}" title="Ver vigencia de matrícula y detalles">Ver detalle</button>
+                    ${esDirector ? `<a class="btn-link btn-historial" href="/historial-matriculas.html?alumno=${encodeURIComponent(alumno.id)}" title="Ver historial de matrículas">Ver historial de matrículas</a>` : ''}
                 </td>
             `;
             tbody.appendChild(tr);
         });
 
-        tbody.querySelectorAll('.btn-link').forEach((button) => {
+        tbody.querySelectorAll('button.btn-link').forEach((button) => {
             button.addEventListener('click', () => loadStudentDetails(button.dataset.id));
         });
     };
@@ -94,15 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const search = (searchInput?.value || '').trim().toLowerCase();
         const status = filterSelect?.value || 'Todos';
 
-        if (status === 'Por vencer') {
-            btnPorVencer?.classList.add('active');
-        } else {
-            btnPorVencer?.classList.remove('active');
-        }
+        setActiveKpiCard(status);
 
         const filtered = alumnosCache.filter((alumno) => {
             const fullName = `${alumno.nombres || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`.toLowerCase();
-            const matchesSearch = !search || fullName.includes(search);
+            const matchesSearch = !search
+                || fullName.includes(search)
+                || (alumno.disciplinas || []).some(d => String(d).toLowerCase().includes(search));
 
             let matchesStatus = true;
             if (status === 'Por vencer') {
@@ -147,11 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('Alumnos recibidos:', result.data);
             alumnosCache = result.data;
+            updateKpis();
             filterAlumnos();
         } catch (error) {
             console.error('Error cargando alumnos:', error);
             const message = error instanceof Error ? error.message : 'Error desconocido al cargar alumnos.';
-            tbody.innerHTML = `<tr><td colspan="3"><div role="alert" class="text-center text-danger" style="padding: 2rem;">${escapeHtml(message)}</div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5"><div role="alert" class="text-center text-danger" style="padding: 2rem;">${escapeHtml(message)}</div></td></tr>`;
         }
     };
 
@@ -211,9 +280,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    if (btnPorVencer) {
-        btnPorVencer.addEventListener('click', () => {
-            filterSelect.value = 'Por vencer';
+    // Eventos de los KPI Cards
+    if (kpiCardTotal) {
+        kpiCardTotal.addEventListener('click', () => {
+            if (filterSelect) filterSelect.value = 'Todos';
+            filterAlumnos();
+        });
+    }
+
+    if (kpiCardActivas) {
+        kpiCardActivas.addEventListener('click', () => {
+            if (filterSelect) filterSelect.value = 'Activa';
+            filterAlumnos();
+        });
+    }
+
+    if (kpiCardPorVencer) {
+        kpiCardPorVencer.addEventListener('click', () => {
+            if (filterSelect) filterSelect.value = 'Por vencer';
+            filterAlumnos();
+        });
+    }
+
+    if (kpiCardVencidas) {
+        kpiCardVencidas.addEventListener('click', () => {
+            if (filterSelect) filterSelect.value = 'Vencida';
             filterAlumnos();
         });
     }
@@ -222,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLimpiarFiltro.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
             if (filterSelect) filterSelect.value = 'Todos';
-            btnPorVencer?.classList.remove('active');
             filterAlumnos();
         });
     }

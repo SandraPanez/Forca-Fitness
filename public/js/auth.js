@@ -111,7 +111,8 @@ const MENU_POR_ROL = {
     ],
     TESORERO: [
         ['Alumnos', '/alumnos.html'],
-        ['Pagos', '/tesoreria.html']
+        ['Pagos', '/tesoreria.html'],
+        ['Balance financiero', '/balance.html']
     ],
     PROFESOR: [
         ['Control de acceso', '/control-acceso#vista-control', 'access'],

@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pagosController = require('./pagos.controller');
 const { autenticar } = require('../../shared/middleware/auth.middleware');
-const { autorizar } = require('../../shared/middleware/permisos.middleware');
+const { autorizar, autorizarRol } = require('../../shared/middleware/permisos.middleware');
 const { PERMISOS } = require('../../shared/constants/permisos');
+const ROLES = require('../../shared/constants/roles');
 
 // GET /api/pagos/verificar/:matricula - Verificar estado de pago de una matrícula
 router.get('/verificar/:matricula', pagosController.verificarEstadoMatricula);
@@ -24,6 +25,28 @@ router.get(
   autenticar,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   pagosController.listarCobrosPorAlumno
+);
+router.get(
+  '/balance',
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.obtenerBalanceFinanciero
+);
+router.get(
+  '/balance/:idPago',
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.obtenerDetalleOperacionBalance
+);
+// Restricción explícita de solo lectura: bloquear edición, modificación o borrado sobre balance
+router.all(
+  ['/balance', '/balance/:idPago'],
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.restringirMutacionBalance
 );
 router.get(
   '/efectivo/pendientes',
