@@ -87,7 +87,6 @@ class AlumnosController {
     }
   }
 
-  
   async obtenerHistorialMatriculas(req, res) {
     try {
       const { id } = req.params;
@@ -109,6 +108,32 @@ class AlumnosController {
       return res.status(500).json({
         success: false,
         message: 'Error interno al obtener el historial de matrículas'
+      });
+    }
+  }
+
+  async inhabilitarAlumno(req, res) {
+    try {
+      const { id } = req.params;
+      const { fecha_inicio, fecha_fin, motivo } = req.body || {};
+
+      const detalleActualizado = await alumnosService.inhabilitarAlumno(id, {
+        fecha_inicio,
+        fecha_fin,
+        motivo
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Alumno inhabilitado temporalmente con éxito. Se conservaron sus datos personales y matrículas.',
+        data: detalleActualizado
+      });
+    } catch (error) {
+      console.error('Error en inhabilitarAlumno:', error);
+      const status = error.statusCode || 500;
+      return res.status(status).json({
+        success: false,
+        message: error.statusCode ? error.message : 'Error interno al inhabilitar temporalmente al alumno'
       });
     }
   }

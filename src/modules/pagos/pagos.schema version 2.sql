@@ -232,6 +232,10 @@ CREATE TABLE IF NOT EXISTS "Registro_Cobro" (
     "Resultado" VARCHAR(20) NOT NULL,
     "Id_Pago" VARCHAR(10) NOT NULL,
     "Referencia_Operacion" VARCHAR(255),
+    "Monto_Original" DECIMAL(10,2),
+    "Tipo_Descuento" VARCHAR(20),
+    "Valor_Descuento" DECIMAL(10,2),
+    "Monto_Descuento" DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     CONSTRAINT "PK_Registro_Cobro" PRIMARY KEY ("Id_Registro"),
     CONSTRAINT "FK_Registro_Cobro_Pago" FOREIGN KEY ("Id_Pago")
         REFERENCES "Pago" ("Id_Pago") ON DELETE RESTRICT

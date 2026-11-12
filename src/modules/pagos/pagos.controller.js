@@ -157,16 +157,16 @@ class PagosController {
     async crearPreferencia(req, res) {
         try {
             const datosMatricula = req.body;
-            const preferencia = await pagosService.crearPreferencia(
-                datosMatricula
-            );
+            const preferencia = await pagosService.crearPreferencia(datosMatricula);
 
-            const checkoutUrl =
-                (process.env.NODE_ENV === 'production' &&
-                    !preferencia.sandbox_init_point)
-                    ? preferencia.init_point
-                    : (preferencia.sandbox_init_point ||
-                        preferencia.init_point);
+            // En produccion se utiliza la URL real; en desarrollo se prefiere sandbox.
+            const checkoutUrl = process.env.NODE_ENV === 'production'
+                ? preferencia.init_point
+                : (preferencia.sandbox_init_point || preferencia.init_point);
+
+            if (!checkoutUrl) {
+                throw new Error('Mercado Pago no devolvio una URL de pago disponible.');
+            }
 
             return res.status(200).json({
                 success: true,
@@ -212,11 +212,33 @@ class PagosController {
     }
 
     async confirmarEfectivo(req, res) {
+        const descuento = req.body?.descuento ?? null;
+        if (descuento !== null) {
+            if (!Array.isArray(req.user?.roles) || !req.user.roles.includes('DIRECTOR')) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo el Director puede autorizar descuentos.'
+                });
+            }
+            if (
+                typeof descuento !== 'object' ||
+                Array.isArray(descuento) ||
+                !['PORCENTAJE', 'MONTO_FIJO'].includes(descuento.tipo) ||
+                descuento.valor === undefined
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Los datos del descuento no son válidos.'
+                });
+            }
+        }
+
         try {
             const pago = await pagosService.confirmarEfectivo(
                 req.body.id_matricula,
                 req.body.referencia_operacion,
-                req.user.id
+                req.user.id,
+                descuento
             );
 
             const esReserva = pago?.estadoMatricula === 'Reservada';
@@ -224,9 +246,11 @@ class PagosController {
             return res.status(200).json({
                 success: true,
                 data: pago,
-                message: esReserva
-                    ? 'Pago en efectivo confirmado. Cupo reservado correctamente.'
-                    : 'Pago en efectivo confirmado correctamente.'
+                message: descuento
+                    ? 'Descuento aplicado correctamente.'
+                    : esReserva
+                        ? 'Pago en efectivo confirmado. Cupo reservado correctamente.'
+                        : 'Pago en efectivo confirmado correctamente.'
             });
         } catch (error) {
             console.error('Error al confirmar pago en efectivo:', error);

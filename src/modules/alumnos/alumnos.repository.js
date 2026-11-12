@@ -1,3 +1,4 @@
+
 const db = require("../../shared/config/database");
 
 class AlumnosRepository {
@@ -21,6 +22,8 @@ class AlumnosRepository {
         p."Nombre" AS nombres,
         p."Apellido_Paterno" AS apellido_paterno,
         p."Apellido_Materno" AS apellido_materno,
+        a."Estado_Alumno" AS estado_alumno,
+        a."Condicion" AS observaciones_medicas,
         m."Fecha_Inscripcion" AS fecha_matricula,
         m."Estado_Matricula" AS estado,
         dm."Fecha_Fin" AS fecha_fin,
@@ -42,8 +45,8 @@ class AlumnosRepository {
       LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
       LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
       ${idProfesor !== null ? 'WHERE dh."Id_Profesor" = $1' : ''}
-      ORDER BY 
-        a."Id_alumno", 
+      ORDER BY
+        a."Id_alumno",
         (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN 0 ELSE 1 END) ASC,
         (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN dm."Fecha_Fin" END) ASC NULLS LAST,
         dm."Fecha_Fin" DESC NULLS LAST
@@ -55,9 +58,11 @@ class AlumnosRepository {
 
   async findAlumnoById(id, idProfesor = null) {
     const query = `
-      SELECT 
+      SELECT
         a."Id_alumno" AS id,
         a."Estado_Alumno" AS estado_alumno_registrado,
+        a."Id_Persona" AS id_persona,
+        a."Estado_Alumno" AS estado_alumno_db,
         p."Numero_Documento" AS numero_documento,
         p."Nombre" AS nombres,
         p."Apellido_Paterno" AS apellido_paterno,
@@ -65,6 +70,7 @@ class AlumnosRepository {
         p."Fecha_Nacimiento" AS fecha_nacimiento,
         p."Direccion" AS direccion,
         a."Condicion" AS observaciones_medicas,
+        m."Id_Matricula" AS id_matricula,
         m."Fecha_Inscripcion" AS fecha_matricula,
         m."Estado_Matricula" AS estado_matricula,
         (
@@ -86,13 +92,13 @@ class AlumnosRepository {
             AND ($2::VARCHAR IS NULL OR dh."Id_Profesor" = $2)
         ) AS disciplinas,
         (
-          SELECT mc."Contacto" 
+          SELECT mc."Contacto"
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
           WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CORREO'
           LIMIT 1
         ) AS correo_electronico,
         (
-          SELECT mc."Contacto" 
+          SELECT mc."Contacto"
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
           WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CELULAR'
           LIMIT 1
@@ -112,12 +118,12 @@ class AlumnosRepository {
               AND dh_profesor."Id_Profesor" = $2
           )
         )
-      ORDER BY 
+      ORDER BY
         (
-          CASE 
-            WHEN (SELECT MIN(dm_f."Fecha_Fin") FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f WHERE dm_f."Id_Matricula" = m."Id_Matricula") >= CURRENT_DATE 
-            THEN 0 
-            ELSE 1 
+          CASE
+            WHEN (SELECT MIN(dm_f."Fecha_Fin") FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f WHERE dm_f."Id_Matricula" = m."Id_Matricula") >= CURRENT_DATE
+            THEN 0
+            ELSE 1
           END
         ) ASC,
         (
@@ -125,14 +131,13 @@ class AlumnosRepository {
           FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f
           WHERE dm_f."Id_Matricula" = m."Id_Matricula"
         ) ASC NULLS LAST,
-        m."Fecha_Inscripcion" DESC
+        m."Fecha_Inscripcion" DESC NULLS LAST
       LIMIT 1
     `;
     const result = await db.query(query, [id, idProfesor]);
     return result.rows[0] || null;
   }
 
-  
   async findNombreAlumnoById(id) {
     const query = `
       SELECT
@@ -180,6 +185,56 @@ class AlumnosRepository {
     `;
     const result = await db.query(query, [id]);
     return result.rows;
+  }
+
+  async inhabilitarAlumno(id, nuevaCondicion) {
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const alumnoRes = await client.query(
+        `SELECT "Id_alumno", "Id_Persona", "Estado_Alumno", "Condicion"
+         FROM "Academia Forca&Fitness"."Alumno"
+         WHERE "Id_alumno" = $1
+         FOR UPDATE`,
+        [id]
+      );
+
+      if (alumnoRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      const alumno = alumnoRes.rows[0];
+
+      // Actualizar estado del alumno a Inhabilitado conservando datos personales y matrículas intactos
+      const updateAlumnoRes = await client.query(
+        `UPDATE "Academia Forca&Fitness"."Alumno"
+         SET "Estado_Alumno" = 'Inhabilitado',
+             "Condicion" = $2
+         WHERE "Id_alumno" = $1
+         RETURNING "Id_alumno" AS id, "Estado_Alumno" AS estado_alumno, "Condicion" AS condicion`,
+        [id, nuevaCondicion]
+      );
+
+      // Suspender acceso temporalmente en Usuario asociado sin eliminar su cuenta ni sus roles
+      if (alumno.Id_Persona) {
+        await client.query(
+          `UPDATE "Academia Forca&Fitness"."Usuario"
+           SET "Estado_Usuario" = 'Inactivo'
+           WHERE "Id_Persona" = $1`,
+          [alumno.Id_Persona]
+        );
+      }
+
+      await client.query('COMMIT');
+      return updateAlumnoRes.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }
 

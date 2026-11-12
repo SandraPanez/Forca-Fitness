@@ -1283,6 +1283,200 @@ body {
     line-height: 1.4;
 }
 
+/* Acciones de la tabla y botones de inhabilitación (HU-03) */
+.acciones-cell {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.btn-inhabilitar-row {
+    background-color: #fff5f5;
+    color: var(--danger-color);
+    border: 1px solid #f5c2c7;
+    border-radius: 4px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-inhabilitar-row:hover:not(:disabled) {
+    background-color: var(--danger-color);
+    color: var(--white);
+    border-color: var(--danger-color);
+}
+
+.btn-inhabilitar-row:disabled {
+    background-color: #f1f3f5;
+    color: #868e96;
+    border-color: var(--border-color);
+    cursor: not-allowed;
+}
+
+.panel-actions-footer {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-inhabilitar-panel {
+    width: 100%;
+    background-color: var(--danger-color);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-inhabilitar-panel:hover:not(:disabled) {
+    background-color: #b71c1c;
+}
+
+.btn-inhabilitar-panel:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Modal de Inhabilitación Temporal (HU-03) */
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-inhabilitar {
+    max-width: 520px;
+    text-align: left;
+    padding: 2rem;
+}
+
+.modal-inhabilitar-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.modal-inhabilitar-header > div:nth-child(2) {
+    flex: 1;
+}
+
+.modal-inhabilitar-header h3 {
+    margin-bottom: 0;
+    font-size: 1.25rem;
+    color: var(--primary-color);
+}
+
+.modal-warning-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #ffebee;
+    color: var(--danger-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.modal-inhabilitar-desc {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem !important;
+    line-height: 1.5;
+}
+
+.conservation-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background-color: #eef5fc;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.conservation-icon {
+    font-size: 1.15rem;
+    line-height: 1.2;
+}
+
+.conservation-notice strong {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    margin-bottom: 0.15rem;
+}
+
+.conservation-notice p {
+    margin: 0 !important;
+    font-size: 0.8rem;
+    color: var(--text-main);
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.modal-inhabilitar-actions {
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.inhabilitacion-info-box {
+    background-color: #fff8f8;
+    border: 1px solid #f5c2c7;
+    border-left: 4px solid var(--danger-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+
+.feedback-banner {
+    padding: 0.9rem 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+}
+
+.feedback-banner[hidden] {
+    display: none;
+}
+
+.feedback-banner.success {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+    border-left: 4px solid #2e7d32;
+}
+
+.feedback-banner.error {
+    background-color: #ffebee;
+    color: #b71c1c;
+    border-left: 4px solid var(--danger-color);
+}
+
 /* ========================================================
    SIDE PANEL (DETALLE DEL ALUMNO)
    ======================================================== */
@@ -2309,6 +2503,7 @@ body {
 .modal-overlay {
     position: fixed;
     inset: 0;
+    overflow-y: auto;
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(5px);
     z-index: 10000;
@@ -2322,9 +2517,156 @@ body {
     border-radius: 18px;
     padding: 2.25rem;
     max-width: 480px;
+    max-height: calc(100vh - 2.5rem);
     width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     text-align: center;
+}
+
+.modal-card:has(.discount-panel:not([hidden])) {
+    max-width: 560px;
+    padding: 1.35rem;
+    text-align: left;
+}
+
+.modal-card:has(.discount-panel:not([hidden])) .modal-card-icon,
+.modal-card:has(.discount-panel:not([hidden])) .modal-title,
+.modal-card:has(.discount-panel:not([hidden])) > .modal-desc {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.discount-panel {
+    margin: 1.25rem 0;
+    padding: 1.1rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #eff6ff;
+}
+
+.discount-panel h4 {
+    margin: 0 0 0.3rem;
+    color: #1e3a8a;
+    font-size: 1rem;
+}
+
+.discount-panel > p:first-of-type {
+    margin: 0 0 1rem;
+    color: #475569;
+    font-size: 0.85rem;
+}
+
+.discount-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.discount-fields .form-group {
+    margin: 0;
+}
+
+.discount-fields label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.discount-fields input,
+.discount-fields select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #fff;
+    color: #0f172a;
+    font: inherit;
+}
+
+.discount-confirmation {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.9rem 0;
+    color: #334155;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.discount-confirmation input {
+    margin-top: 0.15rem;
+}
+
+.btn-apply-discount {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-radius: 8px;
+    background: #1d4ed8;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-apply-discount:hover:not(:disabled) {
+    background: #1e40af;
+}
+
+.btn-apply-discount:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.discount-message {
+    min-height: 1.25rem;
+    margin: 0.6rem 0 0;
+    color: #b91c1c;
+    font-size: 0.85rem;
+}
+
+.discount-summary {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.discount-summary div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+
+.discount-summary dt,
+.discount-summary dd {
+    margin: 0;
+}
+
+.discount-summary dd {
+    font-weight: 600;
+}
+
+.discount-summary .discount-total {
+    margin-top: 0.35rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid #e2e8f0;
+    color: #166534;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.discount-integration-note {
+    margin: 0.7rem 0 0;
+    color: #92400e;
+    font-size: 0.82rem;
 }
 
 .modal-card-icon {
@@ -2370,9 +2712,39 @@ body {
 }
 
 .modal-actions {
+    position: sticky;
+    bottom: -1.35rem;
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
+    padding: 0.85rem 0 0.15rem;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 520px) {
+    .discount-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-overlay {
+        padding: 0.75rem;
+    }
+
+    .modal-card,
+    .modal-card:has(.discount-panel:not([hidden])) {
+        max-height: calc(100vh - 1.5rem);
+        padding: 1rem;
+    }
+
+    .modal-actions {
+        bottom: -1rem;
+        flex-wrap: wrap;
+    }
+
+    .modal-actions button {
+        flex: 1 1 auto;
+    }
 }
 
 .btn-confirm-action {
@@ -2933,6 +3305,28 @@ body {
     justify-content: space-between;
     align-items: center;
     margin: 1.25rem 0;
+}
+
+.receipt-discount-breakdown {
+    display: grid;
+    gap: 0.5rem;
+    margin: -0.5rem 0 1.25rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #334155;
+    font-size: 0.9rem;
+}
+
+.receipt-discount-breakdown div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.receipt-discount-breakdown strong {
+    color: #1e3a8a;
 }
 
 .receipt-total-label {

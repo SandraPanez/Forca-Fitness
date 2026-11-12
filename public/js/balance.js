@@ -271,7 +271,7 @@ async function consultarBalancePorPeriodo() {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                <td colspan="9" style="text-align: center; padding: 2.5rem; color: #64748b;">
                     ⏳ Calculando balance y cargando operaciones del periodo...
                 </td>
             </tr>
@@ -310,7 +310,7 @@ async function consultarBalancePorPeriodo() {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 2.5rem; color: #b91c1c;">
+                    <td colspan="9" style="text-align: center; padding: 2.5rem; color: #b91c1c;">
                         ⚠️ No se pudieron cargar las operaciones del periodo seleccionado.
                     </td>
                 </tr>
@@ -562,7 +562,7 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
             : '📭 No se registraron ingresos ni pagos aprobados en el periodo seleccionado.';
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                <td colspan="9" style="text-align: center; padding: 2.5rem; color: #64748b;">
                     ${mensajeVacio}
                 </td>
             </tr>
@@ -616,6 +616,17 @@ function renderizarTablaOperaciones(operaciones, tieneFiltroTexto) {
                 <td>
                     <strong>${escapeHtml(op.numero_recibo || '—')}</strong>
                     <span class="user-meta-sub">Ref: ${escapeHtml(op.referencia || '—')}</span>
+                </td>
+                <td>
+                    <span class="amount-cell">${escapeHtml(formatearMoneda(op.monto_original ?? op.monto))}</span>
+                </td>
+                <td>
+                    ${Number(op.monto_descuento || 0) > 0
+                        ? `<span class="amount-cell">${escapeHtml(formatearMoneda(op.monto_descuento))}</span>
+                           <span class="user-meta-sub">${escapeHtml(op.tipo_descuento === 'PORCENTAJE' && op.valor_descuento != null
+                               ? `${Number(op.valor_descuento)}%`
+                               : op.tipo_descuento === 'MONTO_FIJO' ? 'Monto fijo' : '')}</span>`
+                        : '<span class="user-meta-sub">Sin descuento</span>'}
                 </td>
                 <td>
                     <span class="amount-cell amount-green">${escapeHtml(formatearMoneda(op.monto))}</span>
@@ -702,6 +713,13 @@ function poblarModalDetalle(op) {
     setText('det-disciplinas', op.disciplinas || 'Mensualidad');
     setText('det-vigencia', op.periodo_matricula || '—');
 
+    setText('det-monto-original', formatearMoneda(op.monto_original ?? op.monto));
+    const etiquetaDescuento = Number(op.monto_descuento || 0) > 0
+        ? `${formatearMoneda(op.monto_descuento)}${op.tipo_descuento === 'PORCENTAJE' && op.valor_descuento != null
+            ? ` (${Number(op.valor_descuento)}%)`
+            : op.tipo_descuento === 'MONTO_FIJO' ? ' (monto fijo)' : ''}`
+        : 'Sin descuento';
+    setText('det-monto-descuento', etiquetaDescuento);
     setText('det-monto', formatearMoneda(op.monto));
     setText('det-monto-letras', op.monto_letras || '—');
 
