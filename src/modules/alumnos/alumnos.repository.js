@@ -1,10 +1,24 @@
+
 const db = require("../../shared/config/database");
 
 class AlumnosRepository {
+  async findAllDisciplinas() {
+    const result = await db.query(`
+      SELECT
+        "Id_Disciplinas" AS id,
+        "Nombre_Disciplina" AS nombre
+      FROM "Academia Forca&Fitness"."Disciplina"
+      ORDER BY "Nombre_Disciplina"
+    `);
+    return result.rows;
+  }
+
   async findAllAlumnos(idProfesor = null) {
     const query = `
       SELECT DISTINCT ON (a."Id_alumno")
         a."Id_alumno" AS id,
+        p."Numero_Documento" AS dni,
+        a."Estado_Alumno" AS estado_alumno_registrado,
         p."Nombre" AS nombres,
         p."Apellido_Paterno" AS apellido_paterno,
         p."Apellido_Materno" AS apellido_materno,
@@ -27,12 +41,12 @@ class AlumnosRepository {
         ) AS disciplinas
       FROM "Academia Forca&Fitness"."Alumno" a
       JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
-      JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
-      JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
-      JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
+      LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
+      LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
       ${idProfesor !== null ? 'WHERE dh."Id_Profesor" = $1' : ''}
-      ORDER BY 
-        a."Id_alumno", 
+      ORDER BY
+        a."Id_alumno",
         (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN 0 ELSE 1 END) ASC,
         (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN dm."Fecha_Fin" END) ASC NULLS LAST,
         dm."Fecha_Fin" DESC NULLS LAST
@@ -44,8 +58,9 @@ class AlumnosRepository {
 
   async findAlumnoById(id, idProfesor = null) {
     const query = `
-      SELECT 
+      SELECT
         a."Id_alumno" AS id,
+        a."Estado_Alumno" AS estado_alumno_registrado,
         a."Id_Persona" AS id_persona,
         a."Estado_Alumno" AS estado_alumno_db,
         p."Numero_Documento" AS numero_documento,
@@ -77,13 +92,13 @@ class AlumnosRepository {
             AND ($2::VARCHAR IS NULL OR dh."Id_Profesor" = $2)
         ) AS disciplinas,
         (
-          SELECT mc."Contacto" 
+          SELECT mc."Contacto"
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
           WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CORREO'
           LIMIT 1
         ) AS correo_electronico,
         (
-          SELECT mc."Contacto" 
+          SELECT mc."Contacto"
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
           WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CELULAR'
           LIMIT 1
@@ -103,12 +118,12 @@ class AlumnosRepository {
               AND dh_profesor."Id_Profesor" = $2
           )
         )
-      ORDER BY 
+      ORDER BY
         (
-          CASE 
-            WHEN (SELECT MIN(dm_f."Fecha_Fin") FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f WHERE dm_f."Id_Matricula" = m."Id_Matricula") >= CURRENT_DATE 
-            THEN 0 
-            ELSE 1 
+          CASE
+            WHEN (SELECT MIN(dm_f."Fecha_Fin") FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f WHERE dm_f."Id_Matricula" = m."Id_Matricula") >= CURRENT_DATE
+            THEN 0
+            ELSE 1
           END
         ) ASC,
         (

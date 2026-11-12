@@ -1,27 +1,61 @@
+
 const express = require('express');
 const router = express.Router();
+
 const matriculasController = require('./matriculas.controller');
-const { autenticar } = require('../../shared/middleware/auth.middleware');
-const { autorizar } = require('../../shared/middleware/permisos.middleware');
-const { PERMISOS } = require('../../shared/constants/permisos');
 
-// GET /api/matriculas/disciplinas - Obtener lista de disciplinas (T_04)
-router.get('/disciplinas', matriculasController.getDisciplinas);
+const {
+  autenticar
+} = require('../../shared/middleware/auth.middleware');
 
-// GET /api/matriculas/disciplinas/:id/horarios - Obtener horarios por disciplina (T_03)
-router.get('/disciplinas/:id/horarios', matriculasController.getHorariosPorDisciplina);
+const {
+  autorizar
+} = require('../../shared/middleware/permisos.middleware');
 
-// GET /api/matriculas/validar-reserva - Validar tope de 4 cupos y ventana de 2 meses (PSW-199)
-router.get('/validar-reserva', matriculasController.validarReserva);
+const {
+  PERMISOS
+} = require('../../shared/constants/permisos');
 
+// =========================================================
+// DISCIPLINAS Y HORARIOS
+// =========================================================
+
+// GET /api/matriculas/disciplinas
+// Obtener lista de disciplinas (T_04)
 router.get(
-  '/mis-matriculas',
-  autenticar,
-  autorizar(PERMISOS.VER_PROPIA_MATRICULA),
-  matriculasController.getMisMatriculas
+  '/disciplinas',
+  matriculasController.getDisciplinas
 );
 
-// GET /api/matriculas/mis-reservas - Reservas del cliente autenticado (HU-10)
+// GET /api/matriculas/disciplinas/:id/horarios
+// Obtener horarios por disciplina (T_03)
+router.get(
+  '/disciplinas/:id/horarios',
+  matriculasController.getHorariosPorDisciplina
+);
+
+// =========================================================
+// RESERVAS
+// =========================================================
+
+// GET /api/matriculas/validar-reserva
+// Validar tope de 4 cupos y ventana de 2 meses (PSW-199)
+router.get(
+  '/validar-reserva',
+  matriculasController.validarReserva
+);
+
+// POST /api/matriculas/reservar
+// Crear reserva de cupo para alumno autenticado (PSW-202)
+// Funcionalidad conservada de develop
+router.post(
+  '/reservar',
+  autenticar,
+  matriculasController.crearReserva
+);
+
+// GET /api/matriculas/mis-reservas
+// Consultar reservas del alumno autenticado (HU-10)
 router.get(
   '/mis-reservas',
   autenticar,
@@ -29,12 +63,33 @@ router.get(
   matriculasController.getMisReservas
 );
 
-// POST /api/matriculas - Guardar los datos de matrícula en la BD (T_08)
-router.post('/', matriculasController.registrarMatricula);
+// =========================================================
+// MATRÍCULAS
+// =========================================================
 
-// POST /api/matriculas/reservar - Crear reserva de cupo para alumno autenticado (PSW-202)
-router.post('/reservar', autenticar, matriculasController.crearReserva);
+// GET /api/matriculas/mis-matriculas
+// Consultar matrículas del alumno autenticado
+router.get(
+  '/mis-matriculas',
+  autenticar,
+  autorizar(PERMISOS.VER_PROPIA_MATRICULA),
+  matriculasController.getMisMatriculas
+);
 
+// POST /api/matriculas
+// Registrar matrícula en la base de datos (T_08)
+router.post(
+  '/',
+  matriculasController.registrarMatricula
+);
+
+// =========================================================
+// RENOVACIONES
+// =========================================================
+
+// POST /api/matriculas/mis-matriculas/:idDetalle/renovar
+// Preparar renovación de matrícula (HU-08)
+// Funcionalidad conservada de main
 router.post(
   '/mis-matriculas/:idDetalle/renovar',
   autenticar,

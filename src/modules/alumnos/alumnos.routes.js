@@ -11,6 +11,12 @@ router.get("/",
   alumnosController.listarAlumnos
 );
 
+router.get("/disciplinas",
+  autenticar,
+  autorizar(PERMISOS.VER_TODOS_ALUMNOS),
+  alumnosController.listarDisciplinas
+);
+
 router.get("/:id", 
   autenticar,
   autorizar(PERMISOS.VER_TODOS_ALUMNOS),

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,6 +15,7 @@
     /* ========================================================
        ESTILOS DEL PANEL DE DIRECCIÓN (VISTA DIRECTOR)
        ======================================================== */
+
     .director-kpi-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -136,8 +138,31 @@
             grid-template-columns: 1fr;
         }
     }
+
+    .btn-buscar-alumnos {
+        padding: 0.7rem 1.25rem;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-family: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .btn-buscar-alumnos:hover {
+        background: #1d4ed8;
+    }
+
+    .badge-status.badge-sin-vigencia {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
     </style>
 </head>
+
 <body>
     <header id="app-header"></header>
 
@@ -189,17 +214,29 @@
         <!-- Barra de herramientas y filtros -->
         <div class="alumnos-toolbar">
             <div class="search-box">
-                <input type="text" id="search-input" class="search-input" placeholder="🔍 Buscar por alumno o disciplina...">
+                <input type="text" id="search-input" class="search-input" placeholder="Buscar por nombre, apellido, DNI o disciplina...">
+                <button type="button" id="btn-buscar-alumnos" class="btn-buscar-alumnos">
+                    Buscar
+                </button>
             </div>
+
             <div class="filter-controls">
+                <select id="disciplina-select" class="filter-select" aria-label="Filtrar por disciplina">
+                    <option value="Todas">Todas las disciplinas</option>
+                </select>
+
                 <select id="filter-select" class="filter-select" aria-label="Filtrar por estado">
-                    <option value="Todos">Todos los estados</option>
+                    <option value="Todos">Activos e inactivos</option>
+                    <option value="Activo">Alumnos activos</option>
+                    <option value="Inactivo">Alumnos inactivos</option>
                     <option value="Por vencer">⚠️ Matrículas por vencer</option>
                     <option value="Activa">Matrículas activas</option>
                     <option value="Vencida">Matrículas vencidas</option>
                     <option value="Reservada">Matrículas reservadas</option>
+                    <option value="Inhabilitado">Alumnos inhabilitados</option>
                     <option value="Inhabilitada">Matrículas inhabilitadas</option>
                 </select>
+
                 <button type="button" id="btn-limpiar-filtro" class="btn-limpiar-filtro" title="Retirar filtro y ver lista completa">
                     ✕ Limpiar filtro
                 </button>
@@ -225,12 +262,13 @@
 
     <!-- PANEL LATERAL (SIDE DRAWER) - INTERFAZ VIGENCIA DE MATRÍCULA -->
     <div class="side-panel-overlay" id="side-panel-overlay"></div>
+
     <aside class="side-panel" id="side-panel" aria-labelledby="panel-title">
         <div class="side-panel-header">
             <h3 id="panel-title">Vigencia de matrícula</h3>
             <button class="btn-close" id="btn-close-panel" aria-label="Cerrar panel">✕</button>
         </div>
-        
+
         <div class="side-panel-content" id="side-panel-content">
             <div class="text-center text-muted mt-4">Cargando información...</div>
         </div>
@@ -281,6 +319,7 @@
                         <label for="inhabilitar-fecha-inicio">Fecha de inicio <span class="asterisk">*</span></label>
                         <input type="date" id="inhabilitar-fecha-inicio" name="fecha_inicio" required>
                     </div>
+
                     <div class="form-group">
                         <label for="inhabilitar-fecha-fin">Fecha de fin <span class="asterisk">*</span></label>
                         <input type="date" id="inhabilitar-fecha-fin" name="fecha_fin" required>

@@ -1,7 +1,7 @@
 ﻿-- ============================================================================
 -- PROYECTO: FORCA & FITNESS
 -- SCRIPT: DDL & DML CONVERSIÓN A POSTGRESQL (VERSION 3.0 RELACIONAL)
--- DESCRIPCIÓN: 
+-- DESCRIPCIÓN:
 -- 1. Conversión de tipos de datos de Sybase / SQL Server a PostgreSQL estándar.
 -- 2. Creación del esquema relacional de 17 tablas con integridad referencial.
 -- 3. Inserción de datos extraídos de 'DDL Forca&Fitness (Version 3.0).sql' adaptados
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS "Persona" (
     "Numero_Documento" VARCHAR(10) NOT NULL,
     "Id_Documento"     VARCHAR(10) NULL,
     CONSTRAINT "PK_Persona" PRIMARY KEY ("Id_Persona"),
-    CONSTRAINT "FK_Persona_Documento" FOREIGN KEY ("Id_Documento") 
+    CONSTRAINT "FK_Persona_Documento" FOREIGN KEY ("Id_Documento")
         REFERENCES "Documento_Identificacion" ("Id_Documento")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS "Profesor" (
     "Biografia"   VARCHAR(200) NULL,
     CONSTRAINT "PK_Profesor" PRIMARY KEY ("Id_Profesor"),
     CONSTRAINT "UQ_Profesor_Persona" UNIQUE ("Id_Persona"),
-    CONSTRAINT "FK_Profesor_Persona" FOREIGN KEY ("Id_Persona") 
+    CONSTRAINT "FK_Profesor_Persona" FOREIGN KEY ("Id_Persona")
         REFERENCES "Persona" ("Id_Persona")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS "Alumno" (
     "Id_Persona"    VARCHAR(10)  NOT NULL,
     CONSTRAINT "PK_Alumno" PRIMARY KEY ("Id_alumno"),
     CONSTRAINT "UQ_Alumno_Persona" UNIQUE ("Id_Persona"),
-    CONSTRAINT "FK_Alumno_Persona" FOREIGN KEY ("Id_Persona") 
+    CONSTRAINT "FK_Alumno_Persona" FOREIGN KEY ("Id_Persona")
         REFERENCES "Persona" ("Id_Persona")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS "Metodo_Contacto" (
     "Contacto"      VARCHAR(50) NOT NULL,
     "Id_Persona"    VARCHAR(10) NOT NULL,
     CONSTRAINT "PK_Metodo_Contacto" PRIMARY KEY ("Id_contacto"),
-    CONSTRAINT "FK_Contacto_Persona" FOREIGN KEY ("Id_Persona") 
+    CONSTRAINT "FK_Contacto_Persona" FOREIGN KEY ("Id_Persona")
         REFERENCES "Persona" ("Id_Persona")
         ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS "Usuario" (
     CONSTRAINT "PK_Usuario" PRIMARY KEY ("Id_Usuario"),
     CONSTRAINT "UQ_Usuario_Correo" UNIQUE ("Correo"),
     CONSTRAINT "UQ_Usuario_Persona" UNIQUE ("Id_Persona"),
-    CONSTRAINT "FK_Usuario_Persona" FOREIGN KEY ("Id_Persona") 
+    CONSTRAINT "FK_Usuario_Persona" FOREIGN KEY ("Id_Persona")
         REFERENCES "Persona" ("Id_Persona")
         ON UPDATE CASCADE ON DELETE SET NULL
 );
@@ -163,10 +163,10 @@ CREATE TABLE IF NOT EXISTS "Usuario_Rol" (
     "Id_Usuario" VARCHAR(10) NOT NULL,
     "Id_Rol"     VARCHAR(10) NOT NULL,
     CONSTRAINT "PK_Usuario_Rol" PRIMARY KEY ("Id_Usuario", "Id_Rol"),
-    CONSTRAINT "FK_UsuarioRol_Usuario" FOREIGN KEY ("Id_Usuario") 
+    CONSTRAINT "FK_UsuarioRol_Usuario" FOREIGN KEY ("Id_Usuario")
         REFERENCES "Usuario" ("Id_Usuario")
         ON DELETE CASCADE,
-    CONSTRAINT "FK_UsuarioRol_Rol" FOREIGN KEY ("Id_Rol") 
+    CONSTRAINT "FK_UsuarioRol_Rol" FOREIGN KEY ("Id_Rol")
         REFERENCES "Rol" ("Id_Rol")
         ON DELETE CASCADE
 );
@@ -181,13 +181,13 @@ CREATE TABLE IF NOT EXISTS "Disciplina_Horario" (
     "Id_Disciplina"  VARCHAR(10) NOT NULL,
     "Id_Profesor"    VARCHAR(10) NOT NULL,
     CONSTRAINT "PK_Disciplina_Horario" PRIMARY KEY ("Id_DiscHorario"),
-    CONSTRAINT "FK_DiscHorario_Horarios" FOREIGN KEY ("Id_Horario") 
+    CONSTRAINT "FK_DiscHorario_Horarios" FOREIGN KEY ("Id_Horario")
         REFERENCES "Horarios" ("Id_Horario")
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT "FK_DiscHorario_Disciplina" FOREIGN KEY ("Id_Disciplina") 
+    CONSTRAINT "FK_DiscHorario_Disciplina" FOREIGN KEY ("Id_Disciplina")
         REFERENCES "Disciplina" ("Id_Disciplinas")
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT "FK_DiscHorario_Profesor" FOREIGN KEY ("Id_Profesor") 
+    CONSTRAINT "FK_DiscHorario_Profesor" FOREIGN KEY ("Id_Profesor")
         REFERENCES "Profesor" ("Id_Profesor")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS "Matricula" (
     "Estado_Matricula"  VARCHAR(15) NOT NULL DEFAULT 'Activa',
     "Id_alumno"         VARCHAR(10) NOT NULL,
     CONSTRAINT "PK_Matricula" PRIMARY KEY ("Id_Matricula"),
-    CONSTRAINT "FK_Matricula_Alumno" FOREIGN KEY ("Id_alumno") 
+    CONSTRAINT "FK_Matricula_Alumno" FOREIGN KEY ("Id_alumno")
         REFERENCES "Alumno" ("Id_alumno")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -216,10 +216,10 @@ CREATE TABLE IF NOT EXISTS "Detalles_Matricula" (
     "Fecha_Fin"       DATE        NOT NULL,
     "Id_DiscHorario"  VARCHAR(10) NOT NULL,
     CONSTRAINT "PK_Detalles_Matricula" PRIMARY KEY ("Id_DetMatricula"),
-    CONSTRAINT "FK_Detalles_Matricula" FOREIGN KEY ("Id_Matricula") 
+    CONSTRAINT "FK_Detalles_Matricula" FOREIGN KEY ("Id_Matricula")
         REFERENCES "Matricula" ("Id_Matricula")
         ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT "FK_Detalles_DiscHorario" FOREIGN KEY ("Id_DiscHorario") 
+    CONSTRAINT "FK_Detalles_DiscHorario" FOREIGN KEY ("Id_DiscHorario")
         REFERENCES "Disciplina_Horario" ("Id_DiscHorario")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -237,13 +237,13 @@ CREATE TABLE IF NOT EXISTS "Pago" (
     "Id_Usuario_Registro" VARCHAR(10)   NULL,
     "Numero_Comprobante"  VARCHAR(20)   NULL,
     CONSTRAINT "PK_Pago" PRIMARY KEY ("Id_Pago"),
-    CONSTRAINT "FK_Pago_Matricula" FOREIGN KEY ("Id_Matricula") 
+    CONSTRAINT "FK_Pago_Matricula" FOREIGN KEY ("Id_Matricula")
         REFERENCES "Matricula" ("Id_Matricula")
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT "FK_Pago_MetodoPago" FOREIGN KEY ("Id_MPago") 
+    CONSTRAINT "FK_Pago_MetodoPago" FOREIGN KEY ("Id_MPago")
         REFERENCES "Metodo_Pago" ("Id_MPago")
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT "FK_Pago_UsuarioRegistro" FOREIGN KEY ("Id_Usuario_Registro") 
+    CONSTRAINT "FK_Pago_UsuarioRegistro" FOREIGN KEY ("Id_Usuario_Registro")
         REFERENCES "Usuario" ("Id_Usuario")
         ON UPDATE CASCADE ON DELETE SET NULL
 );
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS "Mercado_Pago" (
     "Id_Pago"           VARCHAR(10)  NOT NULL,
     CONSTRAINT "PK_Mercado_Pago" PRIMARY KEY ("Id_Mp_Transaccion"),
     CONSTRAINT "UQ_Mercado_Pago_Id_Pago" UNIQUE ("Id_Pago"),
-    CONSTRAINT "FK_Mercado_Pago_Pago" FOREIGN KEY ("Id_Pago") 
+    CONSTRAINT "FK_Mercado_Pago_Pago" FOREIGN KEY ("Id_Pago")
         REFERENCES "Pago" ("Id_Pago")
         ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -281,7 +281,7 @@ CREATE TABLE IF NOT EXISTS "Envio_Comprobante" (
     "Fecha_Resultado" TIMESTAMPTZ  NULL,
     "Id_Pago"         VARCHAR(10)  NOT NULL,
     CONSTRAINT "PK_Envio_Comprobante" PRIMARY KEY ("Id_envio", "Id_Pago"),
-    CONSTRAINT "FK_Envio_Pago" FOREIGN KEY ("Id_Pago") 
+    CONSTRAINT "FK_Envio_Pago" FOREIGN KEY ("Id_Pago")
         REFERENCES "Pago" ("Id_Pago")
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -323,7 +323,7 @@ INSERT INTO "Disciplina" ("Id_Disciplinas", "Nombre_Disciplina", "Descripcion", 
 ('DISC04', 'MMA',             'Artes Marciales Mixtas',                       130.00),
 ('DISC05', 'Jiu Jitsu',       'Brazilian Jiu Jitsu - Adultos',                140.00),
 ('DISC06', 'Jiu Jitsu Kids',  'Brazilian Jiu Jitsu formativo para niños',     110.00)
-ON CONFLICT ("Id_Disciplinas") DO UPDATE 
+ON CONFLICT ("Id_Disciplinas") DO UPDATE
 SET "Nombre_Disciplina" = EXCLUDED."Nombre_Disciplina",
     "Descripcion" = EXCLUDED."Descripcion",
     "Tarifa" = EXCLUDED."Tarifa";
@@ -511,8 +511,8 @@ ON CONFLICT ("Id_Mp_Transaccion") DO NOTHING;
 -- 17. Envíos de Comprobante
 -- ----------------------------------------------------------------------------
 INSERT INTO "Envio_Comprobante" (
-    "Id_envio", "correo_destino", "intento", "Estado_Envio", 
-    "Job_id", "Trace_id", "Message_id", "Mensaje_error", 
+    "Id_envio", "correo_destino", "intento", "Estado_Envio",
+    "Job_id", "Trace_id", "Message_id", "Mensaje_error",
     "Fecha_Solicitud", "Fecha_Resultado", "Id_Pago"
 ) VALUES
 ('ENV01', 'brandon.mercado@gmail.com', 1, 'ENVIADO', 'job-1001', 'trace-5001', 'msg-9001', 'Envío exitoso sin errores', CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '2 days', 'PAG01')

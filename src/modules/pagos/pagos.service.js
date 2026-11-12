@@ -1,3 +1,4 @@
+
 const { MercadoPagoConfig, Preference, Payment, MerchantOrder } = require('mercadopago');
 const pagosRepository = require('./pagos.repository');
 const { montoEnLetras } = require('../../shared/utils/monto-letras.util');
@@ -28,7 +29,7 @@ const MOCK_PENDIENTES = [
         monto: '150.00',
         fecha_pago: new Date(Date.now() - 7200000).toISOString(),
         fecha_vencimiento: new Date(Date.now() + 41 * 3600000).toISOString(),
-        alumno: 'Lucía Fernández Salas',
+        alumno: 'LucÃa FernÃ¡ndez Salas',
         disciplinas: 'Muay Thai'
     },
     {
@@ -63,7 +64,7 @@ const MOCK_COBROS = [
         fecha_pago: new Date(Date.now() - 7200000).toISOString(),
         fecha_vencimiento: new Date(Date.now() + 41 * 3600000).toISOString(),
         medio_pago: 'EFECTIVO',
-        alumno: 'Lucía Fernández Salas',
+        alumno: 'LucÃa FernÃ¡ndez Salas',
         disciplinas: 'Muay Thai',
         estado_matricula: 'Pendiente'
     },
@@ -165,7 +166,7 @@ const MOCK_ALUMNOS_PAGOS = [
     },
     {
         id_alumno: 'ALU-002',
-        nombre_completo: 'Lucía Elena Fernández Salas',
+        nombre_completo: 'LucÃa Elena FernÃ¡ndez Salas',
         dni: '48392019',
         correo: 'lucia.fernandez@hotmail.com',
         disciplinas: ['BJJ', 'MMA'],
@@ -203,7 +204,7 @@ const MOCK_ALUMNOS_PAGOS = [
     },
     {
         id_alumno: 'ALU-003',
-        nombre_completo: 'Mateo Sebastián Quispe Paredes',
+        nombre_completo: 'Mateo SebastiÃ¡n Quispe Paredes',
         dni: '71928374',
         correo: 'mateo.quispe@yahoo.com',
         disciplinas: ['Capoeira', 'Capoeira Kids'],
@@ -241,7 +242,7 @@ const MOCK_ALUMNOS_PAGOS = [
     },
     {
         id_alumno: 'ALU-004',
-        nombre_completo: 'Valeria Sofía Castro Ruiz',
+        nombre_completo: 'Valeria SofÃa Castro Ruiz',
         dni: '75839201',
         correo: 'valeria.castro@outlook.com',
         disciplinas: ['BJJ Kids', 'Cross Training'],
@@ -279,7 +280,7 @@ const MOCK_ALUMNOS_PAGOS = [
     },
     {
         id_alumno: 'ALU-005',
-        nombre_completo: 'Jorge Luis Morales Chávez',
+        nombre_completo: 'Jorge Luis Morales ChÃ¡vez',
         dni: '46781293',
         correo: 'jorge.morales@gmail.com',
         disciplinas: ['Box', 'MMA'],
@@ -371,8 +372,8 @@ function mapearOperacionBalance(row) {
         id_matricula: row.id_matricula,
         alumno: row.alumno || 'Alumno registrado',
         tipo_documento: row.tipo_documento || 'DNI',
-        dni: row.dni || '—',
-        correo: row.correo || '—',
+        dni: row.dni || 'â€”',
+        correo: row.correo || 'â€”',
         disciplinas: row.disciplinas || 'Mensualidad',
         periodo_matricula: row.periodo_matricula || null,
         medio_pago: medioNorm,
@@ -380,8 +381,8 @@ function mapearOperacionBalance(row) {
         estado_pago: row.estado_pago || 'APROBADO',
         fecha_solicitud: row.fecha_solicitud || row.fecha_operacion,
         fecha_operacion: row.fecha_operacion,
-        referencia: row.referencia || '—',
-        registrado_por: row.registrado_por || (medioNorm === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'Tesorería'),
+        referencia: row.referencia || 'â€”',
+        registrado_por: row.registrado_por || (medioNorm === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'TesorerÃa'),
         numero_recibo: formatearNumeroRecibo(row),
         monto_original: Number(montoOriginalNumero.toFixed(2)),
         tipo_descuento: row.tipo_descuento || null,
@@ -404,13 +405,13 @@ function obtenerMockOperacionesBalance() {
             fecha_operacion: p.fecha_pago,
             medio_pago: normalizarMedioPago(p.medio_pago),
             metodo_nombre: p.medio_pago === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Efectivo',
-            referencia: p.referencia || '—',
+            referencia: p.referencia || 'â€”',
             alumno: alu.nombre_completo,
             tipo_documento: 'DNI',
             dni: alu.dni,
             correo: alu.correo,
             disciplinas: p.disciplinas || 'Mensualidad',
-            registrado_por: p.medio_pago === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'Tesorería',
+            registrado_por: p.medio_pago === 'MERCADO_PAGO' ? 'Pasarela Mercado Pago' : 'TesorerÃa',
             numero_recibo: p.numero_recibo,
             monto_letras: p.monto_letras
         }))
@@ -429,8 +430,8 @@ class PagosService {
                         mapa.set(r.id_alumno, {
                             id_alumno: r.id_alumno,
                             nombre_completo: r.nombre_completo,
-                            dni: r.dni || '—',
-                            correo: r.correo || '—',
+                            dni: r.dni || 'â€”',
+                            correo: r.correo || 'â€”',
                             disciplinas: new Set(),
                             profesores: new Set(),
                             pagos: []
@@ -456,7 +457,7 @@ class PagosService {
                             profesor: r.profesores || 'Profesor asignado',
                             medio_pago: r.medio_pago,
                             estado_pago: r.estado_pago,
-                            referencia: r.referencia || '—'
+                            referencia: r.referencia || 'â€”'
                         });
                     }
                 }
@@ -470,14 +471,13 @@ class PagosService {
                     pagos: alu.pagos.sort((a, b) => new Date(b.fecha_pago) - new Date(a.fecha_pago))
                 }));
             } else {
-                listaAlumnos = MOCK_ALUMNOS_PAGOS;
+                listaAlumnos = [];
             }
         } catch (error) {
-            console.warn(`[PAGOS] Error al consultar cobros por alumno en BD (${error.message}). Usando dataset de contingencia.`);
-            listaAlumnos = MOCK_ALUMNOS_PAGOS;
+            throw error;
         }
 
-        // Asegurar que cada alumno tenga sus pagos ordenados del más reciente al más antiguo
+        // Asegurar que cada alumno tenga sus pagos ordenados del mÃ¡s reciente al mÃ¡s antiguo
         return listaAlumnos.map(alu => {
             const pagosOrdenados = [...alu.pagos].sort((a, b) => new Date(b.fecha_pago) - new Date(a.fecha_pago));
             return {
@@ -497,19 +497,7 @@ class PagosService {
                 busqueda: filtros.busqueda
             });
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible (${error.message}). Usando datos temporales en historial.`);
-            let filtrados = [...MOCK_COBROS];
-            if (filtros.estado) {
-                filtrados = filtrados.filter(c => c.estado_pago.toUpperCase() === filtros.estado.toUpperCase());
-            }
-            if (filtros.medio) {
-                filtrados = filtrados.filter(c => c.medio_pago.toUpperCase() === filtros.medio.toUpperCase());
-            }
-            if (filtros.busqueda) {
-                const b = filtros.busqueda.toLowerCase();
-                filtrados = filtrados.filter(c => c.alumno.toLowerCase().includes(b) || c.id_matricula.toLowerCase().includes(b));
-            }
-            return filtrados;
+            throw error;
         }
     }
 
@@ -519,7 +507,7 @@ class PagosService {
      */
     async obtenerBalanceFinanciero({ fechaInicio, fechaFin, medio } = {}) {
         if (!esFechaIsoValida(fechaInicio) || !esFechaIsoValida(fechaFin)) {
-            throw new Error('VALIDACION:Debes indicar un rango de fechas válido (AAAA-MM-DD).');
+            throw new Error('VALIDACION:Debes indicar un rango de fechas vÃ¡lido (AAAA-MM-DD).');
         }
         if (fechaInicio > fechaFin) {
             throw new Error('VALIDACION:La fecha de inicio no puede ser posterior a la fecha de fin.');
@@ -527,7 +515,7 @@ class PagosService {
 
         const medioNormalizado = normalizarMedioPago(medio);
         if (medioNormalizado && !['EFECTIVO', 'MERCADO_PAGO'].includes(medioNormalizado)) {
-            throw new Error('VALIDACION:El medio de pago indicado no es válido.');
+            throw new Error('VALIDACION:El medio de pago indicado no es vÃ¡lido.');
         }
 
         let rows;
@@ -549,14 +537,7 @@ class PagosService {
             resumenPg = resumenBd;
             rows = operacionesBd;
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible al consultar balance (${error.message}). Usando dataset de contingencia.`);
-            rows = obtenerMockOperacionesBalance().filter(op => {
-                if (String(op.estado_pago).toUpperCase() !== 'APROBADO') return false;
-                const fechaOp = fechaLimaIso(op.fecha_operacion);
-                if (!fechaOp || fechaOp < fechaInicio || fechaOp > fechaFin) return false;
-                if (medioNormalizado && op.medio_pago !== medioNormalizado) return false;
-                return true;
-            }).sort((a, b) => new Date(b.fecha_operacion) - new Date(a.fecha_operacion));
+            throw error;
         }
 
         const operaciones = rows.map(mapearOperacionBalance);
@@ -579,21 +560,18 @@ class PagosService {
     }
 
     /**
-     * Recupera el detalle en modo consulta de una operación financiera aprobada por su Id_Pago.
+     * Recupera el detalle en modo consulta de una operaciÃ³n financiera aprobada por su Id_Pago.
      */
     async obtenerDetalleOperacionBalance(idPago) {
         if (!idPago || !String(idPago).trim()) {
-            throw new Error('VALIDACION:El identificador de la operación es obligatorio.');
+            throw new Error('VALIDACION:El identificador de la operaciÃ³n es obligatorio.');
         }
 
         let row = null;
         try {
             row = await pagosRepository.obtenerDetalleOperacionPorId(String(idPago).trim());
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible al consultar detalle (${error.message}). Buscando en contingencia.`);
-            row = obtenerMockOperacionesBalance().find(
-                op => op.id_pago === idPago && String(op.estado_pago).toUpperCase() === 'APROBADO'
-            ) || null;
+            throw error;
         }
 
         if (!row) {
@@ -607,8 +585,7 @@ class PagosService {
         try {
             return await pagosRepository.listarEfectivoPendientes();
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible (${error.message}). Usando datos temporales de pagos por aprobar.`);
-            return MOCK_PENDIENTES;
+            throw error;
         }
     }
 
@@ -628,19 +605,19 @@ class PagosService {
 
     async crearPreferencia(datosMatricula) {
         if (!datosMatricula.id_matricula || !datosMatricula.correo) {
-            throw new Error('VALIDACION:La matrícula y el correo son obligatorios.');
+            throw new Error('VALIDACION:La matrÃcula y el correo son obligatorios.');
         }
 
-        // Verificar si ya existe un pago activo para esta matrícula
+        // Verificar si ya existe un pago activo para esta matrÃcula
         const pagoExistente = await pagosRepository.obtenerPagoActivoPorMatricula(datosMatricula.id_matricula);
         if (pagoExistente) {
             const esAprobado = pagoExistente.estado_pago === 'APROBADO';
             const esEfectivo = pagoExistente.medio_pago === 'EFECTIVO';
             if (esAprobado) {
-                throw new Error('VALIDACION:Esta matrícula ya tiene un pago aprobado. No es necesario volver a pagar.');
+                throw new Error('VALIDACION:Esta matrÃcula ya tiene un pago aprobado. No es necesario volver a pagar.');
             }
             if (esEfectivo) {
-                throw new Error('VALIDACION:Ya tienes una solicitud de pago en efectivo pendiente de confirmación por el tesorero. Espera a que sea aprobada para activar tu acceso.');
+                throw new Error('VALIDACION:Ya tienes una solicitud de pago en efectivo pendiente de confirmaciÃ³n por el tesorero. Espera a que sea aprobada para activar tu acceso.');
             }
             const [transaccion] = await pagosRepository.obtenerTransaccionesMercado(datosMatricula.id_matricula);
             if (transaccion) {
@@ -651,12 +628,12 @@ class PagosService {
         const resumen = await pagosRepository.obtenerResumenMatricula(datosMatricula.id_matricula);
         const monto = Number(resumen.monto);
         if (!Number.isFinite(monto) || monto <= 0) {
-            throw new Error('VALIDACION:La matrícula no tiene disciplinas con tarifa configurada.');
+            throw new Error('VALIDACION:La matrÃcula no tiene disciplinas con tarifa configurada.');
         }
 
         const preference = new Preference(client);
 
-        // Sin HTTPS público se confirma desde Forca consultando la API.
+        // Sin HTTPS pÃºblico se confirma desde Forca consultando la API.
         // Mercado Pago no admite localhost como URL de retorno.
         const body = {
             items: [{
@@ -703,26 +680,26 @@ class PagosService {
 
     async registrarEfectivo(datosPago) {
         if (!datosPago.id_matricula) {
-            throw new Error('VALIDACION:La matrícula es obligatoria.');
+            throw new Error('VALIDACION:La matrÃcula es obligatoria.');
         }
 
-        // Verificar si ya existe un pago activo para esta matrícula
+        // Verificar si ya existe un pago activo para esta matrÃcula
         const pagoExistente = await pagosRepository.obtenerPagoActivoPorMatricula(datosPago.id_matricula);
         if (pagoExistente) {
             const esAprobado = pagoExistente.estado_pago === 'APROBADO';
             const esEfectivo = pagoExistente.medio_pago === 'EFECTIVO';
             if (esAprobado) {
-                throw new Error('VALIDACION:Esta matrícula ya tiene un pago aprobado. No es necesario volver a pagar.');
+                throw new Error('VALIDACION:Esta matrÃcula ya tiene un pago aprobado. No es necesario volver a pagar.');
             }
             if (esEfectivo) {
-                throw new Error('VALIDACION:Ya tienes una solicitud de pago en efectivo pendiente de confirmación por el tesorero. Por favor, espera a que sea aprobada.');
+                throw new Error('VALIDACION:Ya tienes una solicitud de pago en efectivo pendiente de confirmaciÃ³n por el tesorero. Por favor, espera a que sea aprobada.');
             }
         }
 
         const resumen = await pagosRepository.obtenerResumenMatricula(datosPago.id_matricula);
         const monto = Number(resumen.monto);
         if (!Number.isFinite(monto) || monto <= 0) {
-            throw new Error('VALIDACION:La matrícula no tiene disciplinas con tarifa configurada.');
+            throw new Error('VALIDACION:La matrÃcula no tiene disciplinas con tarifa configurada.');
         }
 
         return pagosRepository.registrarPagoEfectivo({
@@ -735,16 +712,16 @@ class PagosService {
     async procesarWebhook(tipo, id) {
         if (tipo !== 'payment') return null;
         if (!['string', 'number'].includes(typeof id) || !/^\d+$/.test(String(id))) {
-            throw new Error('VALIDACION:Identificador de pago inválido.');
+            throw new Error('VALIDACION:Identificador de pago invÃ¡lido.');
         }
         const pago = await new Payment(client).get({ id });
         if (String(pago.id) !== String(id) || !pago.external_reference || !pago.order?.id) {
-            throw new Error('VALIDACION:El pago no tiene una matrícula y una orden verificables.');
+            throw new Error('VALIDACION:El pago no tiene una matrÃcula y una orden verificables.');
         }
         const orden = await new MerchantOrder(client).get({ merchantOrderId: pago.order.id });
         if (!orden.preference_id || orden.external_reference !== pago.external_reference ||
             !orden.payments?.some(item => String(item.id) === String(pago.id))) {
-            throw new Error('VALIDACION:El pago no corresponde a la orden de matrícula.');
+            throw new Error('VALIDACION:El pago no corresponde a la orden de matrÃcula.');
         }
         const estados = {
             approved: 'APROBADO', rejected: 'RECHAZADO', cancelled: 'ANULADO',
@@ -753,7 +730,7 @@ class PagosService {
         if (!estados[pago.status] || pago.currency_id !== 'PEN' ||
             !Number.isFinite(pago.transaction_amount) || pago.transaction_amount <= 0 ||
             Number(pago.transaction_amount_refunded || 0) > 0) {
-            throw new Error('VALIDACION:El estado, moneda o monto del pago requiere revisión.');
+            throw new Error('VALIDACION:El estado, moneda o monto del pago requiere revisiÃ³n.');
         }
         return pagosRepository.actualizarPagoMercado({
             payment_id: String(pago.id),
@@ -767,7 +744,7 @@ class PagosService {
     async sincronizarPago(idMatricula) {
         const transacciones = await pagosRepository.obtenerTransaccionesMercado(idMatricula);
         if (!transacciones.length) {
-            throw new Error('VALIDACION:No hay un pago de Mercado Pago registrado para esta matrícula.');
+            throw new Error('VALIDACION:No hay un pago de Mercado Pago registrado para esta matrÃcula.');
         }
         if (transacciones.some(transaccion => transaccion.estado_pago === 'APROBADO')) {
             return this.verificarEstadoMatricula(idMatricula);
@@ -791,8 +768,10 @@ class PagosService {
     }
 
     async confirmarEfectivo(idMatricula, referenciaOperacion, idUsuario, descuento = null) {
-        if (descuento) {
-            return pagosRepository.confirmarPagoEfectivo(
+        // Conservar confirmacion real en PostgreSQL y soporte para descuentos.
+        // Si la base de datos falla, nunca simular un pago aprobado.
+        if (descuento !== null && descuento !== undefined) {
+            return await pagosRepository.confirmarPagoEfectivo(
                 idMatricula,
                 idUsuario,
                 referenciaOperacion,
@@ -800,26 +779,11 @@ class PagosService {
             );
         }
 
-        try {
-            return await pagosRepository.confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion);
-        } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible (${error.message}). Confirmando pago en modo contingencia.`);
-            // Simular confirmación en memoria
-            const pendIdx = MOCK_PENDIENTES.findIndex(p => p.id_matricula === idMatricula);
-            if (pendIdx !== -1) {
-                MOCK_PENDIENTES.splice(pendIdx, 1);
-            }
-            const cobro = MOCK_COBROS.find(c => c.id_matricula === idMatricula);
-            if (cobro) {
-                cobro.estado_pago = 'APROBADO';
-                cobro.estado_matricula = 'Activa';
-            }
-            return {
-                Id_Pago: cobro?.id_pago || `PAG-TMP-${Date.now().toString().slice(-4)}`,
-                Monto: cobro?.monto || '180.00',
-                estadoMatricula: 'Activa'
-            };
-        }
+        return await pagosRepository.confirmarPagoEfectivo(
+            idMatricula,
+            idUsuario,
+            referenciaOperacion
+        );
     }
 
     async anularSolicitudesEfectivoVencidas() {

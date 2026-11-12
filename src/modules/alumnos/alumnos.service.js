@@ -1,3 +1,4 @@
+
 const alumnosRepository = require('./alumnos.repository');
 
 const INHABILITACION_REGEX = /\[INHABILITADO\|([^|]*)\|([^|]*)\|([^\]]*)\]/;
@@ -30,6 +31,10 @@ function esEstadoInhabilitado(estadoAlumnoDb) {
 }
 
 class AlumnosService {
+  async listarDisciplinas() {
+    return alumnosRepository.findAllDisciplinas();
+  }
+
   async listarAlumnos(idProfesor = null) {
     const records = await alumnosRepository.findAllAlumnos(idProfesor);
     const hoy = new Date();
@@ -37,24 +42,40 @@ class AlumnosService {
 
     return records.map(al => {
       let fechaVencimiento = null;
+
       if (al.fecha_fin) {
         fechaVencimiento = new Date(al.fecha_fin);
       } else if (al.fecha_matricula) {
         fechaVencimiento = new Date(al.fecha_matricula);
         fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
       }
-      if (fechaVencimiento) fechaVencimiento.setHours(0, 0, 0, 0);
-      
-      const diffTime = fechaVencimiento ? (fechaVencimiento.getTime() - hoy.getTime()) : 0;
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      
+
+      if (fechaVencimiento) {
+        fechaVencimiento.setHours(0, 0, 0, 0);
+      }
+
+      const diffTime = fechaVencimiento
+        ? (fechaVencimiento.getTime() - hoy.getTime())
+        : 0;
+
+      const diffDays = fechaVencimiento
+        ? Math.round(diffTime / (1000 * 60 * 60 * 24))
+        : null;
+
       const inhabilitado = esEstadoInhabilitado(al.estado_alumno);
-      const { inhabilitacion } = extraerMetadataInhabilitacion(al.observaciones_medicas);
+      const { inhabilitacion } = extraerMetadataInhabilitacion(
+        al.observaciones_medicas
+      );
 
       const esReservada = al.estado === 'Reservada';
       let estado_matricula_real;
+
       if (esReservada) {
         estado_matricula_real = 'Reservada';
+      } else if (!fechaVencimiento) {
+        estado_matricula_real = al.estado
+          ? 'Sin fecha de vencimiento'
+          : 'Sin matrícula';
       } else if (diffDays < 0) {
         estado_matricula_real = 'Vencida';
       } else if (diffDays <= 3) {
@@ -63,12 +84,17 @@ class AlumnosService {
         estado_matricula_real = 'Activa';
       }
 
-      const estado_matricula = inhabilitado ? 'Inhabilitada' : estado_matricula_real;
+      const estado_matricula = inhabilitado
+        ? 'Inhabilitada'
+        : estado_matricula_real;
+
       const nombres = al.nombres || '';
       const apellidoPaterno = al.apellido_paterno || '';
-      
+
       return {
         id: al.id,
+        dni: al.dni,
+        estado_alumno_registrado: al.estado_alumno_registrado,
         nombres: al.nombres,
         apellido_paterno: al.apellido_paterno,
         apellido_materno: al.apellido_materno,
@@ -78,8 +104,11 @@ class AlumnosService {
         inhabilitado: inhabilitado,
         periodo_inhabilitacion: inhabilitacion,
         dias_restantes: diffDays,
-        por_vencer: !inhabilitado && estado_matricula_real === 'Próxima a vencer',
-        fecha_vencimiento: fechaVencimiento ? fechaVencimiento.toISOString().slice(0, 10) : null,
+        por_vencer: !inhabilitado &&
+          estado_matricula_real === 'Próxima a vencer',
+        fecha_vencimiento: fechaVencimiento
+          ? fechaVencimiento.toISOString().slice(0, 10)
+          : null,
         disciplinas: al.disciplinas || [],
         iniciales: `${nombres.charAt(0)}${apellidoPaterno.charAt(0)}`.toUpperCase()
       };
@@ -88,70 +117,117 @@ class AlumnosService {
 
   async obtenerDetalleAlumno(id, idProfesor = null) {
     const record = await alumnosRepository.findAlumnoById(id, idProfesor);
+
     if (!record) return null;
 
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
     let fechaVencimiento = null;
+
     if (record.fecha_vencimiento) {
       fechaVencimiento = new Date(record.fecha_vencimiento);
     } else if (record.fecha_matricula) {
       fechaVencimiento = new Date(record.fecha_matricula);
       fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
     }
-    if (fechaVencimiento) fechaVencimiento.setHours(0, 0, 0, 0);
-    
-    const diffTime = fechaVencimiento ? (fechaVencimiento.getTime() - hoy.getTime()) : 0;
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    
+
+    if (fechaVencimiento) {
+      fechaVencimiento.setHours(0, 0, 0, 0);
+    }
+
+    const diffTime = fechaVencimiento
+      ? (fechaVencimiento.getTime() - hoy.getTime())
+      : 0;
+
+    const diffDays = fechaVencimiento
+      ? Math.round(diffTime / (1000 * 60 * 60 * 24))
+      : null;
+
     const inhabilitado = esEstadoInhabilitado(record.estado_alumno_db);
-    const { observaciones_medicas, inhabilitacion } = extraerMetadataInhabilitacion(record.observaciones_medicas);
+
+    const {
+      observaciones_medicas,
+      inhabilitacion
+    } = extraerMetadataInhabilitacion(record.observaciones_medicas);
 
     const esReservada = record.estado_matricula === 'Reservada';
+
     let estado_matricula_real;
     let dias_restantes_texto;
 
     if (esReservada) {
       estado_matricula_real = 'Reservada';
       dias_restantes_texto = 'Reservada - Inicia próximo periodo';
+    } else if (!fechaVencimiento) {
+      estado_matricula_real = record.estado_matricula
+        ? 'Sin fecha de vencimiento'
+        : 'Sin matrícula';
+
+      dias_restantes_texto = record.estado_matricula
+        ? 'No hay fecha de vencimiento registrada'
+        : 'Sin matrícula registrada';
     } else if (diffDays < 0) {
       estado_matricula_real = 'Vencida';
-      dias_restantes_texto = `Vencida hace ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
+
+      dias_restantes_texto =
+        `Vencida hace ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
     } else if (diffDays <= 3) {
       estado_matricula_real = 'Próxima a vencer';
-      dias_restantes_texto = diffDays === 0 ? 'Vence hoy' : `Próxima a vencer (${diffDays} día${diffDays === 1 ? '' : 's'} restante${diffDays === 1 ? '' : 's'})`;
+
+      dias_restantes_texto = diffDays === 0
+        ? 'Vence hoy'
+        : `Próxima a vencer (${diffDays} día${diffDays === 1 ? '' : 's'} restante${diffDays === 1 ? '' : 's'})`;
     } else {
       estado_matricula_real = 'Activa';
       dias_restantes_texto = `Activa - ${diffDays} días restantes`;
     }
 
-    const estado = inhabilitado ? 'Inhabilitada' : estado_matricula_real;
-    const estado_alumno = inhabilitado ? 'Inhabilitado' : ((esReservada || diffDays >= 0) ? 'Habilitado' : 'Inhabilitado');
+    const estado = inhabilitado
+      ? 'Inhabilitada'
+      : estado_matricula_real;
+
+    const estado_alumno = inhabilitado
+      ? 'Inhabilitado'
+      : esReservada
+        ? 'Habilitado'
+        : !fechaVencimiento
+          ? 'Sin vigencia'
+          : diffDays >= 0
+            ? 'Habilitado'
+            : 'Inhabilitado';
 
     const formatoFecha = fecha => {
       if (!fecha) return 'No registrada';
+
       const fechaFormateada = new Date(fecha);
+
       return Number.isNaN(fechaFormateada.getTime())
         ? 'No registrada'
         : fechaFormateada.toLocaleDateString('es-PE');
     };
 
-    const formatearFechaIso = (fechaStr) => {
+    const formatearFechaIso = fechaStr => {
       if (!fechaStr) return 'No especificado';
+
       const partes = String(fechaStr).split('-');
+
       if (partes.length === 3) {
         return `${partes[2]}/${partes[1]}/${partes[0]}`;
       }
+
       return formatoFecha(fechaStr);
     };
 
     return {
       id: record.id,
-      nombre_completo: [record.nombres, record.apellido_paterno, record.apellido_materno]
-        .filter(Boolean)
-        .join(' '),
+      nombre_completo: [
+        record.nombres,
+        record.apellido_paterno,
+        record.apellido_materno
+      ].filter(Boolean).join(' '),
       estado: estado,
+      estado_alumno_registrado: record.estado_alumno_registrado,
       estado_matricula_real: estado_matricula_real,
       dni: record.numero_documento,
       correo: record.correo_electronico,
@@ -178,27 +254,36 @@ class AlumnosService {
 
   async obtenerHistorialMatriculas(id) {
     const alumno = await alumnosRepository.findNombreAlumnoById(id);
+
     if (!alumno) return null;
 
     const registros = await alumnosRepository.findHistorialMatriculasByAlumno(id);
     const hoy = new Date();
+
     hoy.setHours(0, 0, 0, 0);
 
-    const aFecha = (texto) => new Date(`${texto}T00:00:00`);
+    const aFecha = texto => new Date(`${texto}T00:00:00`);
 
     const matriculas = registros.map(reg => {
       const inicio = aFecha(reg.fecha_inicio);
       const fin = aFecha(reg.fecha_fin);
 
       let estado;
-      if (inicio > hoy) estado = 'Reservada';
-      else if (fin < hoy) estado = 'Vencida';
-      else estado = 'Activa';
+
+      if (inicio > hoy) {
+        estado = 'Reservada';
+      } else if (fin < hoy) {
+        estado = 'Vencida';
+      } else {
+        estado = 'Activa';
+      }
 
       return {
         id_detalle: reg.id_detalle,
         id_matricula: reg.id_matricula,
-        tipo: reg.es_reserva_anticipada ? 'Reserva anticipada' : 'Regular',
+        tipo: reg.es_reserva_anticipada
+          ? 'Reserva anticipada'
+          : 'Regular',
         disciplina: reg.disciplina,
         horario: `${reg.dias} ${reg.hora_inicio} - ${reg.hora_fin}`,
         fecha_inicio: reg.fecha_inicio,
@@ -208,24 +293,40 @@ class AlumnosService {
     });
 
     return {
-      alumno: { id: alumno.id, nombre_completo: alumno.nombre_completo },
+      alumno: {
+        id: alumno.id,
+        nombre_completo: alumno.nombre_completo
+      },
       permanencia: this.calcularPermanencia(registros, hoy),
       matriculas
     };
   }
 
-  // Resumen rápido: "Desde 2025 - 14 meses en la academia"
+  // Resumen rápido de permanencia del alumno.
   calcularPermanencia(registros, hoy = new Date()) {
     if (!registros.length) return null;
 
-    const inicios = registros.map(r => new Date(`${r.fecha_inicio}T00:00:00`));
-    const fines = registros.map(r => new Date(`${r.fecha_fin}T00:00:00`));
+    const inicios = registros.map(
+      r => new Date(`${r.fecha_inicio}T00:00:00`)
+    );
+
+    const fines = registros.map(
+      r => new Date(`${r.fecha_fin}T00:00:00`)
+    );
+
     const primerInicio = new Date(Math.min(...inicios));
     const ultimoFin = new Date(Math.max(...fines));
     const referencia = ultimoFin < hoy ? ultimoFin : hoy;
 
-    const dias = Math.max(0, Math.round((referencia - primerInicio) / (1000 * 60 * 60 * 24)));
-    const meses = dias === 0 ? 0 : Math.max(1, Math.round(dias / 30.44));
+    const dias = Math.max(
+      0,
+      Math.round((referencia - primerInicio) / (1000 * 60 * 60 * 24))
+    );
+
+    const meses = dias === 0
+      ? 0
+      : Math.max(1, Math.round(dias / 30.44));
+
     const desde = primerInicio.getFullYear();
 
     return {
@@ -237,6 +338,7 @@ class AlumnosService {
 
   async inhabilitarAlumno(id, payload = {}) {
     const record = await alumnosRepository.findAlumnoById(id);
+
     if (!record) {
       const error = new Error('Alumno no encontrado.');
       error.statusCode = 404;
@@ -254,7 +356,9 @@ class AlumnosService {
     const motivoRaw = String(payload.motivo || '').trim();
 
     if (!fechaInicio || !fechaFin) {
-      const error = new Error('Debe registrar la fecha de inicio y la fecha de fin del periodo de inhabilitación.');
+      const error = new Error(
+        'Debe registrar la fecha de inicio y la fecha de fin del periodo de inhabilitación.'
+      );
       error.statusCode = 400;
       throw error;
     }
@@ -262,33 +366,56 @@ class AlumnosService {
     const inicioDate = new Date(`${fechaInicio}T00:00:00`);
     const finDate = new Date(`${fechaFin}T00:00:00`);
 
-    if (Number.isNaN(inicioDate.getTime()) || Number.isNaN(finDate.getTime())) {
-      const error = new Error('Las fechas del periodo de inhabilitación no tienen un formato válido.');
+    if (
+      Number.isNaN(inicioDate.getTime()) ||
+      Number.isNaN(finDate.getTime())
+    ) {
+      const error = new Error(
+        'Las fechas del periodo de inhabilitación no tienen un formato válido.'
+      );
       error.statusCode = 400;
       throw error;
     }
 
     if (finDate < inicioDate) {
-      const error = new Error('La fecha de fin del periodo de inhabilitación debe ser igual o posterior a la fecha de inicio.');
+      const error = new Error(
+        'La fecha de fin del periodo de inhabilitación debe ser igual o posterior a la fecha de inicio.'
+      );
       error.statusCode = 400;
       throw error;
     }
 
     if (!motivoRaw) {
-      const error = new Error('Debe especificar el motivo de la inhabilitación temporal.');
+      const error = new Error(
+        'Debe especificar el motivo de la inhabilitación temporal.'
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    const motivoSanitizado = motivoRaw.replace(/[|\[\]]/g, ' ').substring(0, 90).trim();
-    const { observaciones_medicas } = extraerMetadataInhabilitacion(record.observaciones_medicas);
-    const baseObs = (observaciones_medicas || 'Ninguna').substring(0, 75).trim();
-    const etiquetaInhabilitacion = `[INHABILITADO|${fechaInicio}|${fechaFin}|${motivoSanitizado}]`;
-    const nuevaCondicion = `${baseObs} ${etiquetaInhabilitacion}`.substring(0, 200);
+    const motivoSanitizado = motivoRaw
+      .replace(/[|\[\]]/g, ' ')
+      .substring(0, 90)
+      .trim();
+
+    const { observaciones_medicas } = extraerMetadataInhabilitacion(
+      record.observaciones_medicas
+    );
+
+    const baseObs = (observaciones_medicas || 'Ninguna')
+      .substring(0, 75)
+      .trim();
+
+    const etiquetaInhabilitacion =
+      `[INHABILITADO|${fechaInicio}|${fechaFin}|${motivoSanitizado}]`;
+
+    const nuevaCondicion =
+      `${baseObs} ${etiquetaInhabilitacion}`.substring(0, 200);
 
     await alumnosRepository.inhabilitarAlumno(id, nuevaCondicion);
 
     const detalleActualizado = await this.obtenerDetalleAlumno(id);
+
     return detalleActualizado;
   }
 }

@@ -1,13 +1,42 @@
 const alumnosService = require('./alumnos.service');
 
 class AlumnosController {
+  async listarDisciplinas(req, res) {
+    try {
+      const disciplinas = await alumnosService.listarDisciplinas();
+
+      return res.status(200).json({
+        success: true,
+        data: disciplinas
+      });
+    } catch (error) {
+      console.error('Error al listar disciplinas:', error);
+
+      return res.status(500).json({
+        success: false,
+        message: 'No se pudieron cargar las disciplinas'
+      });
+    }
+  }
+
   async listarAlumnos(req, res) {
     try {
       const idProfesor = req.usuario?.id_profesor || req.query.id_profesor || null;
       const alumnos = await alumnosService.listarAlumnos(idProfesor);
+
+      const esDirector = (req.user?.roles || []).some(
+        rol => String(rol).toUpperCase() === 'DIRECTOR'
+      );
+
+      const alumnosVisibles = esDirector
+        ? alumnos
+        : alumnos.filter(alumno =>
+            String(alumno.estado_alumno_registrado || '').trim().toUpperCase() !== 'INHABILITADO'
+          );
+
       return res.status(200).json({
         success: true,
-        data: alumnos
+        data: alumnosVisibles
       });
     } catch (error) {
       console.error('Error en listarAlumnos:', error);
@@ -24,6 +53,21 @@ class AlumnosController {
       const detalle = await alumnosService.obtenerDetalleAlumno(id);
       
       if (!detalle) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alumno no encontrado'
+        });
+      }
+
+      const esDirector = (req.user?.roles || []).some(
+        rol => String(rol).toUpperCase() === 'DIRECTOR'
+      );
+
+      const esInhabilitado =
+        String(detalle.estado_alumno_registrado || '')
+          .trim().toUpperCase() === 'INHABILITADO';
+
+      if (esInhabilitado && !esDirector) {
         return res.status(404).json({
           success: false,
           message: 'Alumno no encontrado'

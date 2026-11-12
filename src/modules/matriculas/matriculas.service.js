@@ -330,12 +330,12 @@ class MatriculasService {
         estado_vigencia: estadoVigencia,
         dias_restantes: diasRestantes,
         vigente: diasRestantes >= 0,
+        // Solo el último periodo de cada disciplina se puede renovar, faltando 3 días o vencido
         puede_renovar: diasRestantes <= 3 &&
           new Date(matricula.fecha_fin).getTime() === new Date(matricula.fecha_fin_actual).getTime()
       };
     });
   }
-
   async getReservasPorUsuario(idUsuario) {
     if (!idUsuario) {
       throw new Error('El ID del usuario es obligatorio.');
@@ -448,7 +448,7 @@ class MatriculasService {
         throw new Error('El Pasaporte debe contener entre 6 y 10 caracteres alfanuméricos.');
       }
     }
-    
+
     if (!disciplinas || !Array.isArray(disciplinas) || disciplinas.length === 0) {
       throw new Error('Debe seleccionar al menos una disciplina.');
     }
@@ -456,7 +456,7 @@ class MatriculasService {
     const disponibles = await matriculasRepository.getDisciplinas();
     for (const id of disciplinas) {
       const disciplina = disponibles.find(item => item.id === id);
-      if (!disciplina) throw new Error('La disciplina seleccionada no existe.');
+      if (!disciplina) throw new Error('La disciplina seleccionada no existe o no tiene un horario configurado.');
       validarEdadParaDisciplina(datosEstudiante.fecha_nacimiento, disciplina.nombre);
     }
 
