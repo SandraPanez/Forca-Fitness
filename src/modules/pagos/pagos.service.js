@@ -464,11 +464,10 @@ class PagosService {
                     pagos: alu.pagos.sort((a, b) => new Date(b.fecha_pago) - new Date(a.fecha_pago))
                 }));
             } else {
-                listaAlumnos = MOCK_ALUMNOS_PAGOS;
+                listaAlumnos = [];
             }
         } catch (error) {
-            console.warn(`[PAGOS] Error al consultar cobros por alumno en BD (${error.message}). Usando dataset de contingencia.`);
-            listaAlumnos = MOCK_ALUMNOS_PAGOS;
+            throw error;
         }
 
         // Asegurar que cada alumno tenga sus pagos ordenados del más reciente al más antiguo
@@ -491,19 +490,7 @@ class PagosService {
                 busqueda: filtros.busqueda
             });
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible (${error.message}). Usando datos temporales en historial.`);
-            let filtrados = [...MOCK_COBROS];
-            if (filtros.estado) {
-                filtrados = filtrados.filter(c => c.estado_pago.toUpperCase() === filtros.estado.toUpperCase());
-            }
-            if (filtros.medio) {
-                filtrados = filtrados.filter(c => c.medio_pago.toUpperCase() === filtros.medio.toUpperCase());
-            }
-            if (filtros.busqueda) {
-                const b = filtros.busqueda.toLowerCase();
-                filtrados = filtrados.filter(c => c.alumno.toLowerCase().includes(b) || c.id_matricula.toLowerCase().includes(b));
-            }
-            return filtrados;
+            throw error;
         }
     }
 
@@ -543,14 +530,7 @@ class PagosService {
             resumenPg = resumenBd;
             rows = operacionesBd;
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible al consultar balance (${error.message}). Usando dataset de contingencia.`);
-            rows = obtenerMockOperacionesBalance().filter(op => {
-                if (String(op.estado_pago).toUpperCase() !== 'APROBADO') return false;
-                const fechaOp = fechaLimaIso(op.fecha_operacion);
-                if (!fechaOp || fechaOp < fechaInicio || fechaOp > fechaFin) return false;
-                if (medioNormalizado && op.medio_pago !== medioNormalizado) return false;
-                return true;
-            }).sort((a, b) => new Date(b.fecha_operacion) - new Date(a.fecha_operacion));
+            throw error;
         }
 
         const operaciones = rows.map(mapearOperacionBalance);
@@ -584,10 +564,7 @@ class PagosService {
         try {
             row = await pagosRepository.obtenerDetalleOperacionPorId(String(idPago).trim());
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible al consultar detalle (${error.message}). Buscando en contingencia.`);
-            row = obtenerMockOperacionesBalance().find(
-                op => op.id_pago === idPago && String(op.estado_pago).toUpperCase() === 'APROBADO'
-            ) || null;
+            throw error;
         }
 
         if (!row) {
@@ -601,8 +578,7 @@ class PagosService {
         try {
             return await pagosRepository.listarEfectivoPendientes();
         } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible (${error.message}). Usando datos temporales de pagos por aprobar.`);
-            return MOCK_PENDIENTES;
+            throw error;
         }
     }
 
@@ -619,6 +595,8 @@ class PagosService {
             id_pago: pagoExistente.Id_Pago
         };
     }
+
+
 
     async crearPreferencia(datosMatricula) {
         if (!datosMatricula.id_matricula || !datosMatricula.correo) {
@@ -784,27 +762,13 @@ class PagosService {
         return { ...estado, estado_pago: estado.estado_pago || resultado?.estadoPago || transacciones[0].estado_pago };
     }
 
+
     async confirmarEfectivo(idMatricula, referenciaOperacion, idUsuario) {
-        try {
-            return await pagosRepository.confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion);
-        } catch (error) {
-            console.warn(`[PAGOS] BD inaccesible (${error.message}). Confirmando pago en modo contingencia.`);
-            // Simular confirmación en memoria
-            const pendIdx = MOCK_PENDIENTES.findIndex(p => p.id_matricula === idMatricula);
-            if (pendIdx !== -1) {
-                MOCK_PENDIENTES.splice(pendIdx, 1);
-            }
-            const cobro = MOCK_COBROS.find(c => c.id_matricula === idMatricula);
-            if (cobro) {
-                cobro.estado_pago = 'APROBADO';
-                cobro.estado_matricula = 'Activa';
-            }
-            return {
-                Id_Pago: cobro?.id_pago || `PAG-TMP-${Date.now().toString().slice(-4)}`,
-                Monto: cobro?.monto || '180.00',
-                estadoMatricula: 'Activa'
-            };
-        }
+        return await pagosRepository.confirmarPagoEfectivo(
+            idMatricula,
+            idUsuario,
+            referenciaOperacion
+        );
     }
 
     async anularSolicitudesEfectivoVencidas() {

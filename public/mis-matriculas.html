@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -26,21 +27,57 @@
             </p>
         </section>
 
-        <div id="reserva-banner" class="reserva-alert" style="display: none;" role="status">
+        <!-- Aviso de reserva exitosa -->
+        <div
+            id="reserva-banner"
+            class="reserva-alert"
+            style="display: none;"
+            role="status"
+        >
             <div class="reserva-alert-icon">✓</div>
+
             <div class="reserva-alert-content">
                 <strong>¡Cupo reservado correctamente!</strong>
-                <p>Tu vacante para la disciplina ha sido asegurada con tarifa congelada. La matrícula permanecerá en estado <em>Reservada</em> hasta el primer día del mes reservado, activándose automáticamente al iniciar el periodo.</p>
+
+                <p>
+                    Tu vacante para la disciplina ha sido asegurada
+                    con tarifa congelada. La matrícula permanecerá
+                    en estado <em>Reservada</em> hasta el primer día
+                    del mes reservado, activándose automáticamente
+                    al iniciar el periodo.
+                </p>
             </div>
         </div>
 
-        <div id="pago-pendiente-banner" class="reserva-alert" style="display: none; border-color: #f59e0b; background: #fffbeb;" role="status">
-            <div class="reserva-alert-icon" style="background: #fef3c7; color: #d97706;">⏳</div>
+        <!-- Aviso de pago en efectivo pendiente -->
+        <div
+            id="pago-pendiente-banner"
+            class="reserva-alert"
+            style="display: none; border-color: #f59e0b; background: #fffbeb;"
+            role="status"
+        >
+            <div
+                class="reserva-alert-icon"
+                style="background: #fef3c7; color: #d97706;"
+            >
+                ⏳
+            </div>
+
             <div class="reserva-alert-content">
-                <strong style="color: #92400e;">Solicitud de pago registrada</strong>
-                <p style="color: #78350f;">Tu solicitud de pago en efectivo fue registrada exitosamente. El tesorero de la academia confirmará la recepción del pago. Tu matrícula se activará automáticamente al aprobarse.</p>
+                <strong style="color: #92400e;">
+                    Solicitud de pago registrada
+                </strong>
+
+                <p style="color: #78350f;">
+                    Tu solicitud de pago en efectivo fue registrada
+                    exitosamente. El tesorero de la academia
+                    confirmará la recepción del pago. Tu matrícula
+                    se activará automáticamente al aprobarse.
+                </p>
             </div>
         </div>
+
+        <!-- Tabla de matrículas del alumno -->
         <div class="table-container">
             <table class="alumnos-table">
                 <thead>
@@ -54,7 +91,10 @@
 
                 <tbody id="mis-matriculas-tbody">
                     <tr>
-                        <td colspan="4" class="text-center text-muted">
+                        <td
+                            colspan="4"
+                            class="text-center text-muted"
+                        >
                             Cargando matrículas...
                         </td>
                     </tr>
@@ -64,6 +104,51 @@
 
     </main>
 
+    <!-- Modal de renovación de matrícula -->
+    <div
+        class="modal-overlay"
+        id="modal-renovar"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-renovar-titulo"
+    >
+        <div class="modal">
+
+            <h3 id="modal-renovar-titulo">
+                Renovar matrícula
+            </h3>
+
+            <p id="modal-renovar-detalle"></p>
+
+            <p
+                id="modal-renovar-error"
+                class="error-message"
+                role="alert"
+                style="display: none;"
+            ></p>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="btn-cancel"
+                    id="modal-renovar-cancelar"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    class="btn-submit"
+                    id="modal-renovar-continuar"
+                >
+                    Continuar al pago
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="/js/auth.js"></script>
     <script src="/js/mis-matriculas.js"></script>
 

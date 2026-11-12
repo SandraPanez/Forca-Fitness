@@ -157,13 +157,20 @@
                     
                     <hr class="divider">
 
+
                     <label class="mb-1">Disciplinas <span class="asterisk">*</span></label>
-                    <p id="disciplinas-edad" class="field-hint" role="status">Ingresa tu fecha de nacimiento para habilitar las disciplinas disponibles para tu edad.</p>
+
+                    <p id="disciplinas-edad" class="field-hint" role="status">
+                        Ingresa tu fecha de nacimiento para habilitar las disciplinas disponibles para tu edad.
+                    </p>
+
+                    <p class="field-hint">Puedes seleccionar una o más disciplinas.</p>
 
                     <div class="grid-2-cols" id="disciplinas-container">
-                        <!-- T_04: Disciplinas cargadas dinámicamente desde la BD -->
+    <!-- T_04: Disciplinas cargadas dinámicamente desde la BD -->
                         <div class="text-muted" style="font-size:0.9rem">Cargando disciplinas...</div>
                     </div>
+
                     <div id="disciplinas-error" class="error-message" style="display: none;">Debe seleccionar al menos una disciplina.</div>
                 </div>
 

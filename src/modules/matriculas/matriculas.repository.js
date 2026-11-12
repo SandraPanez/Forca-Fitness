@@ -16,7 +16,11 @@ class MatriculasRepository {
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
         "Tarifa" AS tarifa
-      FROM ${SCHEMA}."Disciplina"
+      FROM ${SCHEMA}."Disciplina" d
+      WHERE EXISTS (
+        SELECT 1 FROM ${SCHEMA}."Disciplina_Horario" dh
+        WHERE dh."Id_Disciplina" = d."Id_Disciplinas"
+      )
       ORDER BY "Nombre_Disciplina" ASC
     `;
 
@@ -807,6 +811,7 @@ class MatriculasRepository {
     return result.rows[0] || null;
   }
 
+
   async addDetalleRenovacion(idMatricula, info, client) {
     const idDetalle = await this.generateId(client, 'Detalles_Matricula', 'Id_DetMatricula', 'DET');
     await client.query(`
@@ -815,6 +820,7 @@ class MatriculasRepository {
       VALUES ($1, $2, $3::DATE, $4::DATE, $5)
     `, [idDetalle, idMatricula, info.fecha_inicio, info.fecha_fin, info.id_disc_horario]);
   }
+
 
   async addDisciplinasAMatricula(
     matricula_id,
