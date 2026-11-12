@@ -17,4 +17,16 @@ router.get("/:id",
   alumnosController.obtenerDetalleAlumno
 );
 
+router.patch("/:id/inhabilitar",
+  autenticar,
+  autorizar(PERMISOS.INHABILITAR_ALUMNO),
+  alumnosController.inhabilitarAlumno
+);
+
+router.put("/:id/inhabilitar",
+  autenticar,
+  autorizar(PERMISOS.INHABILITAR_ALUMNO),
+  alumnosController.inhabilitarAlumno
+);
+
 module.exports = router;
