@@ -581,7 +581,7 @@ body {
     color: var(--text-main);
 }
 
-.form-group input, 
+.form-group input,
 .form-group select,
 .form-group textarea {
     padding: 0.75rem 1rem;
@@ -846,17 +846,17 @@ body {
     .grid-2-cols {
         grid-template-columns: 1fr;
     }
-    
+
     .form-header {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .form-actions {
         flex-direction: column-reverse;
         gap: 1rem;
     }
-    
+
     .btn-submit, .btn-cancel {
         width: 100%;
     }
@@ -2002,7 +2002,7 @@ body {
         align-items: flex-start;
         gap: 1rem;
     }
-    
+
     .horario-capacidad {
         border-right: none;
         padding-right: 0;
@@ -2013,7 +2013,7 @@ body {
         border-bottom: 1px solid var(--border-color);
         padding-bottom: 1rem;
     }
-    
+
     .horario-estado {
         text-align: left;
     }

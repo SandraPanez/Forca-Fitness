@@ -85,11 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/matriculas/disciplinas');
             const result = await response.json();
-            
+
             if (result.success && result.data) {
                 // Opción por defecto: Todas las disciplinas (muestra todos los horarios)
                 selectDisciplina.innerHTML = '<option value="todas">Todas las disciplinas</option>';
-                
+
                 // Ordenar alfabéticamente por nombre
                 const disciplinasOrdenadas = [...result.data].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
@@ -256,14 +256,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="horario-dias">${formatDias(horario.dias)}</span>
                     <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
                 </div>
-                
+
                 <div class="horario-capacidad">
                     <span class="cupos-text" style="${puedeReservar ? '' : 'color: var(--danger-color);'}">
                         ${puedeReservar ? `${cuposReserva} cupo${cuposReserva > 1 ? 's' : ''} para reserva` : '0 cupos para reserva'}
                     </span>
                     <span class="capacidad-text">Aforo horario: ${cuposDisponiblesHorario}/${capacidad}</span>
                 </div>
-                
+
                 <div class="horario-estado">
                     <span class="${badgeClass}">${badgeText}</span>
                 </div>
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let badgeText = 'Disponible';
             let cuposStyle = '';
 
-            if (cuposDisponiblesHorario <= 0) { 
+            if (cuposDisponiblesHorario <= 0) {
                 badgeClass = 'badge-agotado';
                 badgeText = 'Agotado';
                 card.classList.add('agotado');
@@ -309,12 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="horario-dias">${formatDias(horario.dias)}</span>
                     <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
                 </div>
-                
+
                 <div class="horario-capacidad">
                     <span class="cupos-text" style="${cuposStyle}">${cuposDisponiblesHorario} cupos disponibles</span>
                     <span class="capacidad-text">Capacidad total: ${capacidad}</span>
                 </div>
-                
+
                 <div class="horario-estado">
                     <span class="${badgeClass}">${badgeText}</span>
                 </div>

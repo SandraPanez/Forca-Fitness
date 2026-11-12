@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 
 const express = require('express');
@@ -24,7 +25,6 @@ app.use(
   autorizar(PERMISOS.ADMINISTRAR_COLAS),
   queuesDashboard.router
 );
-
 
 // Primera página del sistema = Login
 app.get('/', (req, res) => {
@@ -74,6 +74,7 @@ app.get('/control-acceso', (req, res) => {
 });
 
 // Registrar módulos (Rutas)
+// Se conservan las rutas de HU-22 y develop.
 const {
   matriculasRoutes,
   alumnosRoutes,
@@ -82,6 +83,7 @@ const {
   pagosRoutes,
   comprobantesRoutes,
   perfilRoutes,
+  horariosRoutes,
   personalRoutes
 } = require('./src/modules');
 
@@ -92,6 +94,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
 app.use('/api/perfil', perfilRoutes);
+
+// HU-22: Modificar horarios de clases
+app.use('/api/horarios', horariosRoutes);
+
+// develop: Administración de personal
 app.use('/api/personal', personalRoutes);
 
 app.get('/api/health', async (req, res) => {
@@ -118,15 +125,19 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
 const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
+
 async function ejecutarTareasPeriodicas() {
   try {
     const expired = await require('./src/modules/pagos/pagos.service')
       .anularSolicitudesEfectivoVencidas();
+
     if (expired > 0) {
       console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
     }
+
     const activadas = await require('./src/modules/pagos/pagos.service')
       .activarReservasIniciadas();
+
     if (activadas > 0) {
       console.log(`Reservas activadas automáticamente al iniciar periodo: ${activadas}`);
     }
@@ -135,11 +146,16 @@ async function ejecutarTareasPeriodicas() {
   }
 }
 
-const expirationCheck = setInterval(ejecutarTareasPeriodicas, EXPIRATION_CHECK_INTERVAL);
+const expirationCheck = setInterval(
+  ejecutarTareasPeriodicas,
+  EXPIRATION_CHECK_INTERVAL
+);
+
 expirationCheck.unref();
 
 // HU-20: recordatorios de vencimiento por correo (una vez al día).
-require('./src/modules/notificaciones/recordatorios-vencimiento.job').iniciarJobRecordatoriosVencimiento();
+require('./src/modules/notificaciones/recordatorios-vencimiento.job')
+  .iniciarJobRecordatoriosVencimiento();
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);

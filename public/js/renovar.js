@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch('/api/matriculas/disciplinas');
             const result = await response.json();
-            
+
             if (result.success && result.data) {
                 selectReservaDisciplina.innerHTML = '<option value="">Seleccione...</option>';
                 result.data.forEach(disc => {
@@ -533,14 +533,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="horario-dias">${formatDias(horario.dias)}</span>
                     <span class="horario-horas">${formatHora12(horario.hora_inicio)} - ${formatHora12(horario.hora_fin)}</span>
                 </div>
-                
+
                 <div class="horario-capacidad">
                     <span class="cupos-text" style="${puedeReservar ? '' : 'color: var(--danger-color);'}">
                         ${puedeReservar ? `${cuposReserva} cupo${cuposReserva > 1 ? 's' : ''} para reserva` : '0 cupos para reserva'}
                     </span>
                     <span class="capacidad-text">Aforo horario: ${cuposDisponiblesHorario}/${capacidad}</span>
                 </div>
-                
+
                 <div class="horario-estado">
                     <span class="${badgeClass}">${badgeText}</span>
                 </div>

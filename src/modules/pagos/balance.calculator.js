@@ -318,4 +318,3 @@ if (require.main === module) {
 
     console.log('Autoverificación balance.calculator.js: OK');
 }
-

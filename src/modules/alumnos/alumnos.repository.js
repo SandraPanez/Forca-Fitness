@@ -1,5 +1,5 @@
 
-const db = require("../../shared/config/database");
+const db = require('../../shared/config/database');
 
 class AlumnosRepository {
   async findAllDisciplinas() {
@@ -25,8 +25,8 @@ class AlumnosRepository {
         a."Estado_Alumno" AS estado_alumno,
         a."Condicion" AS observaciones_medicas,
         m."Fecha_Inscripcion" AS fecha_matricula,
+        TO_CHAR(dm."Fecha_Fin", 'YYYY-MM-DD') AS fecha_fin,
         m."Estado_Matricula" AS estado,
-        dm."Fecha_Fin" AS fecha_fin,
         dm."Fecha_Inicio" AS fecha_inicio,
         ARRAY(
           SELECT DISTINCT d."Nombre_Disciplina"
@@ -36,21 +36,45 @@ class AlumnosRepository {
           JOIN "Academia Forca&Fitness"."Disciplina" d
             ON dh_alumno."Id_Disciplina" = d."Id_Disciplinas"
           WHERE dm_alumno."Id_Matricula" = m."Id_Matricula"
-            ${idProfesor !== null ? 'AND dh_alumno."Id_Profesor" = $1' : ''}
+            ${idProfesor !== null
+              ? 'AND dh_alumno."Id_Profesor" = $1'
+              : ''}
           ORDER BY d."Nombre_Disciplina"
         ) AS disciplinas
+
       FROM "Academia Forca&Fitness"."Alumno" a
-      JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
-      LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
-      LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
-      LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
-      ${idProfesor !== null ? 'WHERE dh."Id_Profesor" = $1' : ''}
+      JOIN "Academia Forca&Fitness"."Persona" p
+        ON p."Id_Persona" = a."Id_Persona"
+      LEFT JOIN "Academia Forca&Fitness"."Matricula" m
+        ON a."Id_alumno" = m."Id_alumno"
+      LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm
+        ON dm."Id_Matricula" = m."Id_Matricula"
+      LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh
+        ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
+
+      ${idProfesor !== null
+        ? 'WHERE dh."Id_Profesor" = $1'
+        : ''}
+
       ORDER BY
         a."Id_alumno",
-        (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN 0 ELSE 1 END) ASC,
-        (CASE WHEN dm."Fecha_Fin" >= CURRENT_DATE THEN dm."Fecha_Fin" END) ASC NULLS LAST,
-        dm."Fecha_Fin" DESC NULLS LAST
+        CASE
+          WHEN UPPER(TRIM(m."Estado_Matricula")) IN ('ACTIVA', 'ACTIVO')
+               AND dm."Fecha_Fin" >= CURRENT_DATE
+          THEN 0
+          ELSE 1
+        END,
+        CASE
+          WHEN UPPER(TRIM(m."Estado_Matricula")) IN ('ACTIVA', 'ACTIVO')
+               AND dm."Fecha_Fin" >= CURRENT_DATE
+          THEN dm."Fecha_Fin"
+        END ASC NULLS LAST,
+        dm."Fecha_Fin" DESC NULLS LAST,
+        m."Fecha_Inscripcion" DESC NULLS LAST,
+        m."Id_Matricula" DESC,
+        dm."Id_DetMatricula" DESC
     `;
+
     const values = idProfesor !== null ? [idProfesor] : [];
     const result = await db.query(query, values);
     return result.rows;
@@ -72,7 +96,9 @@ class AlumnosRepository {
         a."Condicion" AS observaciones_medicas,
         m."Id_Matricula" AS id_matricula,
         m."Fecha_Inscripcion" AS fecha_matricula,
+        TO_CHAR(dm_seleccionado."Fecha_Fin", 'YYYY-MM-DD') AS fecha_fin,
         m."Estado_Matricula" AS estado_matricula,
+
         (
           SELECT MIN(dm_f."Fecha_Fin")
           FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f
@@ -86,54 +112,67 @@ class AlumnosRepository {
         (
           SELECT string_agg(d."Nombre_Disciplina", ', ')
           FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
-          JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
-          JOIN "Academia Forca&Fitness"."Disciplina" d ON dh."Id_Disciplina" = d."Id_Disciplinas"
+          JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh
+            ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
+          JOIN "Academia Forca&Fitness"."Disciplina" d
+            ON dh."Id_Disciplina" = d."Id_Disciplinas"
           WHERE dm."Id_Matricula" = m."Id_Matricula"
-            AND ($2::VARCHAR IS NULL OR dh."Id_Profesor" = $2)
+            AND (
+              $2::VARCHAR IS NULL
+              OR dh."Id_Profesor" = $2
+            )
         ) AS disciplinas,
+
         (
           SELECT mc."Contacto"
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
-          WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CORREO'
+          WHERE mc."Id_Persona" = a."Id_Persona"
+            AND mc."Tipo_Contacto" = 'CORREO'
           LIMIT 1
         ) AS correo_electronico,
+
         (
           SELECT mc."Contacto"
           FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
-          WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CELULAR'
+          WHERE mc."Id_Persona" = a."Id_Persona"
+            AND mc."Tipo_Contacto" = 'CELULAR'
           LIMIT 1
         ) AS numero_celular
+
       FROM "Academia Forca&Fitness"."Alumno" a
-      JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
-      LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
+      JOIN "Academia Forca&Fitness"."Persona" p
+        ON p."Id_Persona" = a."Id_Persona"
+      LEFT JOIN "Academia Forca&Fitness"."Matricula" m
+        ON a."Id_alumno" = m."Id_alumno"
+      LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm_seleccionado
+        ON dm_seleccionado."Id_Matricula" = m."Id_Matricula"
+      LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh_seleccionado
+        ON dm_seleccionado."Id_DiscHorario" = dh_seleccionado."Id_DiscHorario"
       WHERE a."Id_alumno" = $1
         AND (
           $2::VARCHAR IS NULL
-          OR EXISTS (
-            SELECT 1
-            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_profesor
-            JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh_profesor
-              ON dm_profesor."Id_DiscHorario" = dh_profesor."Id_DiscHorario"
-            WHERE dm_profesor."Id_Matricula" = m."Id_Matricula"
-              AND dh_profesor."Id_Profesor" = $2
-          )
+          OR dh_seleccionado."Id_Profesor" = $2
         )
+
       ORDER BY
-        (
-          CASE
-            WHEN (SELECT MIN(dm_f."Fecha_Fin") FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f WHERE dm_f."Id_Matricula" = m."Id_Matricula") >= CURRENT_DATE
-            THEN 0
-            ELSE 1
-          END
-        ) ASC,
-        (
-          SELECT MIN(dm_f."Fecha_Fin")
-          FROM "Academia Forca&Fitness"."Detalles_Matricula" dm_f
-          WHERE dm_f."Id_Matricula" = m."Id_Matricula"
-        ) ASC NULLS LAST,
-        m."Fecha_Inscripcion" DESC NULLS LAST
+        CASE
+          WHEN UPPER(TRIM(m."Estado_Matricula")) IN ('ACTIVA', 'ACTIVO')
+               AND dm_seleccionado."Fecha_Fin" >= CURRENT_DATE
+          THEN 0
+          ELSE 1
+        END,
+        CASE
+          WHEN UPPER(TRIM(m."Estado_Matricula")) IN ('ACTIVA', 'ACTIVO')
+               AND dm_seleccionado."Fecha_Fin" >= CURRENT_DATE
+          THEN dm_seleccionado."Fecha_Fin"
+        END ASC NULLS LAST,
+        dm_seleccionado."Fecha_Fin" DESC NULLS LAST,
+        m."Fecha_Inscripcion" DESC NULLS LAST,
+        m."Id_Matricula" DESC,
+        dm_seleccionado."Id_DetMatricula" DESC
       LIMIT 1
     `;
+
     const result = await db.query(query, [id, idProfesor]);
     return result.rows[0] || null;
   }
@@ -151,8 +190,8 @@ class AlumnosRepository {
     return result.rows[0] || null;
   }
 
-  // Solo lectura: devuelve cada periodo (inscripción o renovación) del alumno,
-  // de la matrícula más reciente a la más antigua. Nunca modifica ni elimina datos.
+  // Solo lectura: devuelve cada periodo (inscripcion o renovacion) del alumno,
+  // de la matricula mas reciente a la mas antigua. Nunca modifica ni elimina datos.
   async findHistorialMatriculasByAlumno(id) {
     const query = `
       SELECT
@@ -207,7 +246,7 @@ class AlumnosRepository {
 
       const alumno = alumnoRes.rows[0];
 
-      // Actualizar estado del alumno a Inhabilitado conservando datos personales y matrículas intactos
+      // Actualizar estado del alumno conservando datos personales y matriculas.
       const updateAlumnoRes = await client.query(
         `UPDATE "Academia Forca&Fitness"."Alumno"
          SET "Estado_Alumno" = 'Inhabilitado',
@@ -217,7 +256,7 @@ class AlumnosRepository {
         [id, nuevaCondicion]
       );
 
-      // Suspender acceso temporalmente en Usuario asociado sin eliminar su cuenta ni sus roles
+      // Suspender acceso del usuario sin eliminar su cuenta ni sus roles.
       if (alumno.Id_Persona) {
         await client.query(
           `UPDATE "Academia Forca&Fitness"."Usuario"
