@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     const tbody = document.getElementById('alumnos-tbody');
     const overlay = document.getElementById('side-panel-overlay');
@@ -6,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidePanelContent = document.getElementById('side-panel-content');
     const searchInput = document.getElementById('search-input') || document.querySelector('.search-input');
     const btnBuscarAlumnos = document.getElementById('btn-buscar-alumnos');
-    const filterSelect = document.getElementById('filter-select') || document.querySelector('.filter-select');
+    const filterSelect = document.getElementById('filter-select');
     const disciplinaSelect = document.getElementById('disciplina-select');
     const btnPorVencer = document.getElementById('btn-por-vencer');
     const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro');
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'option[value="Inhabilitado"]'
         );
         opcionInhabilitados?.remove();
+        filterSelect.querySelector('option[value="Inhabilitada"]')?.remove();
     }
 
     const closePanel = () => {
@@ -163,7 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const getDiasText = (alumno) => {
-        const inhabilitado = Boolean(alumno.inhabilitado) || alumno.estado_matricula === 'Inhabilitada' || alumno.estado_alumno === 'Inhabilitado';
+        const estadoRegistrado = String(alumno.estado_alumno_registrado || '').trim().toUpperCase();
+        const inhabilitado = estadoRegistrado
+            ? estadoRegistrado === 'INHABILITADO'
+            : Boolean(alumno.inhabilitado);
+        const estadoMatricula = inhabilitado ? 'Inhabilitada' : (alumno.estado_matricula_real || alumno.estado_matricula);
         if (inhabilitado) {
             return alumno.periodo_inhabilitacion?.fecha_fin
                 ? `Hasta ${formatearFecha(alumno.periodo_inhabilitacion.fecha_fin)} (Matrícula conservada)`
@@ -171,18 +177,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const dias = Number(alumno.dias_restantes) || 0;
-        if (alumno.estado_matricula === 'Próxima a vencer') {
+        if (estadoMatricula === 'Próxima a vencer') {
             if (dias === 0) return 'Vence hoy';
             if (dias === 1) return 'Vence mañana';
             return `Vence en ${dias} días`;
         }
-        if (alumno.estado_matricula === 'Activa') {
+        if (estadoMatricula === 'Activa') {
             return `${dias} días restantes`;
         }
-        if (alumno.estado_matricula === 'Vencida') {
+        if (estadoMatricula === 'Vencida') {
             return `Venció hace ${Math.abs(dias)} días`;
         }
-        if (alumno.estado_matricula === 'Reservada') {
+        if (estadoMatricula === 'Reservada') {
             return 'Inicia próximo periodo';
         }
         return '';
@@ -195,9 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
             )
         );
         const total = alumnosListado.length;
-        const activas = alumnosListado.filter(a => a.estado_matricula === 'Activa').length;
-        const porVencer = alumnosListado.filter(a => a.estado_matricula === 'Próxima a vencer' || a.por_vencer).length;
-        const vencidas = alumnosListado.filter(a => a.estado_matricula === 'Vencida').length;
+        const activas = alumnosListado.filter(a => (a.estado_matricula_real || a.estado_matricula) === 'Activa').length;
+        const porVencer = alumnosListado.filter(a => (a.estado_matricula_real || a.estado_matricula) === 'Próxima a vencer' || a.por_vencer).length;
+        const vencidas = alumnosListado.filter(a => (a.estado_matricula_real || a.estado_matricula) === 'Vencida').length;
 
         if (kpiTotalVal) kpiTotalVal.textContent = total;
         if (kpiActivasVal) kpiActivasVal.textContent = activas;
@@ -259,16 +265,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderTable = (alumnos) => {
         tbody.innerHTML = '';
+
         if (!alumnos.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding: 2.5rem 1rem;">No se encontraron alumnos con el criterio seleccionado.</td></tr>';
+            const mensaje = filterSelect?.value === 'Por vencer'
+                ? 'No hay matrículas que venzan en los próximos 3 días.'
+                : 'No se encontraron alumnos con el criterio seleccionado.';
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted" style="padding: 2.5rem 1rem;">${escapeHtml(mensaje)}</td></tr>`;
             return;
         }
 
         const mostrarBotonInhabilitar = puedeInhabilitar();
 
         alumnos.forEach((alumno) => {
-            const inhabilitado = Boolean(alumno.inhabilitado) || alumno.estado_matricula === 'Inhabilitada' || alumno.estado_alumno === 'Inhabilitado';
-            const estadoMostrar = inhabilitado ? 'Inhabilitada' : alumno.estado_matricula;
+            const estadoRegistrado = String(alumno.estado_alumno_registrado || '').trim().toUpperCase();
+            const inhabilitado = estadoRegistrado
+                ? estadoRegistrado === 'INHABILITADO'
+                : Boolean(alumno.inhabilitado);
+            const estadoMostrar = inhabilitado
+                ? 'Inhabilitada'
+                : (alumno.estado_matricula_real || alumno.estado_matricula);
             const badgeClass = getBadgeClass(estadoMostrar);
             const diasTexto = getDiasText(alumno);
             const fechaVenc = formatearFecha(alumno.fecha_vencimiento);
@@ -287,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fechaClase = esVencida ? 'vencida' : (esPorVencer ? 'alerta' : '');
 
             const tr = document.createElement('tr');
+
             tr.innerHTML = `
                 <td>
                     <div class="alumno-row">
@@ -326,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </td>
             `;
+
             tbody.appendChild(tr);
         });
 
@@ -362,30 +379,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 || String(alumno.dni ?? '').includes(search)
                 || (alumno.disciplinas || []).some(d => normalizarTexto(d).includes(search));
 
-            const inhabilitado = Boolean(alumno.inhabilitado) || alumno.estado_matricula === 'Inhabilitada' || alumno.estado_alumno === 'Inhabilitado';
+            // HU-06: estado del alumno y estado de matrícula son filtros distintos.
+            const estadoAlumno = String(alumno.estado_alumno_registrado || '').trim().toUpperCase();
+            const estadoMatricula = alumno.estado_matricula_real || alumno.estado_matricula;
+            const esInhabilitado = estadoAlumno === 'INHABILITADO';
 
             let matchesStatus = true;
-            if (status === 'Por vencer') {
-                matchesStatus = !inhabilitado && (alumno.estado_matricula === 'Próxima a vencer' || alumno.por_vencer === true);
-            } else if (status === 'Activa' || status === 'Activo') {
-                matchesStatus = !inhabilitado && alumno.estado_matricula === 'Activa';
-            } else if (status === 'Vencida' || status === 'Inactivo') {
-                matchesStatus = !inhabilitado && alumno.estado_matricula === 'Vencida';
-            } else if (status === 'Reservada') {
-                matchesStatus = !inhabilitado && alumno.estado_matricula === 'Reservada';
-            } else if (status === 'Inhabilitada' || status === 'Inhabilitado') {
-                matchesStatus = inhabilitado;
-            } else {
-                matchesStatus = true; // 'Todos'
+            if (status === 'Activo') {
+                matchesStatus = estadoAlumno === 'ACTIVO';
+            } else if (status === 'Inactivo') {
+                matchesStatus = estadoAlumno === 'INACTIVO';
+            } else if (status === 'Inhabilitado') {
+                matchesStatus = esInhabilitado;
+            } else if (status === 'Por vencer') {
+                matchesStatus = !esInhabilitado &&
+                    (estadoMatricula === 'Próxima a vencer' || alumno.por_vencer === true);
+            } else if (['Activa', 'Vencida', 'Reservada'].includes(status)) {
+                matchesStatus = !esInhabilitado && estadoMatricula === status;
+            } else if (status === 'Inhabilitada') {
+                matchesStatus = alumno.estado_matricula === 'Inhabilitada';
             }
 
-            const estadoAlumno = String(alumno.estado_alumno_registrado || '').trim().toUpperCase();
-            const estadosPermitidos =
-                status === 'Inhabilitado' ? ['INHABILITADO']
-                : status === 'Activo' ? ['ACTIVO']
-                : status === 'Inactivo' ? ['INACTIVO']
-                : ['ACTIVO', 'INACTIVO'];
-            const matchesHabilitacion = estadosPermitidos.includes(estadoAlumno);
+            // Por defecto: activos e inactivos; los inhabilitados quedan ocultos.
+            const matchesHabilitacion =
+                status === 'Inhabilitado' || status === 'Inhabilitada'
+                    ? (esDirector && (status === 'Inhabilitada' || esInhabilitado))
+                    : ['ACTIVO', 'INACTIVO'].includes(estadoAlumno);
 
             const matchesDisciplina = disciplina === 'Todas' || (
                 Array.isArray(alumno.disciplinas) &&
