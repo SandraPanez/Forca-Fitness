@@ -48,26 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('token', result.token);
             localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
-            const roles = Array.isArray(result.usuario.roles)
-                ? result.usuario.roles
-                : result.usuario.rol
-                    ? [result.usuario.rol]
-                    : [];
-
-            if (
-                roles.includes('DIRECTOR') ||
-                roles.includes('TESORERO')
-            ) {
-                window.location.href = '/alumnos.html';
-                return;
-            }
-
-            if (roles.includes('PROFESOR')) {
-                window.location.href = '/control-acceso';
-                return;
-            }
-
-            window.location.href = '/index.html';
+            window.location.href = paginaDeInicio();
 
         } catch (error) {
             errorElement.textContent = error.message;
@@ -75,9 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
+
     function mostrarPagoPendiente(pago) {
         const existente = document.getElementById('pending-payment-link');
         if (existente) existente.remove();
+
+        // Si ya eligió efectivo, no debe sugerir Mercado Pago; solo esperar aprobación del tesorero
+        const esEfectivo = String(pago?.medio_pago || '').toUpperCase() === 'EFECTIVO';
+        if (esEfectivo) {
+            return;
+        }
 
         const params = new URLSearchParams({
             preview: '1',
@@ -86,7 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nombre: pago.nombre,
             correo: pago.correo,
             concepto: `Mensualidad - ${pago.disciplinas || 'Disciplinas seleccionadas'}`,
-            monto: String(pago.monto)
+            monto: String(pago.monto),
+            metodo: pago.medio_pago ? String(pago.medio_pago).toLowerCase() : ''
         });
         const link = document.createElement('a');
         link.id = 'pending-payment-link';

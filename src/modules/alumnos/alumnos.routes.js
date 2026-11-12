@@ -17,6 +17,12 @@ router.get("/:id",
   alumnosController.obtenerDetalleAlumno
 );
 
+router.get("/:id/historial-matriculas",
+  autenticar,
+  autorizar(PERMISOS.VER_HISTORIAL_MATRICULAS),
+  alumnosController.obtenerHistorialMatriculas
+);
+
 router.patch("/:id/inhabilitar",
   autenticar,
   autorizar(PERMISOS.INHABILITAR_ALUMNO),

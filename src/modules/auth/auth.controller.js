@@ -1,5 +1,16 @@
 const authService = require('./auth.service');
 
+const AUTH_COOKIE_NAME = 'forca_auth_token';
+
+function getCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  };
+}
+
 async function login(req, res) {
   try {
     const { correo, password } = req.body;
@@ -15,6 +26,11 @@ async function login(req, res) {
       password
     );
 
+    res.cookie(AUTH_COOKIE_NAME, resultado.token, {
+      ...getCookieOptions(),
+      maxAge: 8 * 60 * 60 * 1000
+    });
+
     return res.status(200).json(resultado);
 
   } catch (error) {
@@ -25,9 +41,17 @@ async function login(req, res) {
       });
     }
 
+    if (error.message === 'USUARIO_INACTIVO') {
+      return res.status(403).json({ message: 'Tu cuenta está inactiva. Contacta con la administración.' });
+    }
+
     if (error.message === 'USUARIO_PAGO_PENDIENTE') {
+      const esEfectivo = String(error.pagoPendiente?.medio_pago || '').toUpperCase() === 'EFECTIVO';
+      const mensaje = esEfectivo
+        ? 'Tu matrícula está pendiente de confirmación de pago en efectivo. Por favor, acércate a recepción para que el tesorero apruebe tu pago y se habilite tu cuenta.'
+        : 'Tu matrícula tiene un pago pendiente. El pago debe ser completado para habilitar tu cuenta.';
       return res.status(403).json({
-        message: 'Tu matrícula tiene un pago pendiente. Puedes continuar el pago con Mercado Pago.',
+        message: mensaje,
         pagoPendiente: error.pagoPendiente
       });
     }
@@ -51,6 +75,11 @@ async function login(req, res) {
 }
 
 function logout(req, res) {
+  res.clearCookie(
+    AUTH_COOKIE_NAME,
+    getCookieOptions()
+  );
+
   return res.status(200).json({
     message: 'Sesión cerrada correctamente'
   });

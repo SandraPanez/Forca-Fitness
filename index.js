@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 const express = require('express');
 const db = require('./src/shared/config/database');
@@ -6,10 +6,24 @@ const path = require('path');
 const { autenticar } = require('./src/shared/middleware/auth.middleware');
 const { autorizar } = require('./src/shared/middleware/permisos.middleware');
 const { PERMISOS } = require('./src/shared/constants/permisos');
+const { autenticarDashboard } = require('./src/shared/middleware/queues-auth.middleware');
+const { createQueuesDashboard } = require('./src/shared/queues/queues.dashboard');
+const { createEmailTransactionalWorker } = require('./src/shared/queues/email-transactional.worker');
 
 const app = express();
 
 app.use(express.json());
+
+const queuesDashboard = createQueuesDashboard();
+
+createEmailTransactionalWorker();
+
+app.use(
+  queuesDashboard.path,
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_COLAS),
+  queuesDashboard.router
+);
 
 
 // Primera página del sistema = Login
@@ -19,9 +33,30 @@ app.get('/', (req, res) => {
 
 app.get(
   '/tesoreria.html',
-  autenticar,
+  autenticarDashboard,
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
+);
+
+app.get(
+  '/administracion-accesos.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion-accesos.html'))
+);
+
+app.get(
+  '/editar-acceso.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'editar-acceso.html'))
+);
+
+app.get(
+  '/reservas.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.VER_PROPIA_MATRICULA),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'reservas.html'))
 );
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -34,14 +69,22 @@ app.get('/control-acceso', (req, res) => {
 const {
   matriculasRoutes,
   alumnosRoutes,
+  profesoresRoutes,
   authRoutes,
-  pagosRoutes
+  pagosRoutes,
+  comprobantesRoutes,
+  perfilRoutes,
+  personalRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
 app.use('/api/alumnos', alumnosRoutes);
+app.use('/api/profesores', profesoresRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
+app.use('/api/comprobantes', comprobantesRoutes);
+app.use('/api/perfil', perfilRoutes);
+app.use('/api/personal', personalRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -67,19 +110,30 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
 const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
-const expirationCheck = setInterval(async () => {
+async function ejecutarTareasPeriodicas() {
   try {
     const expired = await require('./src/modules/pagos/pagos.service')
       .anularSolicitudesEfectivoVencidas();
     if (expired > 0) {
       console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
     }
+    const activadas = await require('./src/modules/pagos/pagos.service')
+      .activarReservasIniciadas();
+    if (activadas > 0) {
+      console.log(`Reservas activadas automáticamente al iniciar periodo: ${activadas}`);
+    }
   } catch (error) {
-    console.error('Error al anular solicitudes de efectivo vencidas:', error);
+    console.warn(`Tareas periódicas: Base de datos no disponible temporalmente (${error.message || 'error de conexión'}).`);
   }
-}, EXPIRATION_CHECK_INTERVAL);
+}
+
+const expirationCheck = setInterval(ejecutarTareasPeriodicas, EXPIRATION_CHECK_INTERVAL);
 expirationCheck.unref();
+
+// HU-20: recordatorios de vencimiento por correo (una vez al día).
+require('./src/modules/notificaciones/recordatorios-vencimiento.job').iniciarJobRecordatoriosVencimiento();
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
+  ejecutarTareasPeriodicas();
 });

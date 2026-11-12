@@ -2,8 +2,14 @@ const express = require('express');
 const router = express.Router();
 const pagosController = require('./pagos.controller');
 const { autenticar } = require('../../shared/middleware/auth.middleware');
-const { autorizar } = require('../../shared/middleware/permisos.middleware');
+const { autorizar, autorizarRol } = require('../../shared/middleware/permisos.middleware');
 const { PERMISOS } = require('../../shared/constants/permisos');
+const ROLES = require('../../shared/constants/roles');
+
+// GET /api/pagos/verificar/:matricula - Verificar estado de pago de una matrícula
+router.get('/verificar/:matricula', pagosController.verificarEstadoMatricula);
+// La cuenta de un alumno nuevo sigue inactiva hasta verificar el pago en la API.
+router.post('/sincronizar/:matricula', pagosController.sincronizarPago);
 
 // POST /api/pagos/crear-preferencia - Crear preferencia de pago
 router.post('/crear-preferencia', pagosController.crearPreferencia);
@@ -14,6 +20,40 @@ router.get(
   autorizar(PERMISOS.GESTIONAR_PAGOS),
   pagosController.listarCobros
 );
+router.get(
+  '/por-alumno',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  pagosController.listarCobrosPorAlumno
+);
+router.get(
+  '/balance',
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.obtenerBalanceFinanciero
+);
+router.get(
+  '/balance/:idPago',
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.obtenerDetalleOperacionBalance
+);
+// Restricción explícita de solo lectura: bloquear edición, modificación o borrado sobre balance
+router.all(
+  ['/balance', '/balance/:idPago'],
+  autenticar,
+  autorizarRol(ROLES.TESORERO),
+  autorizar(PERMISOS.CONSULTAR_BALANCE),
+  pagosController.restringirMutacionBalance
+);
+router.get(
+  '/efectivo/pendientes',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PAGOS),
+  pagosController.listarEfectivoPendientes
+);
 router.post(
   '/efectivo/confirmar',
   autenticar,
@@ -22,13 +62,7 @@ router.post(
 );
 
 // GET /api/pagos/success - URL de retorno exitoso
-router.get('/success', pagosController.pagoExitoso);
-
-// GET /api/pagos/failure - URL de retorno fallido
-router.get('/failure', pagosController.pagoFallido);
-
-// GET /api/pagos/pending - URL de retorno pendiente
-router.get('/pending', pagosController.pagoPendiente);
+router.get(['/success', '/failure', '/pending'], pagosController.pagoExitoso);
 
 // POST /api/pagos/webhook - Notificaciones de Mercado Pago
 router.post('/webhook', pagosController.webhook);

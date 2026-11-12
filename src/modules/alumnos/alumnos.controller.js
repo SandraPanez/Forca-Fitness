@@ -3,7 +3,8 @@ const alumnosService = require('./alumnos.service');
 class AlumnosController {
   async listarAlumnos(req, res) {
     try {
-      const alumnos = await alumnosService.listarAlumnos();
+      const idProfesor = req.usuario?.id_profesor || req.query.id_profesor || null;
+      const alumnos = await alumnosService.listarAlumnos(idProfesor);
       return res.status(200).json({
         success: true,
         data: alumnos
@@ -38,6 +39,31 @@ class AlumnosController {
       return res.status(500).json({
         success: false,
         message: 'Error interno al obtener detalle del alumno'
+      });
+    }
+  }
+
+  async obtenerHistorialMatriculas(req, res) {
+    try {
+      const { id } = req.params;
+      const historial = await alumnosService.obtenerHistorialMatriculas(id);
+
+      if (!historial) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alumno no encontrado'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: historial
+      });
+    } catch (error) {
+      console.error('Error en obtenerHistorialMatriculas:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno al obtener el historial de matrículas'
       });
     }
   }
