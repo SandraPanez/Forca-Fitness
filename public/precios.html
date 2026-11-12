@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precios y ofertas | Forca & Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+    <link rel="stylesheet" href="/css/precios.css">
+</head>
+<body>
+    <header id="app-header"></header>
+
+    <main class="container" style="max-width: 1200px;">
+        <div class="page-header">
+            <h2 class="title">Precios y ofertas</h2>
+            <p class="description">Actualiza el precio base de cada disciplina y configura una promoción de matrícula. Los cambios solo aplican a nuevas matrículas: no modifican matrículas ni pagos ya registrados.</p>
+        </div>
+
+        <p id="precios-mensaje" class="precios-mensaje" role="status" hidden></p>
+
+        <div id="precios-grid" class="precios-grid" aria-live="polite">
+            <p class="text-muted">Cargando disciplinas...</p>
+        </div>
+    </main>
+
+    <!-- CA1: ventana de configuración -->
+    <dialog class="access-confirm-dialog precios-dialog" id="precio-editar" aria-labelledby="precio-editar-titulo">
+        <form class="access-confirm-content" id="precio-form" novalidate>
+            <h2 id="precio-editar-titulo">Configurar precio</h2>
+            <p class="text-muted" id="precio-editar-disciplina"></p>
+
+            <div class="form-group">
+                <label for="precio-tarifa">Precio base (S/) <span class="asterisk">*</span></label>
+                <input type="number" id="precio-tarifa" name="tarifa" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="precio-tarifa-error">
+                <p class="error-message precio-error" id="precio-tarifa-error" role="alert"></p>
+            </div>
+
+            <fieldset class="precios-fieldset">
+                <legend>Promoción de matrícula</legend>
+                <p class="text-muted precios-nota">Solo puede haber una promoción activa por disciplina.</p>
+
+                <div class="form-group">
+                    <label for="precio-promo-tipo">Tipo de descuento</label>
+                    <select id="precio-promo-tipo" name="promocion_tipo" aria-describedby="precio-promo-tipo-error">
+                        <option value="">Sin promoción</option>
+                        <option value="PORCENTAJE">Porcentaje (%)</option>
+                        <option value="MONTO_FIJO">Monto fijo (S/)</option>
+                    </select>
+                    <p class="error-message precio-error" id="precio-promo-tipo-error" role="alert"></p>
+                </div>
+
+                <div class="precios-promo-campos" id="precio-promo-campos" hidden>
+                    <div class="form-group">
+                        <label for="precio-promo-valor" id="precio-promo-valor-label">Valor del descuento <span class="asterisk">*</span></label>
+                        <input type="number" id="precio-promo-valor" name="promocion_valor" min="0.01" step="0.01" inputmode="decimal" aria-describedby="precio-promo-valor-error">
+                        <p class="error-message precio-error" id="precio-promo-valor-error" role="alert"></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="precio-promo-texto">Texto de la promoción <span class="asterisk">*</span></label>
+                        <input type="text" id="precio-promo-texto" name="promocion_texto" maxlength="40" autocomplete="off" placeholder="Ej: Campaña de verano" aria-describedby="precio-promo-texto-error">
+                        <p class="error-message precio-error" id="precio-promo-texto-error" role="alert"></p>
+                    </div>
+                </div>
+                <p class="error-message precio-error" id="precio-promocion-error" role="alert"></p>
+            </fieldset>
+
+            <p class="precios-final">Precio para nuevas matrículas: <strong id="precio-final">—</strong></p>
+            <p class="text-muted precios-sin-cambios" id="precio-sin-cambios" hidden>Aún no has modificado nada.</p>
+
+            <div class="access-form-actions">
+                <button type="button" class="btn-secondary" id="precio-cancelar">Cancelar</button>
+                <button type="submit" class="btn-primary" id="precio-guardar" disabled>Guardar cambios</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- CA2: confirmación con resumen de cambios -->
+    <dialog class="access-confirm-dialog precios-dialog" id="precio-confirmar" aria-labelledby="precio-confirmar-titulo">
+        <div class="access-confirm-content">
+            <h2 id="precio-confirmar-titulo">Confirmar cambios</h2>
+            <p>Revisa los cambios de <strong id="precio-confirmar-disciplina"></strong>. Solo aplicarán a nuevas matrículas.</p>
+            <table class="precios-resumen">
+                <thead>
+                    <tr><th scope="col"></th><th scope="col">Anterior</th><th scope="col">Nuevo</th></tr>
+                </thead>
+                <tbody id="precio-resumen"></tbody>
+            </table>
+            <p class="access-confirm-error" id="precio-confirmar-error" role="alert"></p>
+            <div class="access-form-actions">
+                <button type="button" class="btn-secondary" id="precio-volver">Volver</button>
+                <button type="button" class="btn-primary" id="precio-confirmar-boton">Confirmar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/descuentos.js"></script>
+    <script src="/js/precios-promociones.js"></script>
+    <script src="/js/precios.js"></script>
+</body>
+</html>

@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const matriculasController = require('./matriculas.controller');
+const disciplinasPreciosController = require('./disciplinas-precios.controller');
 
 const {
   autenticar
@@ -25,6 +26,36 @@ const {
 router.get(
   '/disciplinas',
   matriculasController.getDisciplinas
+);
+
+// =========================================================
+// PRECIOS Y PROMOCIONES (HU-26) - solo Director
+// =========================================================
+
+// GET /api/matriculas/disciplinas/precios
+// Precio base y promoción actual de cada disciplina (T1)
+router.get(
+  '/disciplinas/precios',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PRECIOS),
+  disciplinasPreciosController.listarPrecios
+);
+
+// GET /api/matriculas/disciplinas/:id/precio
+router.get(
+  '/disciplinas/:id/precio',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PRECIOS),
+  disciplinasPreciosController.obtenerPrecio
+);
+
+// PUT /api/matriculas/disciplinas/:id/precio
+// Guardar precio base y una única promoción para futuras matrículas (T6)
+router.put(
+  '/disciplinas/:id/precio',
+  autenticar,
+  autorizar(PERMISOS.GESTIONAR_PRECIOS),
+  disciplinasPreciosController.actualizarPrecio
 );
 
 // GET /api/matriculas/disciplinas/:id/horarios

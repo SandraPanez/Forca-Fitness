@@ -113,7 +113,8 @@ const MENU_POR_ROL = {
         ['Control de acceso', '/control-acceso'],
         ['Horarios', '/horarios.html'],
         ['Administración de accesos', '/administracion-accesos.html'],
-        ['Pagos', '/tesoreria.html']
+        ['Pagos', '/tesoreria.html'],
+        ['Precios y ofertas', '/precios.html']
     ],
     TESORERO: [
         ['Alumnos', '/alumnos.html'],

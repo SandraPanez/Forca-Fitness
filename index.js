@@ -52,6 +52,14 @@ app.get(
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'editar-acceso.html'))
 );
 
+// HU-26: panel de precios y ofertas del Director
+app.get(
+  '/precios.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.GESTIONAR_PRECIOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'precios.html'))
+);
+
 app.get(
   '/reservas.html',
   autenticarDashboard,
