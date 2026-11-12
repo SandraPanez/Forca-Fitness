@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="/css/header.css">
 </head>
-<body>
+<body data-allow-guest="true" data-menu="/disciplinas.html">
 
     <!-- Header -->
     <header id="app-header"></header>
@@ -20,7 +20,7 @@
         
         <!-- Page Header -->
         <section class="page-header">
-            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">Consulta de clases</p>
+            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">CONSULTA DE CLASES</p>
             <h2 class="title">Horarios y disponibilidad</h2>
             <p class="description">Revisa los horarios y cupos disponibles por disciplina.</p>
         </section>
@@ -31,77 +31,30 @@
             <div class="filtros-header">
                 <div class="filtros-texto">
                     <h3>Disponibilidad por disciplina</h3>
-                    <p>Selecciona una disciplina para ver sus horarios.</p>
+                    <p>Revisa los horarios de todas las disciplinas o filtra por una en específico.</p>
                 </div>
                 
-                <div class="disciplina-selector form-group">
-                    <label for="disciplina-select">Disciplina</label>
-                    <select id="disciplina-select">
-                        <option value="">Seleccione...</option>
-                        <!-- Mockup de opciones (Se llenarán por JS después) -->
-                        <option value="1">Boxeo</option>
-                        <option value="2">MMA</option>
-                        <option value="3">Muay Thai</option>
-                    </select>
+                <div class="filtros-controles">
+                    <div class="disciplina-selector form-group">
+                        <label for="disciplina-select">Disciplina</label>
+                        <select id="disciplina-select">
+                            <option value="todas" selected>Todas las disciplinas</option>
+                        </select>
+                    </div>
+
+                    <div class="periodo-selector form-group">
+                        <label for="periodo-select">Periodo de matrícula</label>
+                        <select id="periodo-select">
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <hr class="divider">
 
-            <!-- Grilla de Horarios (Mockup visual para T_06) -->
+            <!-- Grilla de Horarios -->
             <div id="horarios-grid" class="horarios-grid">
-                
-                <!-- Tarjeta Disponible -->
-                <div class="horario-card">
-                    <div class="horario-info">
-                        <span class="horario-dias">Lunes / Miércoles / Viernes</span>
-                        <span class="horario-horas">7:00 p. m. - 8:00 p. m.</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text">4 cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: 20</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="badge-disponible">Disponible</span>
-                    </div>
-                </div>
-
-                <!-- Tarjeta Últimos Cupos -->
-                <div class="horario-card">
-                    <div class="horario-info">
-                        <span class="horario-dias">Martes / Jueves</span>
-                        <span class="horario-horas">6:00 a. m. - 7:00 a. m.</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text" style="color: var(--danger-color)">2 cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: 15</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="badge-ultimos">Últimos cupos</span>
-                    </div>
-                </div>
-
-                <!-- Tarjeta Agotado -->
-                <div class="horario-card agotado">
-                    <div class="horario-info">
-                        <span class="horario-dias">Sábados / Domingos</span>
-                        <span class="horario-horas">9:00 a. m. - 10:30 a. m.</span>
-                    </div>
-                    
-                    <div class="horario-capacidad">
-                        <span class="cupos-text">0 cupos disponibles</span>
-                        <span class="capacidad-text">Capacidad total: 25</span>
-                    </div>
-                    
-                    <div class="horario-estado">
-                        <span class="badge-agotado">Agotado</span>
-                    </div>
-                </div>
-
+                <div class="text-muted" style="text-align: center; padding: 2rem;">Cargando horarios...</div>
             </div>
             
         </div>

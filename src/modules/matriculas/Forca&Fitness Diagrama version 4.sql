@@ -231,7 +231,11 @@ CREATE TABLE IF NOT EXISTS "Registro_Cobro" (
     "Medio_Pago" VARCHAR(20) NOT NULL,
     "Resultado" VARCHAR(20) NOT NULL,
     "Id_Pago" VARCHAR(10) NOT NULL REFERENCES "Pago" ("Id_Pago"),
-    "Referencia_Operacion" VARCHAR(255)
+    "Referencia_Operacion" VARCHAR(255),
+    "Monto_Original" DECIMAL(10,2),
+    "Tipo_Descuento" VARCHAR(20),
+    "Valor_Descuento" DECIMAL(10,2),
+    "Monto_Descuento" DECIMAL(10,2) NOT NULL DEFAULT 0.00
 );
 
 CREATE OR REPLACE FUNCTION impedir_cambios_registro_cobro()

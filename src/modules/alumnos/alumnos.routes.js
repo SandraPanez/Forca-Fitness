@@ -11,10 +11,34 @@ router.get("/",
   alumnosController.listarAlumnos
 );
 
+router.get("/disciplinas",
+  autenticar,
+  autorizar(PERMISOS.VER_TODOS_ALUMNOS),
+  alumnosController.listarDisciplinas
+);
+
 router.get("/:id", 
   autenticar,
   autorizar(PERMISOS.VER_TODOS_ALUMNOS),
   alumnosController.obtenerDetalleAlumno
+);
+
+router.get("/:id/historial-matriculas",
+  autenticar,
+  autorizar(PERMISOS.VER_HISTORIAL_MATRICULAS),
+  alumnosController.obtenerHistorialMatriculas
+);
+
+router.patch("/:id/inhabilitar",
+  autenticar,
+  autorizar(PERMISOS.INHABILITAR_ALUMNO),
+  alumnosController.inhabilitarAlumno
+);
+
+router.put("/:id/inhabilitar",
+  autenticar,
+  autorizar(PERMISOS.INHABILITAR_ALUMNO),
+  alumnosController.inhabilitarAlumno
 );
 
 module.exports = router;

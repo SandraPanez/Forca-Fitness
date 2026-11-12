@@ -1,5 +1,88 @@
 const db = require('../../shared/config/database');
 const { randomUUID } = require('node:crypto');
+const { calcularDescuento } = require('../../../public/js/descuentos');
+
+// Proyección compartida de solo lectura para listar operaciones de balance y consultar su detalle individual
+const BALANCE_OPERACION_SELECT_FROM = `
+    SELECT
+        p."Id_Pago" AS id_pago,
+        cobro."Id_Registro" AS id_registro,
+        p."Id_Matricula" AS id_matricula,
+        COALESCE(cobro."Monto", p."Monto")::NUMERIC(10,2) AS monto,
+        COALESCE(cobro."Monto_Original", p."Monto")::NUMERIC(10,2) AS monto_original,
+        cobro."Tipo_Descuento" AS tipo_descuento,
+        cobro."Valor_Descuento"::NUMERIC(10,2) AS valor_descuento,
+        COALESCE(cobro."Monto_Descuento", 0)::NUMERIC(10,2) AS monto_descuento,
+        UPPER(p."Estado_Pago") AS estado_pago,
+        p."Fecha_Pago" AS fecha_solicitud,
+        COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_operacion,
+        UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago,
+        mp."Nombre_Metodo" AS metodo_nombre,
+        COALESCE(NULLIF(TRIM(cobro."Referencia_Operacion"), ''), NULLIF(TRIM(mptx."Mp_Payment_Id"), ''), '') AS referencia,
+        TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') ||
+            per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
+        COALESCE(doc."Tipo_Documento", 'DNI') AS tipo_documento,
+        per."Numero_Documento" AS dni,
+        (
+            SELECT mc."Contacto"
+            FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
+            WHERE mc."Id_Persona" = a."Id_Persona"
+              AND UPPER(mc."Tipo_Contacto") = 'CORREO'
+            LIMIT 1
+        ) AS correo,
+        COALESCE(det.disciplinas, 'Mensualidad') AS disciplinas,
+        det.periodo AS periodo_matricula,
+        CASE
+            WHEN UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) = 'MERCADO_PAGO' THEN 'Pasarela Mercado Pago'
+            ELSE COALESCE(
+                NULLIF(TRIM(COALESCE(per_reg."Nombre", '') || ' ' || COALESCE(per_reg."Apellido_Paterno", '')), ''),
+                u_reg."Correo",
+                'Tesorería'
+            )
+        END AS registrado_por,
+        (
+            SELECT COUNT(DISTINCT rc."Id_Pago")
+            FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+            WHERE UPPER(rc."Resultado") = 'APROBADO'
+              AND rc."Fecha_Hora" <= COALESCE(cobro."Fecha_Hora", p."Fecha_Pago")
+              AND DATE_TRUNC('year', rc."Fecha_Hora" AT TIME ZONE 'America/Lima') =
+                  DATE_TRUNC('year', COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')
+        )::int AS correlativo
+    FROM "Academia Forca&Fitness"."Pago" p
+    JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+    JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+    JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+    JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+    LEFT JOIN "Academia Forca&Fitness"."Documento_Identificacion" doc ON doc."Id_Documento" = per."Id_Documento"
+    LEFT JOIN "Academia Forca&Fitness"."Usuario" u_reg ON u_reg."Id_Usuario" = p."Id_Usuario_Registro"
+    LEFT JOIN "Academia Forca&Fitness"."Persona" per_reg ON per_reg."Id_Persona" = u_reg."Id_Persona"
+    LEFT JOIN LATERAL (
+        SELECT
+            rc."Id_Registro",
+            rc."Fecha_Hora",
+            rc."Referencia_Operacion",
+            rc."Monto",
+            rc."Monto_Original",
+            rc."Tipo_Descuento",
+            rc."Valor_Descuento",
+            rc."Monto_Descuento"
+        FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+        WHERE rc."Id_Pago" = p."Id_Pago"
+          AND UPPER(rc."Resultado") = 'APROBADO'
+        ORDER BY rc."Fecha_Hora" DESC
+        LIMIT 1
+    ) cobro ON TRUE
+    LEFT JOIN "Academia Forca&Fitness"."Mercado_Pago" mptx ON mptx."Id_Pago" = p."Id_Pago"
+    LEFT JOIN LATERAL (
+        SELECT
+            STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina") AS disciplinas,
+            TO_CHAR(MIN(dm."Fecha_Inicio"), 'DD/MM/YYYY') || ' - ' || TO_CHAR(MAX(dm."Fecha_Fin"), 'DD/MM/YYYY') AS periodo
+        FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+        JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+        WHERE dm."Id_Matricula" = m."Id_Matricula"
+    ) det ON TRUE
+`;
 
 class PagosRepository {
 
@@ -34,7 +117,8 @@ class PagosRepository {
                 p."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,
                 UPPER(mp."Nombre_Metodo") AS medio_pago,
                 TRIM(per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
-                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas,
+                m."Estado_Matricula" AS estado_matricula
             FROM "Academia Forca&Fitness"."Pago" p
             JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
             JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
@@ -44,9 +128,36 @@ class PagosRepository {
             LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
             LEFT JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
             ${where}
-            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno"
+            GROUP BY p."Id_Pago", mp."Nombre_Metodo", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno", m."Estado_Matricula"
             ORDER BY p."Fecha_Pago" DESC
         `, valores);
+        return result.rows;
+    }
+
+    async listarEfectivoPendientes() {
+        const result = await db.query(`
+            SELECT
+                p."Id_Pago" AS id_pago,
+                p."Id_Matricula" AS id_matricula,
+                p."Monto" AS monto,
+                p."Fecha_Pago" AS fecha_pago,
+                p."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,
+                TRIM(per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS alumno,
+                COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
+            FROM "Academia Forca&Fitness"."Pago" p
+            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+            JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+            JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+            LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+            LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+            LEFT JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+            WHERE p."Estado_Pago" = 'PENDIENTE'
+              AND UPPER(mp."Nombre_Metodo") = 'EFECTIVO'
+              AND p."Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
+            GROUP BY p."Id_Pago", per."Nombre", per."Apellido_Paterno", per."Apellido_Materno"
+            ORDER BY p."Fecha_Pago" ASC
+        `);
         return result.rows;
     }
 
@@ -111,6 +222,22 @@ class PagosRepository {
         return result.rows[0];
     }
 
+    async obtenerPagoActivoPorMatricula(idMatricula) {
+        const result = await db.query(`
+            SELECT p."Id_Pago", p."Estado_Pago" AS estado_pago,
+                   m."Estado_Matricula" AS estado_matricula,
+                   UPPER(mp."Nombre_Metodo") AS medio_pago
+            FROM "Academia Forca&Fitness"."Pago" p
+            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
+            WHERE p."Id_Matricula" = $1
+              AND p."Estado_Pago" IN ('PENDIENTE', 'APROBADO')
+            ORDER BY (p."Estado_Pago" = 'APROBADO') DESC, p."Fecha_Pago" DESC
+            LIMIT 1
+        `, [idMatricula]);
+        return result.rows[0] || null;
+    }
+
     async registrarPagoEfectivo(datosPago) {
         const query = `
             INSERT INTO "Academia Forca&Fitness"."Pago"
@@ -138,36 +265,96 @@ class PagosRepository {
         return result.rows[0];
     }
 
-    async confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion) {
+    async confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion, descuento = null) {
         const client = await db.pool.connect();
         try {
             await client.query('BEGIN');
+            const pagoPendiente = await client.query(`
+                SELECT p."Id_Pago", p."Monto"
+                FROM "Academia Forca&Fitness"."Pago" p
+                WHERE p."Id_Matricula" = $1
+                  AND p."Id_MPago" = 'MP02'
+                  AND p."Estado_Pago" = 'PENDIENTE'
+                  AND p."Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
+                ORDER BY p."Fecha_Pago" DESC
+                LIMIT 1
+                FOR UPDATE
+            `, [idMatricula]);
+            if (!pagoPendiente.rows[0]) {
+                throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
+            }
+
+            const precioOriginal = Number(pagoPendiente.rows[0].Monto);
+            const calculoDescuento = descuento
+                ? calcularDescuento({
+                    precioOriginal,
+                    tipo: descuento.tipo,
+                    valor: descuento.valor
+                })
+                : {
+                    precioOriginal,
+                    tipo: null,
+                    valor: null,
+                    descuento: 0,
+                    montoFinal: precioOriginal
+                };
+
             const pago = await client.query(`
                 UPDATE "Academia Forca&Fitness"."Pago"
                 SET "Estado_Pago" = 'APROBADO',
                     "Id_Usuario_Registro" = $2
-                WHERE "Id_Matricula" = $1
+                WHERE "Id_Pago" = $1
                   AND "Id_MPago" = 'MP02'
                   AND "Estado_Pago" = 'PENDIENTE'
                   AND "Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
                 RETURNING "Id_Pago", "Monto"
-            `, [idMatricula, idUsuario || null]);
+            `, [pagoPendiente.rows[0].Id_Pago, idUsuario || null]);
             if (!pago.rows[0]) {
                 throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
             }
-            const estadoMatricula = 'Activa';
+            const esFutura = await this.esMatriculaPeriodoFuturo(idMatricula, client);
+            const estadoMatricula = esFutura ? 'Reservada' : 'Activa';
 
             await this.actualizarEstadoMatricula(idMatricula, estadoMatricula, client);
             await this.activarUsuarioPorMatricula(idMatricula, client);
-            await client.query(`
-                INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
-                ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
-                 "Resultado", "Id_Pago", "Referencia_Operacion")
-                VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
-            `, [`REG${Date.now().toString().slice(-14)}`, pago.rows[0].Monto, pago.rows[0].Id_Pago, referenciaOperacion || null]);
+            if (descuento) {
+                await client.query(`
+                    INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
+                    ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
+                     "Resultado", "Id_Pago", "Referencia_Operacion",
+                     "Monto_Original", "Tipo_Descuento", "Valor_Descuento", "Monto_Descuento")
+                    VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4, $5, $6, $7, $8)
+                `, [
+                    `REG${Date.now().toString().slice(-14)}`,
+                    calculoDescuento.montoFinal,
+                    pago.rows[0].Id_Pago,
+                    referenciaOperacion || null,
+                    calculoDescuento.precioOriginal,
+                    calculoDescuento.tipo,
+                    calculoDescuento.valor,
+                    calculoDescuento.descuento
+                ]);
+            } else {
+                await client.query(`
+                    INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
+                    ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
+                     "Resultado", "Id_Pago", "Referencia_Operacion")
+                    VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
+                `, [
+                    `REG${Date.now().toString().slice(-14)}`,
+                    calculoDescuento.montoFinal,
+                    pago.rows[0].Id_Pago,
+                    referenciaOperacion || null
+                ]);
+            }
             await client.query('COMMIT');
             return {
                 ...pago.rows[0],
+                Monto_Original: calculoDescuento.precioOriginal,
+                Tipo_Descuento: calculoDescuento.tipo,
+                Valor_Descuento: calculoDescuento.valor,
+                Monto_Descuento: calculoDescuento.descuento,
+                Monto_Cobrado: calculoDescuento.montoFinal,
                 estadoMatricula
             };
         } catch (error) {
@@ -177,23 +364,6 @@ class PagosRepository {
             client.release();
         }
     }
-
-    async obtenerPagoActivoPorMatricula(idMatricula) {
-        const result = await db.query(`
-            SELECT p."Id_Pago", p."Estado_Pago" AS estado_pago,
-                   m."Estado_Matricula" AS estado_matricula,
-                   UPPER(mp."Nombre_Metodo") AS medio_pago
-            FROM "Academia Forca&Fitness"."Pago" p
-            JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
-            JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_Matricula" = p."Id_Matricula"
-            WHERE p."Id_Matricula" = $1
-              AND p."Estado_Pago" IN ('PENDIENTE', 'APROBADO')
-            ORDER BY (p."Estado_Pago" = 'APROBADO') DESC, p."Fecha_Pago" DESC
-            LIMIT 1
-        `, [idMatricula]);
-        return result.rows[0] || null;
-    }
-
 
     async anularSolicitudesEfectivoVencidas() {
         const result = await db.query(`
@@ -221,6 +391,31 @@ class PagosRepository {
                 id_pago: pago.Id_Pago
             });
         }
+        return result.rows.length;
+    }
+
+    async activarReservasIniciadas() {
+        const result = await db.query(`
+            WITH activadas AS (
+                UPDATE "Academia Forca&Fitness"."Matricula" m
+                SET "Estado_Matricula" = 'Activa'
+                WHERE m."Estado_Matricula" = 'Reservada'
+                  AND EXISTS (
+                      SELECT 1 FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                      WHERE dm."Id_Matricula" = m."Id_Matricula"
+                        AND dm."Fecha_Inicio" <= CURRENT_DATE
+                  )
+                RETURNING m."Id_Matricula", m."Id_alumno"
+            )
+            SELECT * FROM activadas
+        `);
+
+        if (result.rows.length > 0) {
+            for (const row of result.rows) {
+                await this.activarUsuarioPorMatricula(row.Id_Matricula);
+            }
+        }
+
         return result.rows.length;
     }
 
@@ -279,53 +474,6 @@ class PagosRepository {
         return result.rows[0];
     }
 
-    async obtenerTransaccionPorPaymentId(paymentId) {
-        const result = await db.query(`
-            SELECT "Id_Mp_Transaccion", "Id_Pago"
-            FROM "Academia Forca&Fitness"."Mercado_Pago"
-            WHERE "Mp_Payment_Id" = $1
-        `, [String(paymentId)]);
-        return result.rows[0] || null;
-    }
-
-    async asociarPaymentId(datosMP) {
-        const result = await db.query(`
-            UPDATE "Academia Forca&Fitness"."Mercado_Pago"
-            SET "Mp_Payment_Id" = $1
-            WHERE "Id_Pago" = $2
-              AND "Mp_Payment_Id" IS NULL
-            RETURNING "Id_Pago"
-        `, [String(datosMP.mp_payment_id), datosMP.id_pago]);
-        return result.rows[0] || null;
-    }
-
-
-    async actualizarEstadoPago(
-        id_matricula,
-        estado_pago
-    ) {
-        const query = `
-            UPDATE "Academia Forca&Fitness"."Pago"
-            SET "Estado_Pago" = $1
-            WHERE "Id_Matricula" = $2
-            RETURNING
-                "Id_Pago",
-                "Estado_Pago",
-                "Monto"
-        `;
-
-        const result = await db.query(
-            query,
-            [
-                estado_pago,
-                id_matricula
-            ]
-        );
-
-        return result.rows[0];
-    }
-
-
     async obtenerTransaccionesMercado(idMatricula) {
         const result = await db.query(`
             SELECT mp."Preference_Id", p."Estado_Pago" AS estado_pago
@@ -336,7 +484,6 @@ class PagosRepository {
         `, [idMatricula]);
         return result.rows;
     }
-
 
     async actualizarPagoMercado({ payment_id, preference_id, id_matricula, monto, estado_pago }) {
         const client = await db.pool.connect();
@@ -381,7 +528,8 @@ class PagosRepository {
                 WHERE "Id_Matricula" = $1 AND "Id_Pago" <> $2 AND "Estado_Pago" = 'APROBADO'
             `, [id_matricula, pago.Id_Pago]);
             if (estado_pago === 'APROBADO') {
-                estadoMatricula = 'Activa';
+                const futura = await this.esMatriculaPeriodoFuturo(id_matricula, client);
+                estadoMatricula = futura ? 'Reservada' : 'Activa';
                 await this.actualizarEstadoMatricula(id_matricula, estadoMatricula, client);
                 await this.activarUsuarioPorMatricula(id_matricula, client);
             } else if (otroAprobado.rows.length === 0) {
@@ -405,7 +553,6 @@ class PagosRepository {
             client.release();
         }
     }
-
 
 
     async obtenerMetodosPago() {
@@ -455,7 +602,7 @@ class PagosRepository {
                 ), fechas AS (
                     UPDATE "Academia Forca&Fitness"."Detalles_Matricula" dm
                     SET "Fecha_Inicio" = p.inicio,
-                        "Fecha_Fin" = (p.inicio + INTERVAL '30 days')::DATE
+                        "Fecha_Fin" = (p.inicio + INTERVAL '29 days')::DATE
                     FROM periodos p WHERE dm."Id_DetMatricula" = p."Id_DetMatricula"
                     RETURNING dm."Id_DetMatricula"
                 )
@@ -480,6 +627,25 @@ class PagosRepository {
         return result.rows[0];
     }
 
+    async esMatriculaPeriodoFuturo(idMatricula, client = db) {
+        const query = `
+            SELECT 1
+            FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+            WHERE dm."Id_Matricula" = $1
+              AND (
+                  EXTRACT(YEAR FROM dm."Fecha_Inicio") > EXTRACT(YEAR FROM CURRENT_DATE)
+                  OR (
+                      EXTRACT(YEAR FROM dm."Fecha_Inicio") = EXTRACT(YEAR FROM CURRENT_DATE)
+                      AND EXTRACT(MONTH FROM dm."Fecha_Inicio") > EXTRACT(MONTH FROM CURRENT_DATE)
+                  )
+              )
+            LIMIT 1
+        `;
+        const result = await client.query(query, [idMatricula]);
+        return result.rows.length > 0;
+    }
+
+
     // Habilitar la cuenta asociada a la matrícula
     async activarUsuarioPorMatricula(id_matricula, client = db) {
         const query = `
@@ -490,6 +656,7 @@ class PagosRepository {
               ON a."Id_alumno" = m."Id_alumno"
             WHERE m."Id_Matricula" = $1
               AND u."Id_Persona" = a."Id_Persona"
+              AND UPPER(u."Estado_Usuario") <> 'INACTIVO'
             RETURNING
                 u."Id_Usuario",
                 u."Correo",
@@ -504,6 +671,187 @@ class PagosRepository {
         return result.rows[0] || null;
     }
 
+    async obtenerUsuarioPorMatricula(id_matricula) {
+        const query = `
+            SELECT
+                u."Id_Usuario",
+                u."Correo",
+                u."Estado_Usuario",
+                TRIM(per."Nombre" || ' ' || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS nombre
+            FROM "Academia Forca&Fitness"."Matricula" m
+            JOIN "Academia Forca&Fitness"."Alumno" a ON a."Id_alumno" = m."Id_alumno"
+            JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+            LEFT JOIN "Academia Forca&Fitness"."Usuario" u ON u."Id_Persona" = a."Id_Persona"
+            WHERE m."Id_Matricula" = $1
+            LIMIT 1
+        `;
+
+        const result = await db.query(query, [id_matricula]);
+        return result.rows[0] || null;
+    }
+
+    async listarCobrosPorAlumno() {
+        const query = `
+            SELECT
+                a."Id_alumno" AS id_alumno,
+                per."Numero_Documento" AS dni,
+                TRIM(per."Nombre" || ' ' || COALESCE(per."Segundo_Nombre" || ' ', '') || per."Apellido_Paterno" || ' ' || per."Apellido_Materno") AS nombre_completo,
+                (
+                    SELECT mc."Contacto"
+                    FROM "Academia Forca&Fitness"."Metodo_Contacto" mc
+                    WHERE mc."Id_Persona" = a."Id_Persona" AND mc."Tipo_Contacto" = 'CORREO'
+                    LIMIT 1
+                ) AS correo,
+                p."Id_Pago" AS id_pago,
+                p."Id_Matricula" AS id_matricula,
+                p."Monto" AS monto,
+                p."Estado_Pago" AS estado_pago,
+                p."Fecha_Pago" AS fecha_pago,
+                UPPER(COALESCE(mp."Nombre_Metodo", 'EFECTIVO')) AS medio_pago,
+                cobro."Referencia_Operacion" AS referencia,
+                COALESCE(
+                    (
+                        SELECT STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ')
+                        FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+                        WHERE dm."Id_Matricula" = m."Id_Matricula"
+                    ),
+                    (
+                        SELECT STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ')
+                        FROM "Academia Forca&Fitness"."Matricula" m2
+                        JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m2."Id_Matricula"
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Disciplina" d ON d."Id_Disciplinas" = dh."Id_Disciplina"
+                        WHERE m2."Id_alumno" = a."Id_alumno"
+                    )
+                ) AS disciplinas,
+                COALESCE(
+                    (
+                        SELECT STRING_AGG(DISTINCT TRIM(per_prof."Nombre" || ' ' || per_prof."Apellido_Paterno"), ', ')
+                        FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Profesor" prof ON prof."Id_Profesor" = dh."Id_Profesor"
+                        JOIN "Academia Forca&Fitness"."Persona" per_prof ON per_prof."Id_Persona" = prof."Id_Persona"
+                        WHERE dm."Id_Matricula" = m."Id_Matricula"
+                    ),
+                    (
+                        SELECT STRING_AGG(DISTINCT TRIM(per_prof."Nombre" || ' ' || per_prof."Apellido_Paterno"), ', ')
+                        FROM "Academia Forca&Fitness"."Matricula" m2
+                        JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m2."Id_Matricula"
+                        JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dh."Id_DiscHorario" = dm."Id_DiscHorario"
+                        JOIN "Academia Forca&Fitness"."Profesor" prof ON prof."Id_Profesor" = dh."Id_Profesor"
+                        JOIN "Academia Forca&Fitness"."Persona" per_prof ON per_prof."Id_Persona" = prof."Id_Persona"
+                        WHERE m2."Id_alumno" = a."Id_alumno"
+                    )
+                ) AS profesores
+            FROM "Academia Forca&Fitness"."Alumno" a
+            JOIN "Academia Forca&Fitness"."Persona" per ON per."Id_Persona" = a."Id_Persona"
+            LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON m."Id_alumno" = a."Id_alumno"
+            LEFT JOIN "Academia Forca&Fitness"."Pago" p ON p."Id_Matricula" = m."Id_Matricula"
+            LEFT JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+            LEFT JOIN LATERAL (
+                SELECT rc."Referencia_Operacion"
+                FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+                WHERE rc."Id_Pago" = p."Id_Pago"
+                ORDER BY rc."Fecha_Hora" DESC
+                LIMIT 1
+            ) cobro ON TRUE
+            ORDER BY a."Id_alumno", p."Fecha_Pago" DESC NULLS LAST;
+        `;
+        const result = await db.query(query);
+        return result.rows;
+    }
+
+    _construirFiltroBalance({ fechaInicio, fechaFin, medio }, soloAprobados = true) {
+        const condiciones = [
+            `(COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AT TIME ZONE 'America/Lima')::date BETWEEN $1::date AND $2::date`
+        ];
+        if (soloAprobados) {
+            condiciones.unshift(`UPPER(p."Estado_Pago") = 'APROBADO'`);
+        }
+        const valores = [fechaInicio, fechaFin];
+
+        if (medio) {
+            valores.push(String(medio).trim().toUpperCase().replace(/\s+/g, '_'));
+            condiciones.push(`UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) = $${valores.length}`);
+        }
+
+        return { whereSql: `WHERE ${condiciones.join(' AND ')}`, valores };
+    }
+
+    /**
+     * Consulta agregada en PostgreSQL para calcular el resumen financiero del periodo
+     * (total de ingresos aprobados, desglose por medio de pago y conteo de operaciones).
+     */
+    async obtenerResumenBalancePorPeriodo({ fechaInicio, fechaFin, medio }) {
+        const { whereSql, valores } = this._construirFiltroBalance({ fechaInicio, fechaFin, medio }, false);
+
+        const query = `
+            WITH operaciones_periodo AS (
+                SELECT
+                    p."Id_Pago" AS id_pago,
+                    COALESCE(cobro."Monto", p."Monto")::NUMERIC(10,2) AS monto,
+                    UPPER(p."Estado_Pago") AS estado_pago,
+                    UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago
+                FROM "Academia Forca&Fitness"."Pago" p
+                JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
+                LEFT JOIN LATERAL (
+                    SELECT rc."Fecha_Hora", rc."Monto"
+                    FROM "Academia Forca&Fitness"."Registro_Cobro" rc
+                    WHERE rc."Id_Pago" = p."Id_Pago"
+                      AND UPPER(rc."Resultado") = 'APROBADO'
+                    ORDER BY rc."Fecha_Hora" DESC
+                    LIMIT 1
+                ) cobro ON TRUE
+                ${whereSql}
+            )
+            SELECT
+                COALESCE(SUM(monto) FILTER (WHERE estado_pago = 'APROBADO'), 0)::NUMERIC(12,2) AS total_ingresos,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'APROBADO')::int AS total_operaciones,
+                COALESCE(SUM(monto) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'EFECTIVO'), 0)::NUMERIC(12,2) AS ingresos_efectivo,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'EFECTIVO')::int AS operaciones_efectivo,
+                COALESCE(SUM(monto) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'MERCADO_PAGO'), 0)::NUMERIC(12,2) AS ingresos_mercado_pago,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'APROBADO' AND medio_pago = 'MERCADO_PAGO')::int AS operaciones_mercado_pago,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago = 'PENDIENTE')::int AS operaciones_pendientes,
+                COUNT(DISTINCT id_pago) FILTER (WHERE estado_pago IN ('ANULADO', 'RECHAZADO'))::int AS operaciones_no_completadas
+            FROM operaciones_periodo;
+        `;
+
+        const result = await db.query(query, valores);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Consulta los ingresos y pagos aprobados dentro de un rango de fechas (zona horaria America/Lima).
+     */
+    async obtenerBalancePorPeriodo({ fechaInicio, fechaFin, medio }) {
+        const { whereSql, valores } = this._construirFiltroBalance({ fechaInicio, fechaFin, medio }, true);
+
+        const query = `
+            ${BALANCE_OPERACION_SELECT_FROM}
+            ${whereSql}
+            ORDER BY COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") DESC
+        `;
+
+        const result = await db.query(query, valores);
+        return result.rows;
+    }
+
+    /**
+     * Recupera el detalle completo en modo consulta de una operación financiera aprobada por su Id_Pago.
+     */
+    async obtenerDetalleOperacionPorId(idPago) {
+        const query = `
+            ${BALANCE_OPERACION_SELECT_FROM}
+            WHERE p."Id_Pago" = $1
+              AND UPPER(p."Estado_Pago") = 'APROBADO'
+            LIMIT 1
+        `;
+
+        const result = await db.query(query, [idPago]);
+        return result.rows[0] || null;
+    }
 }
 
 module.exports = new PagosRepository();

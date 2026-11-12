@@ -1,5 +1,18 @@
 const db = require('../../shared/config/database');
 
+async function buscarSesionPorId(idUsuario) {
+  const result = await db.query(`
+    SELECT u."Id_Usuario", u."Estado_Usuario",
+      ARRAY_REMOVE(ARRAY_AGG(DISTINCT UPPER(r."Rol_Cargo")), NULL) AS "Roles"
+    FROM "Academia Forca&Fitness"."Usuario" u
+    LEFT JOIN "Academia Forca&Fitness"."Usuario_Rol" ur ON ur."Id_Usuario" = u."Id_Usuario"
+    LEFT JOIN "Academia Forca&Fitness"."Rol" r ON r."Id_Rol" = ur."Id_Rol"
+    WHERE u."Id_Usuario" = $1
+    GROUP BY u."Id_Usuario", u."Estado_Usuario"
+  `, [idUsuario]);
+  return result.rows[0] || null;
+}
+
 async function buscarPorCorreo(correo) {
   const query = `
     SELECT
@@ -110,6 +123,7 @@ async function buscarMatriculaPendientePorCorreo(correo) {
 }
 
 module.exports = {
+  buscarSesionPorId,
   buscarPorCorreo,
   buscarMatriculaPendientePorCorreo
 };

@@ -1,13 +1,42 @@
 const alumnosService = require('./alumnos.service');
 
 class AlumnosController {
+  async listarDisciplinas(req, res) {
+    try {
+      const disciplinas = await alumnosService.listarDisciplinas();
+
+      return res.status(200).json({
+        success: true,
+        data: disciplinas
+      });
+    } catch (error) {
+      console.error('Error al listar disciplinas:', error);
+
+      return res.status(500).json({
+        success: false,
+        message: 'No se pudieron cargar las disciplinas'
+      });
+    }
+  }
+
   async listarAlumnos(req, res) {
     try {
       const idProfesor = req.usuario?.id_profesor || req.query.id_profesor || null;
       const alumnos = await alumnosService.listarAlumnos(idProfesor);
+
+      const esDirector = (req.user?.roles || []).some(
+        rol => String(rol).toUpperCase() === 'DIRECTOR'
+      );
+
+      const alumnosVisibles = esDirector
+        ? alumnos
+        : alumnos.filter(alumno =>
+            String(alumno.estado_alumno_registrado || '').trim().toUpperCase() !== 'INHABILITADO'
+          );
+
       return res.status(200).json({
         success: true,
-        data: alumnos
+        data: alumnosVisibles
       });
     } catch (error) {
       console.error('Error en listarAlumnos:', error);
@@ -30,6 +59,21 @@ class AlumnosController {
         });
       }
 
+      const esDirector = (req.user?.roles || []).some(
+        rol => String(rol).toUpperCase() === 'DIRECTOR'
+      );
+
+      const esInhabilitado =
+        String(detalle.estado_alumno_registrado || '')
+          .trim().toUpperCase() === 'INHABILITADO';
+
+      if (esInhabilitado && !esDirector) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alumno no encontrado'
+        });
+      }
+
       return res.status(200).json({
         success: true,
         data: detalle
@@ -39,6 +83,57 @@ class AlumnosController {
       return res.status(500).json({
         success: false,
         message: 'Error interno al obtener detalle del alumno'
+      });
+    }
+  }
+
+  async obtenerHistorialMatriculas(req, res) {
+    try {
+      const { id } = req.params;
+      const historial = await alumnosService.obtenerHistorialMatriculas(id);
+
+      if (!historial) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alumno no encontrado'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: historial
+      });
+    } catch (error) {
+      console.error('Error en obtenerHistorialMatriculas:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno al obtener el historial de matrículas'
+      });
+    }
+  }
+
+  async inhabilitarAlumno(req, res) {
+    try {
+      const { id } = req.params;
+      const { fecha_inicio, fecha_fin, motivo } = req.body || {};
+
+      const detalleActualizado = await alumnosService.inhabilitarAlumno(id, {
+        fecha_inicio,
+        fecha_fin,
+        motivo
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Alumno inhabilitado temporalmente con éxito. Se conservaron sus datos personales y matrículas.',
+        data: detalleActualizado
+      });
+    } catch (error) {
+      console.error('Error en inhabilitarAlumno:', error);
+      const status = error.statusCode || 500;
+      return res.status(status).json({
+        success: false,
+        message: error.statusCode ? error.message : 'Error interno al inhabilitar temporalmente al alumno'
       });
     }
   }
