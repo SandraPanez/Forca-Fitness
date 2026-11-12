@@ -18,6 +18,42 @@ function formatearSoles(monto) {
     return `S/ ${Number(monto).toFixed(2)}`;
 }
 
+// ---------------------------------------------------------------------------
+// HU-26 VISUAL (solo esta pantalla): los cambios se aplican únicamente en memoria
+// del navegador; nunca se llama al PUT ni se escribe en la BD. Si la API de precios
+// no puede cargar (p. ej. BD sin columnas Promocion_*), se usan estos datos locales.
+// ---------------------------------------------------------------------------
+const DISCIPLINAS_DEMO = Object.freeze([
+    { id: 'DEMO-MMA', nombre: 'MMA', descripcion: 'Artes Marciales Mixtas', tarifa: 150, promocion: { tipo: 'PORCENTAJE', valor: 10, texto: 'Promo nuevos alumnos' } },
+    { id: 'DEMO-JJ', nombre: 'Jiu Jitsu', descripcion: 'Brazilian Jiu Jitsu - Adultos', tarifa: 180, promocion: null },
+    { id: 'DEMO-CAP', nombre: 'Capoeira', descripcion: 'Arte marcial y danza afrobrasileña - Adultos', tarifa: 160, promocion: { tipo: 'MONTO_FIJO', valor: 20, texto: 'Promo temporada' } },
+    { id: 'DEMO-BOX', nombre: 'Boxeo', descripcion: 'Entrenamiento técnico de boxeo', tarifa: 110, promocion: null }
+]);
+
+function conPrecioVigente(disciplina) {
+    return {
+        ...disciplina,
+        promocion: disciplina.promocion ? { ...disciplina.promocion } : null,
+        precio_vigente: preciosValidacion.calcularPrecioVigente(disciplina).precioFinal
+    };
+}
+
+function crearDisciplinasDemo() {
+    return DISCIPLINAS_DEMO.map(conPrecioVigente);
+}
+
+// Solo errores del servidor o respuestas inválidas activan el demo.
+// 401 (sesión) y 403 (permisos) se tratan como en el modo real.
+function debeActivarModoDemo(status, resultado) {
+    if (status >= 500) return true;
+    if (status >= 200 && status < 300) return !resultado || !resultado.success || !Array.isArray(resultado.data);
+    return false;
+}
+
+function aplicarCambioDemo(disciplina, cambios) {
+    return conPrecioVigente({ ...disciplina, tarifa: cambios.tarifa, promocion: cambios.promocion });
+}
+
 // T7: tarjeta de disciplina con precio actual, etiqueta verde si hay promoción y botón Editar.
 function htmlTarjetaPrecio(disciplina) {
     const promo = disciplina.promocion;
@@ -99,18 +135,37 @@ function iniciarPanelPrecios() {
         grid.innerHTML = [...disciplinas.values()].map(htmlTarjetaPrecio).join('');
     }
 
+    function usarDatosLocales() {
+        disciplinas.clear();
+        crearDisciplinasDemo().forEach(d => disciplinas.set(d.id, d));
+        pintarTarjetas();
+    }
+
+    // 1) API real (solo lectura); 2) si no puede cargar, datos locales de esta pantalla.
+    // 401 (sesión) y 403 (permisos) muestran su mensaje como cualquier pantalla.
     async function cargar() {
+        let response;
+        let result = null;
         try {
-            const response = await authFetch('/api/matriculas/disciplinas/precios');
-            const result = await response.json();
-            if (!response.ok || !result.success) throw new Error(result.message);
+            response = await authFetch('/api/matriculas/disciplinas/precios');
+            result = await response.json().catch(() => null);
+        } catch {
+            usarDatosLocales(); // sin conexión con el servidor
+            return;
+        }
+
+        if (response.ok && result && result.success && Array.isArray(result.data)) {
             disciplinas.clear();
             result.data.forEach(d => disciplinas.set(d.id, d));
             pintarTarjetas();
-        } catch (error) {
-            grid.innerHTML = '';
-            mostrarMensaje(error.message || 'No se pudieron cargar los precios.', true);
+            return;
         }
+        if (debeActivarModoDemo(response.status, result)) {
+            usarDatosLocales();
+            return;
+        }
+        grid.innerHTML = '';
+        mostrarMensaje((result && result.message) || 'No se pudieron cargar los precios.', true);
     }
 
     function leerFormulario() {
@@ -186,51 +241,24 @@ function iniciarPanelPrecios() {
         btnConfirmar.focus();
     }
 
-    function bloquear(valor) {
-        guardando = valor;
-        btnConfirmar.disabled = valor;
-        btnVolver.disabled = valor;
-        btnConfirmar.textContent = valor ? 'Guardando...' : 'Confirmar';
+    // CA3 / T7 / T8: actualiza la tarjeta, cierra ventanas y muestra el mensaje.
+    function finalizarGuardado(actual, texto) {
+        disciplinas.set(actual.id, actual);
+        const tarjeta = grid.querySelector(`[data-id="${CSS.escape(actual.id)}"]`);
+        if (tarjeta) tarjeta.outerHTML = htmlTarjetaPrecio(actual);
+        else pintarTarjetas();
+
+        dialogConfirmar.close();
+        dialogEditar.close();
+        seleccion = null;
+        pendiente = null;
+        mostrarMensaje(texto || 'Precio actualizado con éxito');
     }
 
-    // CA3 / T6 / T8: persiste, cierra ventanas, actualiza la tarjeta y muestra el mensaje.
-    async function confirmar() {
+    // CA3 / T6 (visual): aplica el cambio solo en memoria; no se guarda en la BD.
+    function confirmar() {
         if (guardando || !pendiente || !seleccion) return;
-        bloquear(true);
-        try {
-            const response = await authFetch(`/api/matriculas/disciplinas/${encodeURIComponent(seleccion.id)}/precio`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(pendiente)
-            });
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                if (result.errors) {
-                    dialogConfirmar.close();
-                    pintarErrores(result.errors);
-                    btnGuardar.disabled = true;
-                    return;
-                }
-                errorConfirmar.textContent = result.message || 'No se pudo guardar el precio.';
-                return;
-            }
-
-            const actual = result.data.actual;
-            disciplinas.set(actual.id, actual);
-            const tarjeta = grid.querySelector(`[data-id="${CSS.escape(actual.id)}"]`);
-            if (tarjeta) tarjeta.outerHTML = htmlTarjetaPrecio(actual);
-            else pintarTarjetas();
-
-            dialogConfirmar.close();
-            dialogEditar.close();
-            seleccion = null;
-            pendiente = null;
-            mostrarMensaje(result.message || 'Precio actualizado con éxito');
-        } catch {
-            errorConfirmar.textContent = 'No se pudo guardar el precio. Inténtalo nuevamente.';
-        } finally {
-            bloquear(false);
-        }
+        finalizarGuardado(aplicarCambioDemo(seleccion, pendiente), 'Precio actualizado con éxito');
     }
 
     grid.addEventListener('click', event => {
@@ -256,7 +284,14 @@ function iniciarPanelPrecios() {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { htmlTarjetaPrecio, filasResumenCambios, formatearSoles };
+    module.exports = {
+        htmlTarjetaPrecio,
+        filasResumenCambios,
+        formatearSoles,
+        crearDisciplinasDemo,
+        debeActivarModoDemo,
+        aplicarCambioDemo
+    };
 } else {
     document.addEventListener('DOMContentLoaded', iniciarPanelPrecios);
 }

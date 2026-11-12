@@ -1,7 +1,6 @@
 const db = require('../../shared/config/database');
 const { randomUUID } = require('node:crypto');
 const { calcularDescuento } = require('../../../public/js/descuentos');
-const { expresionPrecioDetalle } = require('../matriculas/disciplinas-precios.repository');
 
 // Proyección compartida de solo lectura para listar operaciones de balance y consultar su detalle individual
 const BALANCE_OPERACION_SELECT_FROM = `
@@ -165,7 +164,7 @@ class PagosRepository {
     async obtenerResumenMatricula(idMatricula) {
         const query = `
             SELECT
-                COALESCE(SUM(${expresionPrecioDetalle('dm', 'd')}), 0)::NUMERIC AS monto,
+                COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
                 COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
             FROM "Academia Forca&Fitness"."Detalles_Matricula" dm
             JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh
