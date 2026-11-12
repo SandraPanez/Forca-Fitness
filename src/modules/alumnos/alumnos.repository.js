@@ -1,6 +1,17 @@
 const db = require("../../shared/config/database");
 
 class AlumnosRepository {
+  async findAllDisciplinas() {
+    const result = await db.query(`
+      SELECT
+        "Id_Disciplinas" AS id,
+        "Nombre_Disciplina" AS nombre
+      FROM "Academia Forca&Fitness"."Disciplina"
+      ORDER BY "Nombre_Disciplina"
+    `);
+    return result.rows;
+  }
+
   async findAllAlumnos(idProfesor = null) {
     const query = `
       SELECT DISTINCT ON (a."Id_alumno")

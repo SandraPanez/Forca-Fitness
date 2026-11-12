@@ -1,6 +1,24 @@
 const alumnosService = require('./alumnos.service');
 
 class AlumnosController {
+  async listarDisciplinas(req, res) {
+    try {
+      const disciplinas = await alumnosService.listarDisciplinas();
+
+      return res.status(200).json({
+        success: true,
+        data: disciplinas
+      });
+    } catch (error) {
+      console.error('Error al listar disciplinas:', error);
+
+      return res.status(500).json({
+        success: false,
+        message: 'No se pudieron cargar las disciplinas'
+      });
+    }
+  }
+
   async listarAlumnos(req, res) {
     try {
       const idProfesor = req.usuario?.id_profesor || req.query.id_profesor || null;

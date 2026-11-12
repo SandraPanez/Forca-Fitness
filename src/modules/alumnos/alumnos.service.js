@@ -1,6 +1,10 @@
 const alumnosRepository = require('./alumnos.repository');
 
 class AlumnosService {
+  async listarDisciplinas() {
+    return alumnosRepository.findAllDisciplinas();
+  }
+
   async listarAlumnos(idProfesor = null) {
     const records = await alumnosRepository.findAllAlumnos(idProfesor);
     const hoy = new Date();

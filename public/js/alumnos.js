@@ -112,21 +112,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const cargarDisciplinas = () => {
+    const cargarDisciplinas = async () => {
         if (!disciplinaSelect) return;
 
-        const disciplinas = [...new Set(alumnosCache.flatMap(alumno =>
-            Array.isArray(alumno.disciplinas) ? alumno.disciplinas : []
-        ).map(d => String(d).trim()).filter(Boolean))]
-            .sort((a, b) => a.localeCompare(b, 'es'));
+        try {
+            const response = await authFetch('/api/alumnos/disciplinas');
 
-        disciplinaSelect.innerHTML = '<option value="Todas">Todas las disciplinas</option>';
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
 
-        for (const nombre of disciplinas) {
-            const opcion = document.createElement('option');
-            opcion.value = nombre;
-            opcion.textContent = nombre;
-            disciplinaSelect.appendChild(opcion);
+            const result = await response.json();
+
+            if (!result.success || !Array.isArray(result.data)) {
+                throw new Error('Formato de disciplinas no valido');
+            }
+
+            const disciplinas = [...new Set(
+                result.data
+                    .map(d => String(d.nombre || '').trim())
+                    .filter(Boolean)
+            )].sort((a, b) => a.localeCompare(b, 'es'));
+
+            disciplinaSelect.innerHTML =
+                '<option value="Todas">Todas las disciplinas</option>';
+
+            for (const nombre of disciplinas) {
+                const opcion = document.createElement('option');
+                opcion.value = nombre;
+                opcion.textContent = nombre;
+                disciplinaSelect.appendChild(opcion);
+            }
+
+        } catch (error) {
+            console.error('Error cargando disciplinas:', error);
+            disciplinaSelect.innerHTML =
+                '<option value="Todas">Error al cargar disciplinas</option>';
         }
     };
 
@@ -151,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fechaVenc = formatearFecha(alumno.fecha_vencimiento);
             const disciplinasArr = Array.isArray(alumno.disciplinas) && alumno.disciplinas.length
                 ? alumno.disciplinas
-                : ['General'];
+                : ['Sin disciplina registrada'];
 
             const disciplinasHtml = disciplinasArr
                 .map(d => `<span class="badge-disciplina-pill">${escapeHtml(d)}</span>`)
@@ -279,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('Alumnos recibidos:', result.data);
             alumnosCache = result.data;
-            cargarDisciplinas();
+            await cargarDisciplinas();
             updateKpis();
             filterAlumnos();
         } catch (error) {
