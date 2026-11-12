@@ -1,4 +1,5 @@
 const db = require('../../shared/config/database');
+const { expresionPrecioDetalle } = require('../matriculas/disciplinas-precios.repository');
 
 async function buscarSesionPorId(idUsuario) {
   const result = await db.query(`
@@ -72,7 +73,7 @@ async function buscarMatriculaPendientePorCorreo(correo) {
       LOWER(u."Correo") AS correo,
       TRIM(p."Nombre" || ' ' || COALESCE(p."Segundo_Nombre" || ' ', '') ||
         p."Apellido_Paterno" || ' ' || p."Apellido_Materno") AS nombre,
-      COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
+      COALESCE(SUM(${expresionPrecioDetalle('dm', 'd')}), 0)::NUMERIC AS monto,
       COALESCE(STRING_AGG(DISTINCT d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas,
       pago."Estado_Pago" AS estado_pago,
       pago."Fecha_Pago" + INTERVAL '48 hours' AS fecha_vencimiento,

@@ -1,0 +1,137 @@
+/* HU-26: panel de precios y ofertas del Director */
+.precios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.precio-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.25rem;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.precio-card.tiene-promocion {
+    border-color: #86efac;
+}
+
+.precio-card h3 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.precio-card-descripcion {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.precio-card-valor {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.precio-card-base {
+    margin-left: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+/* Etiqueta destacada verde de promoción activa */
+.promo-tag {
+    align-self: flex-start;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: #16a34a;
+    color: var(--white);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.precio-card .btn-primary {
+    align-self: flex-end;
+    margin-top: auto;
+    cursor: pointer;
+}
+
+.precios-mensaje {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 600;
+}
+
+.precios-mensaje.es-error {
+    background: #fee2e2;
+    color: var(--danger-color);
+}
+
+.precios-fieldset {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0;
+    border: none;
+}
+
+.precios-fieldset legend {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.precios-promo-campos {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.precios-promo-campos[hidden] {
+    display: none;
+}
+
+.precio-error {
+    margin-top: 0;
+}
+
+.precio-error:empty {
+    display: none;
+}
+
+.precios-nota,
+.precios-sin-cambios {
+    font-size: 0.85rem;
+}
+
+.precios-final strong {
+    color: var(--primary-color);
+}
+
+.precios-resumen {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.precios-resumen th,
+.precios-resumen td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.precios-resumen tr.cambio td {
+    font-weight: 600;
+}
+
+.precios-dialog .btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}

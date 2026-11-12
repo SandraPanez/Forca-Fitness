@@ -1,5 +1,6 @@
 const db = require('../../shared/config/database');
 const pagosRepository = require('../pagos/pagos.repository');
+const { expresionPrecioVigente, expresionPrecioDetalle } = require('./disciplinas-precios.repository');
 
 const SCHEMA = '"Academia Forca&Fitness"';
 
@@ -15,7 +16,9 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        "Tarifa" AS tarifa
+        ${expresionPrecioVigente('d')} AS tarifa,
+        d."Tarifa" AS tarifa_base,
+        d."Promocion_Texto" AS promocion_texto
       FROM ${SCHEMA}."Disciplina" d
       WHERE EXISTS (
         SELECT 1 FROM ${SCHEMA}."Disciplina_Horario" dh
@@ -31,7 +34,7 @@ class MatriculasRepository {
   async getResumenMatricula(id_matricula, client = db) {
     const query = `
       SELECT
-        COALESCE(SUM(d."Tarifa"), 0)::NUMERIC AS monto,
+        COALESCE(SUM(${expresionPrecioDetalle('dm', 'd')}), 0)::NUMERIC AS monto,
         COALESCE(STRING_AGG(d."Nombre_Disciplina", ', ' ORDER BY d."Nombre_Disciplina"), '') AS disciplinas
       FROM ${SCHEMA}."Detalles_Matricula" dm
       JOIN ${SCHEMA}."Disciplina_Horario" dh
@@ -111,8 +114,10 @@ class MatriculasRepository {
         "Id_Disciplinas" AS id,
         "Nombre_Disciplina" AS nombre,
         "Descripcion" AS descripcion,
-        "Tarifa" AS tarifa
-      FROM ${SCHEMA}."Disciplina"
+        ${expresionPrecioVigente('d')} AS tarifa,
+        d."Tarifa" AS tarifa_base,
+        d."Promocion_Texto" AS promocion_texto
+      FROM ${SCHEMA}."Disciplina" d
       WHERE "Id_Disciplinas" = $1
     `;
     const result = await db.query(query, [id_disciplina]);
