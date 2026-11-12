@@ -2,6 +2,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const usuario = obtenerUsuario();
   const rolesUsuario = obtenerRolesUsuario(usuario);
   const rolesPermitidos = ['DIRECTOR', 'TESORERO'];
+  const esDirector = rolesUsuario.includes('DIRECTOR');
+  const demoDescuentoLocal = esDirector
+    && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+    && new URLSearchParams(window.location.search).get('demoDescuento') === '1';
 
   const tieneAcceso = rolesUsuario.some((rol) =>
     rolesPermitidos.includes(rol)
@@ -30,9 +34,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalReferencia = document.getElementById('modal-referencia');
   const modalCancel = document.getElementById('modal-cancel');
   const modalConfirmBtn = document.getElementById('modal-confirm');
+  const modalDiscountPanel = document.getElementById('modal-discount-panel');
+  const modalDiscountType = document.getElementById('modal-discount-type');
+  const modalDiscountValue = document.getElementById('modal-discount-value');
+  const modalDiscountConfirmation = document.getElementById('modal-discount-confirmation');
+  const modalApplyDiscount = document.getElementById('modal-apply-discount');
+  const modalDiscountMessage = document.getElementById('modal-discount-message');
+  const modalDiscountSummary = document.getElementById('modal-discount-summary');
+  const modalOriginalPrice = document.getElementById('modal-original-price');
+  const modalDiscountAmount = document.getElementById('modal-discount-amount');
+  const modalFinalPrice = document.getElementById('modal-final-price');
+  const modalDemoNote = document.getElementById('modal-demo-note');
 
   let pendingMatriculaToConfirm = null;
   let pendingButtonToDisable = null;
+  let pendingPaymentAmount = 0;
+  let pendingIsDemo = false;
+  let appliedDiscount = null;
 
   // Toast flotante (esquina inferior derecha)
   const showToast = (text, type = 'success', duration = 4500) => {
@@ -73,7 +91,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await authFetch('/api/pagos/efectivo/pendientes');
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'No se pudieron cargar las solicitudes pendientes.');
-      renderPendientes(result.data);
+      const pendientes = demoDescuentoLocal
+        ? [...result.data, {
+          id_pago: 'DEMO-PAGO-LOCAL',
+          id_matricula: 'DEMO-MAT-LOCAL',
+          monto: '120.00',
+          fecha_pago: new Date().toISOString(),
+          fecha_vencimiento: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          alumno: 'Alumno de prueba (no real)',
+          disciplinas: 'Mensualidad de demostración',
+          es_demo: true
+        }]
+        : result.data;
+      renderPendientes(pendientes);
     } catch (error) {
       pendingTbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${escapeHtml(error.message)}</td></tr>`;
       showMessage(error.message, 'error', pendingMessage);
@@ -99,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>
           <strong>${escapeHtml(p.alumno)}</strong>
           <small class="treasury-muted">${escapeHtml(p.id_matricula)}</small>
+          ${p.es_demo ? '<small class="treasury-muted">PRUEBA LOCAL · no guardada</small>' : ''}
         </td>
         <td>${escapeHtml(p.disciplinas || 'Mensualidad')}</td>
         <td><strong>S/ ${Number(p.monto).toFixed(2)}</strong></td>
@@ -113,6 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
             class="btn-approve-cash"
             data-matricula="${escapeHtml(p.id_matricula)}"
             data-alumno="${escapeHtml(p.alumno)}"
+            data-monto="${escapeHtml(p.monto)}"
+            data-demo="${p.es_demo ? 'true' : 'false'}"
             type="button"
           >
             ✓ Confirmar pago
@@ -129,17 +162,108 @@ document.addEventListener('DOMContentLoaded', () => {
   function abrirModalConfirmacion(btn) {
     pendingMatriculaToConfirm = btn.dataset.matricula;
     pendingButtonToDisable = btn;
+    pendingPaymentAmount = Number(btn.dataset.monto);
+    pendingIsDemo = btn.dataset.demo === 'true';
     modalAlumnoName.textContent = btn.dataset.alumno || 'este alumno';
     modalReferencia.value = '';
+    limpiarDescuento();
+    modalDiscountPanel.hidden = !esDirector;
+    modalDemoNote.hidden = !pendingIsDemo;
     confirmModal.removeAttribute('hidden');
     confirmModal.style.display = 'flex';
   }
+
+  function limpiarDescuento() {
+    appliedDiscount = null;
+    modalDiscountType.value = '';
+    modalDiscountValue.value = '';
+    modalDiscountValue.disabled = true;
+    modalDiscountValue.removeAttribute('max');
+    modalDiscountConfirmation.checked = false;
+    modalApplyDiscount.disabled = true;
+    modalDiscountMessage.textContent = '';
+    modalDiscountSummary.hidden = true;
+    modalConfirmBtn.disabled = pendingIsDemo;
+    modalConfirmBtn.textContent = pendingIsDemo ? 'Prueba local (no se registra)' : 'Sí, confirmar pago';
+  }
+
+  function limpiarDescuentoAplicado() {
+    appliedDiscount = null;
+    modalDiscountSummary.hidden = true;
+    modalConfirmBtn.disabled = pendingIsDemo;
+    modalConfirmBtn.textContent = pendingIsDemo ? 'Prueba local (no se registra)' : 'Sí, confirmar pago';
+    modalDiscountMessage.textContent = '';
+  }
+
+  function actualizarBotonAplicarDescuento() {
+    modalApplyDiscount.disabled = !(
+      modalDiscountType.value &&
+      modalDiscountValue.value &&
+      modalDiscountConfirmation.checked
+    );
+  }
+
+  modalDiscountType.addEventListener('change', () => {
+    const tipo = modalDiscountType.value;
+    modalDiscountValue.disabled = !tipo;
+    modalDiscountValue.value = '';
+    if (tipo) {
+      modalDiscountValue.max = tipo === 'PORCENTAJE' ? '100' : String(pendingPaymentAmount);
+    } else {
+      modalDiscountValue.removeAttribute('max');
+    }
+    modalDiscountValue.placeholder = tipo === 'PORCENTAJE' ? 'Ej. 20' : 'Ej. 15.00';
+    modalDiscountConfirmation.checked = false;
+    limpiarDescuentoAplicado();
+    actualizarBotonAplicarDescuento();
+  });
+
+  modalDiscountValue.addEventListener('input', () => {
+    limpiarDescuentoAplicado();
+    actualizarBotonAplicarDescuento();
+  });
+  modalDiscountConfirmation.addEventListener('change', () => {
+    if (!modalDiscountConfirmation.checked) limpiarDescuentoAplicado();
+    actualizarBotonAplicarDescuento();
+  });
+
+  modalApplyDiscount.addEventListener('click', () => {
+    const tipo = modalDiscountType.value;
+    const valor = Number(modalDiscountValue.value);
+
+    if (!tipo || !modalDiscountConfirmation.checked) return;
+
+    try {
+      appliedDiscount = calcularDescuento({
+        precioOriginal: pendingPaymentAmount,
+        tipo,
+        valor
+      });
+    } catch (error) {
+      modalDiscountMessage.textContent = error.message;
+      return;
+    }
+
+    modalOriginalPrice.textContent = `S/ ${appliedDiscount.precioOriginal.toFixed(2)}`;
+    modalDiscountAmount.textContent = `- S/ ${appliedDiscount.descuento.toFixed(2)}`;
+    modalFinalPrice.textContent = `S/ ${appliedDiscount.montoFinal.toFixed(2)}`;
+    modalDiscountSummary.hidden = false;
+    modalDiscountMessage.textContent = 'Descuento aplicado a la vista previa.';
+    modalConfirmBtn.disabled = pendingIsDemo;
+    modalConfirmBtn.textContent = pendingIsDemo
+      ? 'Prueba local (no se registra)'
+      : 'Confirmar cobro con descuento';
+  });
 
   function cerrarModal() {
     confirmModal.setAttribute('hidden', '');
     confirmModal.style.display = 'none';
     pendingMatriculaToConfirm = null;
     pendingButtonToDisable = null;
+    pendingPaymentAmount = 0;
+    pendingIsDemo = false;
+    modalDemoNote.hidden = true;
+    limpiarDescuento();
   }
 
   modalCancel.addEventListener('click', cerrarModal);
@@ -148,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   modalConfirmBtn.addEventListener('click', async () => {
-    if (!pendingMatriculaToConfirm) return;
+    if (!pendingMatriculaToConfirm || pendingIsDemo) return;
     modalConfirmBtn.disabled = true;
     modalConfirmBtn.textContent = 'Confirmando...';
     try {
@@ -157,7 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_matricula: pendingMatriculaToConfirm,
-          referencia_operacion: modalReferencia.value.trim() || null
+          referencia_operacion: modalReferencia.value.trim() || null,
+          descuento: appliedDiscount
+            ? { tipo: appliedDiscount.tipo, valor: appliedDiscount.valor }
+            : null
         })
       });
       const result = await response.json();
@@ -165,7 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
       cerrarModal();
       // Recargar ambas secciones
       await Promise.all([cargarPendientes(), cargarCobros()]);
-      showToast('Pago confirmado correctamente. La matrícula del alumno ha sido activada.', 'success');
+      showToast(
+        result.message || 'Pago confirmado correctamente. La matrícula del alumno ha sido activada.',
+        'success'
+      );
       // Redirigir al comprobante si está disponible
       if (result.data?.Id_Pago) {
         setTimeout(() => {
@@ -253,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // HU: Vista "Por alumno" y "Balance financiero" (Exclusiva para rol TESORERO)
   // ────────────────────────────────────────────────────────────
   const esTesorero = rolesUsuario.includes('TESORERO');
+  const directorPendingPaymentsAction = document.getElementById('director-pending-payments-action');
   const tabTodos = document.getElementById('tab-todos');
   const tabPorAlumno = document.getElementById('tab-por-alumno');
   const vistaTodosCobros = document.getElementById('vista-todos-cobros');
@@ -263,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tesoreroBalanceAction) {
       tesoreroBalanceAction.style.display = 'inline-flex';
     }
+
     if (tabPorAlumno) {
       tabPorAlumno.style.display = 'inline-block';
     }
@@ -287,6 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarAlumnosConPagos();
       }
     });
+  }
+
+  if (esDirector && directorPendingPaymentsAction) {
+    directorPendingPaymentsAction.style.display = 'inline-flex';
   }
 
   // Elementos de la sección "Por alumno"
@@ -347,6 +483,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const receiptRef = document.getElementById('receipt-ref');
   const receiptTotal = document.getElementById('receipt-total');
   const receiptTotalLetters = document.getElementById('receipt-total-letters');
+  const receiptDiscountBreakdown = document.getElementById('receipt-discount-breakdown');
+  const receiptOriginalPrice = document.getElementById('receipt-original-price');
+  const receiptDiscountApplied = document.getElementById('receipt-discount-applied');
 
   // Configurar apertura/cierre dinámico de cada filtro
   function toggleFilterBox(checkbox, box) {
@@ -706,6 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
     receiptRef.textContent = pago.referencia || '—';
     receiptTotal.textContent = `S/ ${Number(pago.monto).toFixed(2)}`;
     receiptTotalLetters.textContent = pago.monto_letras || `${Number(pago.monto).toFixed(2)} SOLES`;
+    receiptDiscountBreakdown.hidden = true;
 
     // Intentar consultar endpoint oficial para sincronizar correlativo si existe
     try {
@@ -715,6 +855,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (comp.data) {
           receiptNumber.textContent = comp.data.numero;
           receiptTotalLetters.textContent = comp.data.total_letras;
+          receiptTotal.textContent = comp.data.total;
+          if (Number(comp.data.monto_descuento) > 0) {
+            receiptDiscountBreakdown.hidden = false;
+            receiptOriginalPrice.textContent = `S/ ${Number(comp.data.monto_original).toFixed(2)}`;
+            const tipo = comp.data.tipo_descuento === 'PORCENTAJE'
+              ? ` (${Number(comp.data.valor_descuento)}%)`
+              : '';
+            receiptDiscountApplied.textContent =
+              `${tipo} - S/ ${Number(comp.data.monto_descuento).toFixed(2)}`;
+          }
         }
       }
     } catch (err) {

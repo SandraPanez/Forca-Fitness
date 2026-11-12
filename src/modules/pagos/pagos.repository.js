@@ -1,5 +1,6 @@
 const db = require('../../shared/config/database');
 const { randomUUID } = require('node:crypto');
+const { calcularDescuento } = require('../../../public/js/descuentos');
 
 // Proyección compartida de solo lectura para listar operaciones de balance y consultar su detalle individual
 const BALANCE_OPERACION_SELECT_FROM = `
@@ -7,7 +8,11 @@ const BALANCE_OPERACION_SELECT_FROM = `
         p."Id_Pago" AS id_pago,
         cobro."Id_Registro" AS id_registro,
         p."Id_Matricula" AS id_matricula,
-        p."Monto"::NUMERIC(10,2) AS monto,
+        COALESCE(cobro."Monto", p."Monto")::NUMERIC(10,2) AS monto,
+        COALESCE(cobro."Monto_Original", p."Monto")::NUMERIC(10,2) AS monto_original,
+        cobro."Tipo_Descuento" AS tipo_descuento,
+        cobro."Valor_Descuento"::NUMERIC(10,2) AS valor_descuento,
+        COALESCE(cobro."Monto_Descuento", 0)::NUMERIC(10,2) AS monto_descuento,
         UPPER(p."Estado_Pago") AS estado_pago,
         p."Fecha_Pago" AS fecha_solicitud,
         COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_operacion,
@@ -52,7 +57,15 @@ const BALANCE_OPERACION_SELECT_FROM = `
     LEFT JOIN "Academia Forca&Fitness"."Usuario" u_reg ON u_reg."Id_Usuario" = p."Id_Usuario_Registro"
     LEFT JOIN "Academia Forca&Fitness"."Persona" per_reg ON per_reg."Id_Persona" = u_reg."Id_Persona"
     LEFT JOIN LATERAL (
-        SELECT rc."Id_Registro", rc."Fecha_Hora", rc."Referencia_Operacion"
+        SELECT
+            rc."Id_Registro",
+            rc."Fecha_Hora",
+            rc."Referencia_Operacion",
+            rc."Monto",
+            rc."Monto_Original",
+            rc."Tipo_Descuento",
+            rc."Valor_Descuento",
+            rc."Monto_Descuento"
         FROM "Academia Forca&Fitness"."Registro_Cobro" rc
         WHERE rc."Id_Pago" = p."Id_Pago"
           AND UPPER(rc."Resultado") = 'APROBADO'
@@ -252,20 +265,50 @@ class PagosRepository {
         return result.rows[0];
     }
 
-    async confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion) {
+    async confirmarPagoEfectivo(idMatricula, idUsuario, referenciaOperacion, descuento = null) {
         const client = await db.pool.connect();
         try {
             await client.query('BEGIN');
+            const pagoPendiente = await client.query(`
+                SELECT p."Id_Pago", p."Monto"
+                FROM "Academia Forca&Fitness"."Pago" p
+                WHERE p."Id_Matricula" = $1
+                  AND p."Id_MPago" = 'MP02'
+                  AND p."Estado_Pago" = 'PENDIENTE'
+                  AND p."Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
+                ORDER BY p."Fecha_Pago" DESC
+                LIMIT 1
+                FOR UPDATE
+            `, [idMatricula]);
+            if (!pagoPendiente.rows[0]) {
+                throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
+            }
+
+            const precioOriginal = Number(pagoPendiente.rows[0].Monto);
+            const calculoDescuento = descuento
+                ? calcularDescuento({
+                    precioOriginal,
+                    tipo: descuento.tipo,
+                    valor: descuento.valor
+                })
+                : {
+                    precioOriginal,
+                    tipo: null,
+                    valor: null,
+                    descuento: 0,
+                    montoFinal: precioOriginal
+                };
+
             const pago = await client.query(`
                 UPDATE "Academia Forca&Fitness"."Pago"
                 SET "Estado_Pago" = 'APROBADO',
                     "Id_Usuario_Registro" = $2
-                WHERE "Id_Matricula" = $1
+                WHERE "Id_Pago" = $1
                   AND "Id_MPago" = 'MP02'
                   AND "Estado_Pago" = 'PENDIENTE'
                   AND "Fecha_Pago" + INTERVAL '48 hours' >= CURRENT_TIMESTAMP
                 RETURNING "Id_Pago", "Monto"
-            `, [idMatricula, idUsuario || null]);
+            `, [pagoPendiente.rows[0].Id_Pago, idUsuario || null]);
             if (!pago.rows[0]) {
                 throw new Error('No existe una solicitud de efectivo pendiente o ya venció.');
             }
@@ -274,15 +317,44 @@ class PagosRepository {
 
             await this.actualizarEstadoMatricula(idMatricula, estadoMatricula, client);
             await this.activarUsuarioPorMatricula(idMatricula, client);
-            await client.query(`
-                INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
-                ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
-                 "Resultado", "Id_Pago", "Referencia_Operacion")
-                VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
-            `, [`REG${Date.now().toString().slice(-14)}`, pago.rows[0].Monto, pago.rows[0].Id_Pago, referenciaOperacion || null]);
+            if (descuento) {
+                await client.query(`
+                    INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
+                    ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
+                     "Resultado", "Id_Pago", "Referencia_Operacion",
+                     "Monto_Original", "Tipo_Descuento", "Valor_Descuento", "Monto_Descuento")
+                    VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4, $5, $6, $7, $8)
+                `, [
+                    `REG${Date.now().toString().slice(-14)}`,
+                    calculoDescuento.montoFinal,
+                    pago.rows[0].Id_Pago,
+                    referenciaOperacion || null,
+                    calculoDescuento.precioOriginal,
+                    calculoDescuento.tipo,
+                    calculoDescuento.valor,
+                    calculoDescuento.descuento
+                ]);
+            } else {
+                await client.query(`
+                    INSERT INTO "Academia Forca&Fitness"."Registro_Cobro"
+                    ("Id_Registro", "Fecha_Hora", "Monto", "Medio_Pago",
+                     "Resultado", "Id_Pago", "Referencia_Operacion")
+                    VALUES ($1, CURRENT_TIMESTAMP, $2, 'EFECTIVO', 'APROBADO', $3, $4)
+                `, [
+                    `REG${Date.now().toString().slice(-14)}`,
+                    calculoDescuento.montoFinal,
+                    pago.rows[0].Id_Pago,
+                    referenciaOperacion || null
+                ]);
+            }
             await client.query('COMMIT');
             return {
                 ...pago.rows[0],
+                Monto_Original: calculoDescuento.precioOriginal,
+                Tipo_Descuento: calculoDescuento.tipo,
+                Valor_Descuento: calculoDescuento.valor,
+                Monto_Descuento: calculoDescuento.descuento,
+                Monto_Cobrado: calculoDescuento.montoFinal,
                 estadoMatricula
             };
         } catch (error) {
@@ -719,13 +791,13 @@ class PagosRepository {
             WITH operaciones_periodo AS (
                 SELECT
                     p."Id_Pago" AS id_pago,
-                    p."Monto"::NUMERIC(10,2) AS monto,
+                    COALESCE(cobro."Monto", p."Monto")::NUMERIC(10,2) AS monto,
                     UPPER(p."Estado_Pago") AS estado_pago,
                     UPPER(REPLACE(mp."Nombre_Metodo", ' ', '_')) AS medio_pago
                 FROM "Academia Forca&Fitness"."Pago" p
                 JOIN "Academia Forca&Fitness"."Metodo_Pago" mp ON mp."Id_MPago" = p."Id_MPago"
                 LEFT JOIN LATERAL (
-                    SELECT rc."Fecha_Hora"
+                    SELECT rc."Fecha_Hora", rc."Monto"
                     FROM "Academia Forca&Fitness"."Registro_Cobro" rc
                     WHERE rc."Id_Pago" = p."Id_Pago"
                       AND UPPER(rc."Resultado") = 'APROBADO'

@@ -1294,20 +1294,22 @@
                             <th>Matrícula / Disciplina</th>
                             <th>Medio de pago</th>
                             <th>N° Comprobante / Ref</th>
-                            <th>Monto</th>
+                            <th>Precio original</th>
+                            <th>Descuento</th>
+                            <th>Total cobrado</th>
                             <th style="text-align: right;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="balance-tbody">
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                            <td colspan="9" style="text-align: center; padding: 2.5rem; color: #64748b;">
                                 📅 Selecciona un periodo y pulsa <strong>"Consultar balance"</strong> para visualizar las operaciones.
                             </td>
                         </tr>
                     </tbody>
                     <tfoot id="balance-tfoot" style="display: none;">
                         <tr>
-                            <td colspan="5" id="tfoot-label">Total del periodo</td>
+                            <td colspan="7" id="tfoot-label">Total del periodo</td>
                             <td class="tfoot-total-amount" id="tfoot-total-monto">S/ 0.00</td>
                             <td></td>
                         </tr>
@@ -1443,6 +1445,16 @@
                     </div>
 
                     <div class="detalle-section-heading">III. Importe Verificado</div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Precio original</span>
+                        <div id="det-monto-original" class="detalle-item-value" aria-readonly="true">S/ 0.00</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Descuento aplicado</span>
+                        <div id="det-monto-descuento" class="detalle-item-value" aria-readonly="true">Sin descuento</div>
+                    </div>
 
                     <div class="detalle-item full-width">
                         <span class="detalle-item-label">Monto Total Cobrado</span>

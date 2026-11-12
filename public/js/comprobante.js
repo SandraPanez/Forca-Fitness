@@ -48,6 +48,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         setText('ref-pago', comprobante.referencia);
         setText('total-numero', comprobante.total);
         setText('total-letras', comprobante.total_letras);
+        const detalleDescuento = document.getElementById('detalle-descuento');
+        if (Number(comprobante.monto_descuento) > 0) {
+            detalleDescuento.hidden = false;
+            setText('precio-original-pago', `S/ ${Number(comprobante.monto_original).toFixed(2)}`);
+            const tipo = comprobante.tipo_descuento === 'PORCENTAJE'
+                ? ` (${Number(comprobante.valor_descuento)}%)`
+                : '';
+            setText(
+                'descuento-aplicado-pago',
+                `${tipo} - S/ ${Number(comprobante.monto_descuento).toFixed(2)}`
+            );
+        } else {
+            detalleDescuento.hidden = true;
+        }
     } catch (error) {
         // Sin pago aprobado no hay comprobante que mostrar
         document.getElementById('area-impresion').hidden = true;

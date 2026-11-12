@@ -68,6 +68,10 @@ psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagr
   `src/modules/personal/personal-permisos.schema.sql` contra el mismo esquema.
   Esta migración crea las sobrescrituras individuales que usa la autorización
   del servidor; debe estar aplicada antes de iniciar la versión que las consulta.
+- Para registrar descuentos de HU-15 en cobros nuevos, ejecuta una vez
+  `src/modules/pagos/hu15-descuentos-migration.sql` contra la base existente.
+  La migración agrega los campos de auditoría a `Registro_Cobro` y es segura
+  para volver a ejecutar.
 - `src/modules/pagos/pagos.schema version 2.sql` es una copia del mismo
   esquema: no ejecutes los dos, el segundo falla porque las tablas ya existen.
 - El esquema crea las tablas vacías. Los roles, métodos de pago, disciplinas,
@@ -87,7 +91,7 @@ quien inicia sesión (se define en `public/js/auth.js`, en `MENU_POR_ROL`):
 
 | Rol | Menú |
 |---|---|
-| Director | Alumnos, Control de acceso, Administración de accesos |
+| Director | Alumnos, Control de acceso, Administración de accesos, Pagos |
 | Tesorero | Alumnos, Pagos |
 | Profesor | Control de acceso, Alumnos |
 | Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas, Mis reservas, Mi perfil |
@@ -105,8 +109,8 @@ variable `PORT` que Render inyecta. Para el servicio web en Render:
    resto de variables de la tabla de arriba, con `APP_URL` igual a la
    dirección pública del servicio. No subas `.env` ni copies una URL con
    credenciales al repositorio.
-3. Ejecuta una vez el esquema base y la migración de permisos de la sección
-   "Base de datos" contra esa base.
+3. Ejecuta una vez el esquema base y las migraciones de permisos y descuentos
+   de la sección "Base de datos" contra esa base.
 4. Configura `/api/health` como health check del servicio.
 
 La imagen no crea tablas automáticamente: el esquema debe ejecutarse una vez

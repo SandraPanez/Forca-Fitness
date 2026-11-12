@@ -4,7 +4,7 @@ const PDFDocument = require('pdfkit');
 
 const IMAGENES = path.join(__dirname, '..', '..', '..', 'public', 'images');
 const ANCHO = 595; // ancho A4 en puntos
-const ALTO = 600;
+const ALTO = 680;
 const AZUL = '#1a4a7a';
 
 // Dibuja el "Recibo virtual" de la academia y devuelve el PDF como stream.
@@ -31,11 +31,14 @@ function generarReciboPdf(recibo = {}) {
     .text('ACADEMIA FORCA & FITNESS', 164, 73);
 
   // Tarjeta blanca
-  doc.lineWidth(1).rect(30, 149, 535, 431).fillAndStroke('#ffffff', '#dddddd');
+  doc.lineWidth(1).rect(30, 149, 535, 511).fillAndStroke('#ffffff', '#dddddd');
 
   const campos = [
     ['PAGADOR', recibo.pagador],
     ['CANTIDAD', recibo.cantidad],
+    ...(recibo.monto_original ? [['PRECIO ORIGINAL', recibo.monto_original]] : []),
+    ...(recibo.detalle_descuento ? [['DESCUENTO APLICADO', recibo.detalle_descuento]] : []),
+    ['TOTAL PAGADO', recibo.total_pagado || recibo.cantidad],
     ['CONCEPTO', recibo.concepto],
     ['FECHA', recibo.fecha]
   ];

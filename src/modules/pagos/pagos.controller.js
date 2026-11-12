@@ -172,19 +172,43 @@ class PagosController {
     }
 
     async confirmarEfectivo(req, res) {
+        const descuento = req.body?.descuento ?? null;
+        if (descuento !== null) {
+            if (!Array.isArray(req.user?.roles) || !req.user.roles.includes('DIRECTOR')) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo el Director puede autorizar descuentos.'
+                });
+            }
+            if (
+                typeof descuento !== 'object' ||
+                Array.isArray(descuento) ||
+                !['PORCENTAJE', 'MONTO_FIJO'].includes(descuento.tipo) ||
+                descuento.valor === undefined
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Los datos del descuento no son válidos.'
+                });
+            }
+        }
+
         try {
             const pago = await pagosService.confirmarEfectivo(
                 req.body.id_matricula,
                 req.body.referencia_operacion,
-                req.user.id
+                req.user.id,
+                descuento
             );
             const esReserva = pago?.estadoMatricula === 'Reservada';
             return res.status(200).json({
                 success: true,
                 data: pago,
-                message: esReserva
-                    ? 'Pago en efectivo confirmado. Cupo reservado correctamente.'
-                    : 'Pago en efectivo confirmado correctamente.'
+                message: descuento
+                    ? 'Descuento aplicado correctamente.'
+                    : esReserva
+                        ? 'Pago en efectivo confirmado. Cupo reservado correctamente.'
+                        : 'Pago en efectivo confirmado correctamente.'
             });
         } catch (error) {
             console.error('Error al confirmar pago en efectivo:', error);
