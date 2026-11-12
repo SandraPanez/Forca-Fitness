@@ -148,6 +148,9 @@
             <p class="description" style="color: #64748b; margin: 0;">Supervisa en tiempo real el estado de las matrículas, fechas de vencimiento y disciplinas de todos los alumnos registrados.</p>
         </div>
 
+        <!-- Notificación visual (Toast / Banner) -->
+        <div id="inhabilitar-feedback" class="feedback-banner" hidden role="status" aria-live="polite"></div>
+
         <!-- Tarjetas KPI de Dirección -->
         <div class="director-kpi-grid">
             <div class="kpi-card active" id="kpi-card-total" role="button" tabindex="0" title="Ver lista completa de alumnos">
@@ -195,6 +198,7 @@
                     <option value="Activa">Matrículas activas</option>
                     <option value="Vencida">Matrículas vencidas</option>
                     <option value="Reservada">Matrículas reservadas</option>
+                    <option value="Inhabilitada">Matrículas inhabilitadas</option>
                 </select>
                 <button type="button" id="btn-limpiar-filtro" class="btn-limpiar-filtro" title="Retirar filtro y ver lista completa">
                     ✕ Limpiar filtro
@@ -231,6 +235,73 @@
             <div class="text-center text-muted mt-4">Cargando información...</div>
         </div>
     </aside>
+
+    <!-- MODAL DE CONFIRMACIÓN E INHABILITACIÓN TEMPORAL (HU-03) -->
+    <div class="modal-overlay" id="inhabilitarModal" aria-hidden="true">
+        <div class="modal modal-inhabilitar" role="dialog" aria-modal="true" aria-labelledby="inhabilitar-modal-title">
+            <div class="modal-inhabilitar-header">
+                <div class="modal-warning-badge">!</div>
+                <div>
+                    <span class="step-indicator">ACCIÓN ADMINISTRATIVA</span>
+                    <h3 id="inhabilitar-modal-title">Inhabilitar temporalmente al alumno</h3>
+                </div>
+                <button type="button" class="btn-close" id="btn-close-inhabilitar-modal" aria-label="Cerrar modal">✕</button>
+            </div>
+
+            <p class="modal-inhabilitar-desc">
+                Vas a inhabilitar temporalmente a <strong id="inhabilitar-alumno-nombre">---</strong>.
+                Su estado pasará a <strong>Inhabilitado</strong> durante el periodo indicado.
+            </p>
+
+            <div class="conservation-notice">
+                <span class="conservation-icon">🛡️</span>
+                <div>
+                    <strong>Conservación garantizada de datos y matrículas</strong>
+                    <p>Los datos personales, contactos e historial de matrículas del alumno se conservarán íntegramente en el sistema.</p>
+                </div>
+            </div>
+
+            <form id="inhabilitarForm" novalidate>
+                <input type="hidden" id="inhabilitar-alumno-id" name="id_alumno">
+
+                <div class="form-group mb-3">
+                    <label for="inhabilitar-duracion-preset">Duración rápida del periodo</label>
+                    <select id="inhabilitar-duracion-preset" class="filter-select" style="width: 100%; padding: 0.65rem 0.85rem;">
+                        <option value="custom">Personalizado (seleccionar fechas)</option>
+                        <option value="7">7 días</option>
+                        <option value="15" selected>15 días</option>
+                        <option value="30">1 mes (30 días)</option>
+                        <option value="60">2 meses (60 días)</option>
+                        <option value="90">3 meses (90 días)</option>
+                    </select>
+                </div>
+
+                <div class="grid-2-cols mb-3" style="gap: 1rem;">
+                    <div class="form-group">
+                        <label for="inhabilitar-fecha-inicio">Fecha de inicio <span class="asterisk">*</span></label>
+                        <input type="date" id="inhabilitar-fecha-inicio" name="fecha_inicio" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inhabilitar-fecha-fin">Fecha de fin <span class="asterisk">*</span></label>
+                        <input type="date" id="inhabilitar-fecha-fin" name="fecha_fin" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inhabilitar-motivo">Motivo de la inhabilitación <span class="asterisk">*</span></label>
+                    <textarea id="inhabilitar-motivo" name="motivo" rows="3" maxlength="90" placeholder="Ej: Solicitud de licencia médica temporal, viaje o medida disciplinaria..." required></textarea>
+                    <div class="char-counter" id="inhabilitar-motivo-counter">0 / 90 caracteres</div>
+                </div>
+
+                <div id="inhabilitar-error" class="error-message" style="display: none; text-align: left;"></div>
+
+                <div class="modal-actions modal-inhabilitar-actions">
+                    <button type="button" class="btn-cancel" id="btn-cancel-inhabilitar">Cancelar</button>
+                    <button type="submit" class="btn-submit btn-danger" id="btn-confirm-inhabilitar">Confirmar inhabilitación</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="/js/auth.js"></script>
     <script src="/js/alumnos.js"></script>
