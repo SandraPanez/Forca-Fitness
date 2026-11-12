@@ -5,6 +5,8 @@ class AlumnosRepository {
     const query = `
       SELECT DISTINCT ON (a."Id_alumno")
         a."Id_alumno" AS id,
+        p."Numero_Documento" AS dni,
+        a."Estado_Alumno" AS estado_alumno_registrado,
         p."Nombre" AS nombres,
         p."Apellido_Paterno" AS apellido_paterno,
         p."Apellido_Materno" AS apellido_materno,
@@ -25,9 +27,9 @@ class AlumnosRepository {
         ) AS disciplinas
       FROM "Academia Forca&Fitness"."Alumno" a
       JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
-      JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
-      JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
-      JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
+      LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
+      LEFT JOIN "Academia Forca&Fitness"."Detalles_Matricula" dm ON dm."Id_Matricula" = m."Id_Matricula"
+      LEFT JOIN "Academia Forca&Fitness"."Disciplina_Horario" dh ON dm."Id_DiscHorario" = dh."Id_DiscHorario"
       ${idProfesor !== null ? 'WHERE dh."Id_Profesor" = $1' : ''}
       ORDER BY 
         a."Id_alumno", 
@@ -44,6 +46,7 @@ class AlumnosRepository {
     const query = `
       SELECT 
         a."Id_alumno" AS id,
+        a."Estado_Alumno" AS estado_alumno_registrado,
         p."Numero_Documento" AS numero_documento,
         p."Nombre" AS nombres,
         p."Apellido_Paterno" AS apellido_paterno,
@@ -85,7 +88,7 @@ class AlumnosRepository {
         ) AS numero_celular
       FROM "Academia Forca&Fitness"."Alumno" a
       JOIN "Academia Forca&Fitness"."Persona" p ON p."Id_Persona" = a."Id_Persona"
-      JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
+      LEFT JOIN "Academia Forca&Fitness"."Matricula" m ON a."Id_alumno" = m."Id_alumno"
       WHERE a."Id_alumno" = $1
         AND (
           $2::VARCHAR IS NULL

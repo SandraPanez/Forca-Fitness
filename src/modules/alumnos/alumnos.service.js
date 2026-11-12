@@ -17,12 +17,14 @@ class AlumnosService {
       if (fechaVencimiento) fechaVencimiento.setHours(0, 0, 0, 0);
       
       const diffTime = fechaVencimiento ? (fechaVencimiento.getTime() - hoy.getTime()) : 0;
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = fechaVencimiento ? Math.round(diffTime / (1000 * 60 * 60 * 24)) : null;
       
       const esReservada = al.estado === 'Reservada';
       let estado_matricula;
       if (esReservada) {
         estado_matricula = 'Reservada';
+      } else if (!fechaVencimiento) {
+        estado_matricula = al.estado ? 'Sin fecha de vencimiento' : 'Sin matr\u00edcula';
       } else if (diffDays < 0) {
         estado_matricula = 'Vencida';
       } else if (diffDays <= 3) {
@@ -36,6 +38,8 @@ class AlumnosService {
       
       return {
         id: al.id,
+        dni: al.dni,
+        estado_alumno_registrado: al.estado_alumno_registrado,
         nombres: al.nombres,
         apellido_paterno: al.apellido_paterno,
         apellido_materno: al.apellido_materno,
@@ -66,7 +70,7 @@ class AlumnosService {
     if (fechaVencimiento) fechaVencimiento.setHours(0, 0, 0, 0);
     
     const diffTime = fechaVencimiento ? (fechaVencimiento.getTime() - hoy.getTime()) : 0;
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = fechaVencimiento ? Math.round(diffTime / (1000 * 60 * 60 * 24)) : null;
     
     const esReservada = record.estado_matricula === 'Reservada';
     let estado;
@@ -75,6 +79,11 @@ class AlumnosService {
     if (esReservada) {
       estado = 'Reservada';
       dias_restantes_texto = 'Reservada - Inicia próximo periodo';
+    } else if (!fechaVencimiento) {
+      estado = record.estado_matricula ? 'Sin fecha de vencimiento' : 'Sin matrícula';
+      dias_restantes_texto = record.estado_matricula
+        ? 'No hay fecha de vencimiento registrada'
+        : 'Sin matrícula registrada';
     } else if (diffDays < 0) {
       estado = 'Vencida';
       dias_restantes_texto = `Vencida hace ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
@@ -86,7 +95,11 @@ class AlumnosService {
       dias_restantes_texto = `Activa - ${diffDays} días restantes`;
     }
 
-    const estado_alumno = (esReservada || diffDays >= 0) ? 'Habilitado' : 'Inhabilitado';
+    const estado_alumno = esReservada
+      ? 'Habilitado'
+      : !fechaVencimiento
+        ? 'Sin vigencia'
+        : diffDays >= 0 ? 'Habilitado' : 'Inhabilitado';
 
     const formatoFecha = fecha => {
       if (!fecha) return 'No registrada';
@@ -101,6 +114,7 @@ class AlumnosService {
         .filter(Boolean)
         .join(' '),
       estado: estado,
+      estado_alumno_registrado: record.estado_alumno_registrado,
       dni: record.numero_documento,
       correo: record.correo_electronico,
       celular: record.numero_celular || 'No registrado',

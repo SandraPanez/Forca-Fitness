@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnClosePanel = document.getElementById('btn-close-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
     const searchInput = document.getElementById('search-input') || document.querySelector('.search-input');
+    const btnBuscarAlumnos = document.getElementById('btn-buscar-alumnos');
     const filterSelect = document.getElementById('filter-select') || document.querySelector('.filter-select');
+    const disciplinaSelect = document.getElementById('disciplina-select');
     const btnPorVencer = document.getElementById('btn-por-vencer');
     const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro');
 
@@ -21,6 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let alumnosCache = [];    // El historial de matrículas solo lo consulta el Director
     const esDirector = obtenerRolesUsuario().includes('DIRECTOR');
+
+    // Solo el Director puede seleccionar alumnos inhabilitados.
+    if (!esDirector && filterSelect) {
+        const opcionInhabilitados = filterSelect.querySelector(
+            'option[value="Inhabilitado"]'
+        );
+        opcionInhabilitados?.remove();
+    }
 
     const closePanel = () => {
         overlay.classList.remove('active');
@@ -53,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return 'badge-vencida';
             case 'Reservada':
                 return 'badge-reservada';
+            case 'Sin matr\u00edcula':
+            case 'Sin fecha de vencimiento':
+                return 'badge-sin-vigencia';
             default:
                 return 'badge-activa';
         }
@@ -78,10 +91,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateKpis = () => {
-        const total = alumnosCache.length;
-        const activas = alumnosCache.filter(a => a.estado_matricula === 'Activa').length;
-        const porVencer = alumnosCache.filter(a => a.estado_matricula === 'Próxima a vencer' || a.por_vencer).length;
-        const vencidas = alumnosCache.filter(a => a.estado_matricula === 'Vencida').length;
+        const alumnosListado = alumnosCache.filter(alumno =>
+            ['ACTIVO', 'INACTIVO'].includes(
+                String(alumno.estado_alumno_registrado || '').trim().toUpperCase()
+            )
+        );
+        const total = alumnosListado.length;
+        const activas = alumnosListado.filter(a => a.estado_matricula === 'Activa').length;
+        const porVencer = alumnosListado.filter(a => a.estado_matricula === 'Próxima a vencer' || a.por_vencer).length;
+        const vencidas = alumnosListado.filter(a => a.estado_matricula === 'Vencida').length;
 
         if (kpiTotalVal) kpiTotalVal.textContent = total;
         if (kpiActivasVal) kpiActivasVal.textContent = activas;
@@ -91,6 +109,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const optPorVencer = filterSelect?.querySelector('option[value="Por vencer"]');
         if (optPorVencer) {
             optPorVencer.textContent = `⚠️ Matrículas por vencer (${porVencer})`;
+        }
+    };
+
+    const cargarDisciplinas = () => {
+        if (!disciplinaSelect) return;
+
+        const disciplinas = [...new Set(alumnosCache.flatMap(alumno =>
+            Array.isArray(alumno.disciplinas) ? alumno.disciplinas : []
+        ).map(d => String(d).trim()).filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b, 'es'));
+
+        disciplinaSelect.innerHTML = '<option value="Todas">Todas las disciplinas</option>';
+
+        for (const nombre of disciplinas) {
+            const opcion = document.createElement('option');
+            opcion.value = nombre;
+            opcion.textContent = nombre;
+            disciplinaSelect.appendChild(opcion);
         }
     };
 
@@ -160,17 +196,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const normalizarTexto = valor => String(valor ?? '')
+        .toLocaleLowerCase('es')
+        .normalize('NFD')
+        .replace(/n\u0303/g, '\u00f1')
+        .replace(/[\u0300-\u036f]/g, '');
+
     const filterAlumnos = () => {
-        const search = (searchInput?.value || '').trim().toLowerCase();
+        const search = normalizarTexto(searchInput?.value).trim();
         const status = filterSelect?.value || 'Todos';
+        const disciplina = disciplinaSelect?.value || 'Todas';
 
         setActiveKpiCard(status);
 
         const filtered = alumnosCache.filter((alumno) => {
-            const fullName = `${alumno.nombres || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`.toLowerCase();
+            const fullName = normalizarTexto(`${alumno.nombres || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`);
             const matchesSearch = !search
                 || fullName.includes(search)
-                || (alumno.disciplinas || []).some(d => String(d).toLowerCase().includes(search));
+                || String(alumno.dni ?? '').includes(search)
+                || (alumno.disciplinas || []).some(d => normalizarTexto(d).includes(search));
 
             let matchesStatus = true;
             if (status === 'Por vencer') {
@@ -185,7 +229,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 matchesStatus = true; // 'Todos'
             }
 
-            return matchesSearch && matchesStatus;
+            const estadoAlumno = String(alumno.estado_alumno_registrado || '').trim().toUpperCase();
+            const estadosPermitidos =
+                status === 'Inhabilitado' ? ['INHABILITADO']
+                : status === 'Activo' ? ['ACTIVO']
+                : status === 'Inactivo' ? ['INACTIVO']
+                : ['ACTIVO', 'INACTIVO'];
+            const matchesHabilitacion = estadosPermitidos.includes(estadoAlumno);
+
+            const matchesDisciplina = disciplina === 'Todas' || (
+                Array.isArray(alumno.disciplinas) &&
+                alumno.disciplinas.some(d => String(d).trim() === disciplina)
+            );
+
+            return matchesSearch && matchesStatus && matchesHabilitacion && matchesDisciplina;
+        });
+
+        // Los alumnos inactivos aparecen al final del listado.
+        filtered.sort((a, b) => {
+            const estadoA = String(a.estado_alumno_registrado || '').trim().toUpperCase();
+            const estadoB = String(b.estado_alumno_registrado || '').trim().toUpperCase();
+            return Number(estadoA === 'INACTIVO') - Number(estadoB === 'INACTIVO');
         });
 
         renderTable(filtered);
@@ -215,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('Alumnos recibidos:', result.data);
             alumnosCache = result.data;
+            cargarDisciplinas();
             updateKpis();
             filterAlumnos();
         } catch (error) {
@@ -313,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnLimpiarFiltro.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
             if (filterSelect) filterSelect.value = 'Todos';
+            if (disciplinaSelect) disciplinaSelect.value = 'Todas';
             filterAlumnos();
         });
     }
@@ -320,7 +386,17 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClosePanel.addEventListener('click', closePanel);
     overlay.addEventListener('click', closePanel);
     if (searchInput) searchInput.addEventListener('input', filterAlumnos);
+    if (btnBuscarAlumnos) btnBuscarAlumnos.addEventListener('click', filterAlumnos);
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                filterAlumnos();
+            }
+        });
+    }
     if (filterSelect) filterSelect.addEventListener('change', filterAlumnos);
+    if (disciplinaSelect) disciplinaSelect.addEventListener('change', filterAlumnos);
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closePanel();
     });
