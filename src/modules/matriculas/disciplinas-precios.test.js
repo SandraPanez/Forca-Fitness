@@ -269,3 +269,55 @@ describe('HU-26 · Tarjeta y resumen (T5 / T7)', () => {
     ]);
   });
 });
+
+describe('HU-26 · Versión visual (sin escritura en BD)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { crearDisciplinasDemo, debeActivarModoDemo, aplicarCambioDemo } = require('../../../public/js/precios');
+  const raiz = path.join(__dirname, '..', '..', '..');
+  const leer = (rel) => fs.readFileSync(path.join(raiz, rel), 'utf8');
+
+  it('datos locales: precio, promoción y precio final de cada disciplina', () => {
+    const datos = crearDisciplinasDemo().map(d => [d.nombre, d.tarifa, d.precio_vigente, d.promocion && d.promocion.texto]);
+    assert.deepEqual(datos, [
+      ['MMA', 150, 135, 'Promo nuevos alumnos'],
+      ['Jiu Jitsu', 180, 180, null],
+      ['Capoeira', 160, 140, 'Promo temporada'],
+      ['Boxeo', 110, 110, null]
+    ]);
+  });
+
+  it('fallo de la API (5xx o respuesta inválida) usa datos locales; 401/403 no', () => {
+    assert.equal(debeActivarModoDemo(500, { success: false }), true);
+    assert.equal(debeActivarModoDemo(200, null), true);
+    assert.equal(debeActivarModoDemo(200, { success: true, data: [] }), false);
+    assert.equal(debeActivarModoDemo(401, {}), false);
+    assert.equal(debeActivarModoDemo(403, {}), false);
+  });
+
+  it('CA3 visual: el cambio se aplica en memoria y recalcula el precio final', () => {
+    const [mma] = crearDisciplinasDemo();
+    const actual = aplicarCambioDemo(mma, { tarifa: 200, promocion: { tipo: 'MONTO_FIJO', valor: 40, texto: 'Promo verano' } });
+    assert.deepEqual([actual.id, actual.tarifa, actual.precio_vigente, actual.promocion.texto], [mma.id, 200, 160, 'Promo verano']);
+    assert.equal(crearDisciplinasDemo()[0].tarifa, 150, 'los datos locales originales no se alteran');
+  });
+
+  it('Confirmar no llama PUT/PATCH ni escribe en la BD, y no hay texto "demo" visible', () => {
+    const js = leer('public/js/precios.js');
+    assert.doesNotMatch(js, /method:\s*['"](PUT|PATCH|POST|DELETE)['"]/);
+    assert.equal((js.match(/authFetch\(/g) || []).length, 1, 'solo la lectura GET de precios');
+    assert.doesNotMatch(leer('public/precios.html'), /demostraci|\bdemo\b|mock/i);
+  });
+
+  it('consultas compartidas no leen columnas Promocion_* (regresión de HU-26)', () => {
+    for (const rel of [
+      'src/modules/auth/auth.repository.js',
+      'src/modules/matriculas/matriculas.repository.js',
+      'src/modules/pagos/pagos.repository.js'
+    ]) {
+      const fuente = leer(rel);
+      assert.doesNotMatch(fuente, /Promocion_/, rel);
+      assert.doesNotMatch(fuente, /disciplinas-precios/, rel);
+    }
+  });
+});
