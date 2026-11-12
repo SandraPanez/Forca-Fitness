@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renovación y Reserva | Forca & Fitness</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+
+    <style>
+    /* ========================================================
+       ESTILOS PARA REDISEÑO DE RENOVACIÓN (MOCKUP HU-08)
+       ======================================================== */
+    .renovacion-grid-datos {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        column-gap: 3.5rem !important;
+        row-gap: 1.35rem !important;
+        margin: 1.5rem 0 1.75rem 0 !important;
+    }
+
+    .planes-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .plan-card {
+        border: 1.5px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        border-radius: 8px !important;
+        padding: 1.15rem 1.35rem !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        user-select: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+    }
+
+    .plan-card:hover {
+        border-color: #94a3b8 !important;
+        background-color: #f8fafc !important;
+    }
+
+    .plan-card.active {
+        border: 2px solid #2563eb !important;
+        background: #ffffff !important;
+        box-shadow: 0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08) !important;
+    }
+
+    .plan-card-nombre {
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        color: #0f172a !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .plan-card.active .plan-card-nombre {
+        color: #1e40af !important;
+    }
+
+    .plan-card-precio {
+        font-size: 0.92rem !important;
+        color: #64748b !important;
+        font-weight: 500 !important;
+    }
+
+    .plan-card.active .plan-card-precio {
+        color: #2563eb !important;
+        font-weight: 600 !important;
+    }
+
+    @media (max-width: 640px) {
+        .renovacion-grid-datos {
+            grid-template-columns: 1fr !important;
+            gap: 1.25rem !important;
+        }
+        .planes-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+    </style>
+</head>
+
+<body data-menu="/renovar.html">
+
+    <!-- Header dinámico unificado -->
+    <header id="app-header"></header>
+
+    <!-- Main Container -->
+    <main class="container" style="max-width: 1000px;">
+
+        <!-- Page Header -->
+        <section class="page-header">
+            <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase;">RENOVACIÓN Y RESERVA</p>
+            <h2 class="title">Renovar matrícula o reservar cupo</h2>
+            <p class="description">Renueva tu matrícula actual conservando tu horario o asegura tu vacante para los próximos meses con tarifa congelada.</p>
+        </section>
+
+        <p id="renovacion-mensaje" role="status" tabindex="-1"></p>
+
+        <!-- Form Card con Tabs -->
+        <div class="form-card">
+
+            <!-- Selector interactivo de tipo de trámite (Card Selection) -->
+            <div class="tramite-cards-grid">
+
+                <div class="tramite-card active" id="card-tipo-renovar" role="button" tabindex="0">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(229, 57, 53, 0.1); color: var(--primary-color, #e53935); display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            🔄
+                        </div>
+                        <span class="tramite-badge" style="background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; text-transform: uppercase;">
+                            Matrícula actual
+                        </span>
+                    </div>
+                    <h3 style="font-size: 1.15rem; margin: 0 0 0.35rem 0; color: var(--text-main, #222);">Renovar mi matrícula</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted, #666); margin: 0; line-height: 1.4;">
+                        Conserva tu disciplina y horario habitual. La renovación se activa automáticamente con la confirmación del pago.
+                    </p>
+                    <div class="tramite-check-indicator" style="position: absolute; top: 1rem; right: 1rem; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-color, #e53935); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">
+                        ✓
+                    </div>
+                </div>
+
+                <div class="tramite-card" id="card-tipo-reservar" role="button" tabindex="0">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(26, 79, 139, 0.1); color: #1a4f8b; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            🔒
+                        </div>
+                        <span class="tramite-badge" style="background: #ede7f6; color: #4527a0; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; text-transform: uppercase;">
+                            Tarifa congelada
+                        </span>
+                    </div>
+                    <h3 style="font-size: 1.15rem; margin: 0 0 0.35rem 0; color: var(--text-main, #222);">Reservar cupo por adelantado</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted, #666); margin: 0; line-height: 1.4;">
+                        Asegura tu vacante para los próximos dos meses con aforo garantizado y congelando el precio actual.
+                    </p>
+                    <div class="tramite-check-indicator" style="position: absolute; top: 1rem; right: 1rem; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-color, #e53935); color: #fff; display: none; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">
+                        ✓
+                    </div>
+                </div>
+
+            </div>
+
+            <hr class="divider" style="margin-bottom: 1.5rem;">
+
+            <!-- Panel 1: Renovar matrícula actual (HU-08 Rediseñado) -->
+            <div id="panel-renovar-actual">
+                <p class="subtitle" style="font-weight: 700; color: var(--text-muted); letter-spacing: 1px; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.35rem;">RENOVACIÓN</p>
+                <h3 id="renovacion-titulo" style="font-size: 1.35rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.35rem 0;">Datos de tu matrícula</h3>
+                <p class="description" style="margin-bottom: 1.25rem;">La matrícula se activa únicamente cuando Tesorería valide el pago.</p>
+
+                <div id="sin-renovacion-box" style="display: none; padding: 1.5rem; background-color: var(--secondary-color); border-radius: 8px; text-align: center; margin-top: 1rem;">
+                    <p style="margin: 0 0 1rem 0; color: var(--text-muted);">No tienes matrículas vencidas o próximas a vencer disponibles para renovar.</p>
+                    <button type="button" class="btn-submit" id="btn-ir-a-reservar" style="font-size: 0.9rem;">
+                        Reservar cupo para próximos meses →
+                    </button>
+                </div>
+
+                <form id="renovacion-form" style="margin-top: 1rem;">
+                    <div class="form-group" id="selector-matricula-group" style="display: none; margin-bottom: 1.25rem;">
+                        <label for="select-matricula-renovar">Seleccionar matrícula a renovar</label>
+                        <select id="select-matricula-renovar">
+                        </select>
+                    </div>
+
+                    <hr class="divider" style="margin: 1.25rem 0 1.5rem 0;">
+
+                    <!-- Ficha del Alumno (Mockup) -->
+                    <div class="renovacion-alumno-card" style="margin-bottom: 1.5rem;">
+                        <span class="renovacion-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.65rem;">Alumno</span>
+                        <div style="display: flex; align-items: center; gap: 0.9rem;">
+                            <div id="renovacion-avatar" class="avatar-circle" style="width: 44px; height: 44px; border-radius: 50%; background: #e0f2fe; color: #0284c7; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+                                JR
+                            </div>
+                            <div style="font-size: 0.95rem; line-height: 1.35;">
+                                <strong id="renovacion-alumno-nombre" style="color: var(--text-main); font-weight: 700;">—</strong>
+                                <span style="color: #94a3b8; margin: 0 0.35rem;">/</span>
+                                <span id="renovacion-alumno-disciplina" style="color: var(--text-muted);">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grid de 4 datos: 2 columnas x 2 filas (Mockup HU-08) -->
+                    <div class="renovacion-grid-datos" style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 3.5rem; row-gap: 1.35rem; margin: 1.5rem 0 1.75rem 0;">
+                        <!-- Columna 1, Fila 1: Estado -->
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Estado</span>
+                            <span id="renovacion-estado-text" style="font-weight: 700; font-size: 1.05rem; color: #dc2626; display: block;">—</span>
+                        </div>
+                        <!-- Columna 2, Fila 1: Inicio -->
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Inicio</span>
+                            <span id="renovacion-inicio-text" style="font-weight: 600; font-size: 1.05rem; color: #0f172a; display: block;">—</span>
+                        </div>
+                        <!-- Columna 1, Fila 2: Vencimiento -->
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Vencimiento</span>
+                            <span id="renovacion-fin-text" style="font-weight: 600; font-size: 1.05rem; color: #0f172a; display: block;">—</span>
+                        </div>
+                        <!-- Columna 2, Fila 2: Plan actual -->
+                        <div class="renovacion-item">
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 0.35rem;">Plan actual</span>
+                            <span id="renovacion-plan-text" style="font-weight: 600; font-size: 1.05rem; color: #0f172a; display: block;">Mensual</span>
+                        </div>
+                    </div>
+
+                    <!-- Campos ocultos de compatibilidad -->
+                    <input type="hidden" id="renovacion-disciplina">
+                    <input type="hidden" id="renovacion-horario">
+                    <input type="hidden" id="renovacion-periodo">
+
+                    <hr class="divider" style="border: none; border-top: 1px solid #e2e8f0; margin: 1.75rem 0;">
+
+                    <!-- Periodo de renovación * -->
+                    <div style="margin-bottom: 2rem;">
+                        <label style="font-weight: 700; font-size: 0.95rem; color: #0f172a; display: block; margin-bottom: 1rem;">
+                            Periodo de renovación <span style="color: #dc2626;">*</span>
+                        </label>
+
+                        <div class="planes-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <!-- Card 1: Mensual (activo) -->
+                            <div class="plan-card active" data-plan="Mensual" data-meses="1" role="button" tabindex="0" style="border: 2px solid #2563eb; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 0 0 1px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.08);">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #1e40af; margin-bottom: 0.35rem;">Mensual</div>
+                                <div class="plan-card-precio" id="plan-precio-mensual" style="font-size: 0.92rem; color: #2563eb; font-weight: 600;">S/ 150</div>
+                            </div>
+
+                            <!-- Card 2: Bimensual -->
+                            <div class="plan-card" data-plan="Bimensual" data-meses="2" role="button" tabindex="0" style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 0.35rem;">Bimensual</div>
+                                <div class="plan-card-precio" id="plan-precio-bimensual" style="font-size: 0.92rem; color: #64748b; font-weight: 500;">S/ 280</div>
+                            </div>
+
+                            <!-- Card 3: Trimestral -->
+                            <div class="plan-card" data-plan="Trimestral" data-meses="3" role="button" tabindex="0" style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 0.35rem;">Trimestral</div>
+                                <div class="plan-card-precio" id="plan-precio-trimestral" style="font-size: 0.92rem; color: #64748b; font-weight: 500;">S/ 400</div>
+                            </div>
+
+                            <!-- Card 4: Combo AFF -->
+                            <div class="plan-card" data-plan="Combo AFF" data-meses="combo" role="button" tabindex="0" style="border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 8px; padding: 1.15rem 1.35rem; cursor: pointer; display: flex; flex-direction: column; justify-content: center;">
+                                <div class="plan-card-nombre" style="font-weight: 700; font-size: 0.95rem; color: #0f172a; margin-bottom: 0.35rem;">Combo AFF</div>
+                                <div class="plan-card-precio" id="plan-precio-combo" style="font-size: 0.92rem; color: #64748b; font-weight: 500;">S/ 630</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="divider" style="border: none; border-top: 1px solid #e2e8f0; margin: 1.75rem 0;">
+
+                    <!-- Botones Cancelar y Solicitar renovación -->
+                    <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+                        <a href="/mis-matriculas.html" class="btn-cancel" style="padding: 0.75rem 1.25rem; text-decoration: none; color: #64748b; font-weight: 600; font-size: 0.95rem;">Cancelar</a>
+                        <button type="submit" class="btn-submit" id="renovacion-continuar" style="background: #2563eb; color: #fff; padding: 0.8rem 2rem; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; font-size: 0.95rem; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);">
+                            Solicitar renovación
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Panel 2: Reservar cupo para próximos 2 meses (HU-09) -->
+            <div id="panel-reservar-cupo" style="display: none;">
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem;">Reservar cupo para una disciplina</h3>
+                <p class="description">Selecciona una disciplina con cupos disponibles y un periodo dentro de los próximos dos meses para asegurar tu vacante con tarifa congelada.</p>
+
+                <div class="filtros-header" style="margin-top: 1.25rem;">
+                    <div class="filtros-texto">
+                        <h4 style="margin: 0; font-size: 1rem;">Disponibilidad de reservas</h4>
+                        <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Elige la disciplina y el periodo futuro (hasta 2 meses por adelantado).</p>
+                    </div>
+
+                    <div class="filtros-controles" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div class="disciplina-selector form-group">
+                            <label for="reserva-disciplina-select">Disciplina</label>
+                            <select id="reserva-disciplina-select">
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
+
+                        <div class="periodo-selector form-group">
+                            <label for="reserva-periodo-select">Periodo de reserva</label>
+                            <select id="reserva-periodo-select">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <!-- Resumen de Disciplina y Periodo (HU-09) -->
+                <div id="resumen-disciplina-container"></div>
+
+                <!-- Grilla de Horarios para Reserva -->
+                <div id="reserva-horarios-grid" class="horarios-grid">
+                    <div class="text-muted" style="text-align: center; padding: 2rem;">Cargando horarios para reserva...</div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <a href="/mis-matriculas.html" class="btn-cancel">Ver mis matrículas</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal Confirmar Reserva (PSW-201 / CA 1) -->
+    <div class="modal-overlay" id="modal-confirmar-reserva">
+        <div class="modal modal-reserva">
+            <h3>Confirmar reserva de cupo</h3>
+            <p class="modal-subtitle">Revisa los datos de tu reserva antes de continuar al pago.</p>
+
+            <div class="reserva-detalle-card">
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Disciplina</span>
+                    <span class="reserva-detalle-valor" id="modal-reserva-disciplina">—</span>
+                </div>
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Horario</span>
+                    <span class="reserva-detalle-valor" id="modal-reserva-horario">—</span>
+                </div>
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Periodo contratado</span>
+                    <span class="reserva-detalle-valor">
+                        <span class="badge-status badge-reservada" id="modal-reserva-periodo">—</span>
+                    </span>
+                </div>
+                <div class="reserva-detalle-row">
+                    <span class="reserva-detalle-label">Tarifa mensual vigente</span>
+                    <div style="text-align: right;">
+                        <span class="reserva-detalle-valor" id="modal-reserva-tarifa" style="color: var(--primary-color); font-size: 1.15rem;">S/ —</span>
+                        <span class="tarifa-congelada-tag" style="display: block; margin-top: 0.2rem;">Tarifa congelada</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reserva-condiciones-box">
+                <div class="condicion-item">
+                    <span>🔒</span>
+                    <p><strong>Tarifa congelada:</strong> Aseguras la tarifa actual. No aplicarán posteriores variaciones ni promociones de precio.</p>
+                </div>
+                <div class="condicion-item">
+                    <span>📅</span>
+                    <p><strong>Estado "Reservada":</strong> Tu matrícula figurará como Reservada y se activará automáticamente el primer día del periodo.</p>
+                </div>
+                <div class="condicion-item">
+                    <span>💳</span>
+                    <p><strong>Garantía de vacante:</strong> El cupo queda asegurado y descontado del aforo en cuanto se procese el pago.</p>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn-cancel" id="btn-cancelar-reserva">Cancelar</button>
+                <button type="button" class="btn-submit" id="btn-continuar-pago">Continuar al pago</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/renovar.js"></script>
+</body>
+</html>

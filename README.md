@@ -34,6 +34,25 @@ npm start
 `GET /api/health` comprueba el servidor y la base: responde `200` con
 `database: "connected"`, o `503` con `database: "disconnected"`.
 
+## Probar Mercado Pago desde localhost
+
+Usa las credenciales del vendedor de prueba en `MP_ACCESS_TOKEN` y conserva
+`APP_URL=http://localhost:3000`. Al continuar con Mercado Pago, el checkout se
+abre en otra pestaña y Forca permanece abierta. Completa la compra con el
+comprador y la tarjeta de prueba; luego vuelve a Forca y pulsa **Verificar pago**.
+También se consulta al recuperar el foco de la pestaña. No se necesita un túnel
+para esta consulta: el servidor local accede a la API de Mercado Pago.
+
+Solo un pago verificado como aprobado habilita la cuenta y confirma la matrícula.
+Los periodos futuros quedan **Reservados**. Una respuesta pendiente o un error de
+la API no se convierte en aprobación. Las cuentas y tarjetas se obtienen de la
+[guía oficial de pruebas](https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/integration-test/test-purchases).
+
+Para recibir notificaciones aunque el alumno cierre Forca, configura `APP_URL`
+con una dirección pública HTTPS que llegue a ese mismo servidor. Con ella se
+incluyen el webhook y las URLs de retorno; Mercado Pago desaconseja usar
+[localhost en las URLs de retorno](https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/configure-back-urls).
+
 ## Base de datos
 
 El equipo trabaja con la base PostgreSQL compartida en Render: con sus
@@ -45,6 +64,14 @@ Para usar una base propia, créala y ejecuta solo este archivo:
 psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagrama version 4.sql"
 ```
 
+- Para habilitar la administración de accesos, ejecuta también una vez
+  `src/modules/personal/personal-permisos.schema.sql` contra el mismo esquema.
+  Esta migración crea las sobrescrituras individuales que usa la autorización
+  del servidor; debe estar aplicada antes de iniciar la versión que las consulta.
+- Para registrar descuentos de HU-15 en cobros nuevos, ejecuta una vez
+  `src/modules/pagos/hu15-descuentos-migration.sql` contra la base existente.
+  La migración agrega los campos de auditoría a `Registro_Cobro` y es segura
+  para volver a ejecutar.
 - `src/modules/pagos/pagos.schema version 2.sql` es una copia del mismo
   esquema: no ejecutes los dos, el segundo falla porque las tablas ya existen.
 - El esquema crea las tablas vacías. Los roles, métodos de pago, disciplinas,
@@ -64,10 +91,10 @@ quien inicia sesión (se define en `public/js/auth.js`, en `MENU_POR_ROL`):
 
 | Rol | Menú |
 |---|---|
-| Director | Alumnos, Control de acceso |
+| Director | Alumnos, Control de acceso, Administración de accesos, Pagos |
 | Tesorero | Alumnos, Pagos |
 | Profesor | Control de acceso, Alumnos |
-| Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas, Mi perfil |
+| Cliente | Nueva matrícula, Disciplinas, Renovar, Mis matrículas, Mis reservas, Mi perfil |
 
 Si una cuenta tiene varios roles, ve las opciones de todos sin repetir.
 
@@ -82,7 +109,8 @@ variable `PORT` que Render inyecta. Para el servicio web en Render:
    resto de variables de la tabla de arriba, con `APP_URL` igual a la
    dirección pública del servicio. No subas `.env` ni copies una URL con
    credenciales al repositorio.
-3. Ejecuta una vez el archivo SQL de la sección "Base de datos" contra esa base.
+3. Ejecuta una vez el esquema base y las migraciones de permisos y descuentos
+   de la sección "Base de datos" contra esa base.
 4. Configura `/api/health` como health check del servicio.
 
 La imagen no crea tablas automáticamente: el esquema debe ejecutarse una vez

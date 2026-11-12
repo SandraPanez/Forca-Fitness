@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,32 +10,247 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/header.css">
+
+    <style>
+    /* ========================================================
+       ESTILOS DEL PANEL DE DIRECCIÓN (VISTA DIRECTOR)
+       ======================================================== */
+
+    .director-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .kpi-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1.15rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #cbd5e1;
+    }
+
+    .kpi-card.active {
+        border-color: #2563eb;
+        background: #f8fafc;
+        box-shadow: 0 0 0 1.5px #2563eb;
+    }
+
+    .kpi-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .kpi-icon-total {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .kpi-icon-activas {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .kpi-icon-alerta {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .kpi-icon-vencidas {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    .kpi-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kpi-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .kpi-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-top: 0.2rem;
+    }
+
+    .badge-disciplina-pill {
+        display: inline-block;
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+        margin-right: 0.3rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .fecha-vencimiento-text {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .fecha-vencimiento-text.alerta {
+        color: #d97706;
+    }
+
+    .fecha-vencimiento-text.vencida {
+        color: #dc2626;
+    }
+
+    @media (max-width: 900px) {
+        .director-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .director-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .btn-buscar-alumnos {
+        padding: 0.7rem 1.25rem;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-family: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .btn-buscar-alumnos:hover {
+        background: #1d4ed8;
+    }
+
+    .badge-status.badge-sin-vigencia {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+    </style>
 </head>
+
 <body>
-    <!-- Header General (Simulado de Menú Principal) -->
     <header id="app-header"></header>
 
     <div class="container" style="max-width: 1200px;">
-        <div class="page-header">
-            <h2 class="title">Alumnos registrados</h2>
-            <p class="description">Consulta los alumnos que forman parte de Forca & Fitness.</p>
+        <div class="page-header" style="margin-bottom: 1.5rem;">
+            <p class="subtitle" style="font-weight: 700; color: #64748b; letter-spacing: 0.05em; font-size: 0.78rem; text-transform: uppercase; margin-bottom: 0.35rem;">PANEL DE DIRECCIÓN</p>
+            <h2 class="title" style="margin: 0 0 0.35rem 0;">Alumnos y vigencia de matrículas</h2>
+            <p class="description" style="color: #64748b; margin: 0;">Supervisa en tiempo real el estado de las matrículas, fechas de vencimiento y disciplinas de todos los alumnos registrados.</p>
         </div>
 
-    <input type="text" id="search-input" class="search-input" placeholder="🔍 Buscar por nombre">
-    <select id="filter-select" class="filter-select">
-        <option value="Todos">Todos</option>
-        <option value="Activa">Activa</option>
-        <option value="Vencida">Vencida</option>
-        <option value="Inhabilitada">Inhabilitada</option>
-        <option value="PorVencer">Por vencer (próximos 3 días)</option>
-    </select>
+        <!-- Notificación visual (Toast / Banner) -->
+        <div id="inhabilitar-feedback" class="feedback-banner" hidden role="status" aria-live="polite"></div>
 
-        <!-- Tabla principal -->
+        <!-- Tarjetas KPI de Dirección -->
+        <div class="director-kpi-grid">
+            <div class="kpi-card active" id="kpi-card-total" role="button" tabindex="0" title="Ver lista completa de alumnos">
+                <div class="kpi-icon kpi-icon-total">👥</div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-total-val">0</span>
+                    <span class="kpi-label">Total Alumnos</span>
+                </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-card-activas" role="button" tabindex="0" title="Filtrar matrículas activas">
+                <div class="kpi-icon kpi-icon-activas">✓</div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-activas-val">0</span>
+                    <span class="kpi-label">Matrículas Activas</span>
+                </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-card-por-vencer" role="button" tabindex="0" title="Filtrar matrículas por vencer (≤ 3 días)">
+                <div class="kpi-icon kpi-icon-alerta">⚠️</div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-por-vencer-val">0</span>
+                    <span class="kpi-label">Próximas a Vencer</span>
+                </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-card-vencidas" role="button" tabindex="0" title="Filtrar matrículas vencidas">
+                <div class="kpi-icon kpi-icon-vencidas">✕</div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-vencidas-val">0</span>
+                    <span class="kpi-label">Matrículas Vencidas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de herramientas y filtros -->
+        <div class="alumnos-toolbar">
+            <div class="search-box">
+                <input type="text" id="search-input" class="search-input" placeholder="Buscar por nombre, apellido, DNI o disciplina...">
+                <button type="button" id="btn-buscar-alumnos" class="btn-buscar-alumnos">
+                    Buscar
+                </button>
+            </div>
+
+            <div class="filter-controls">
+                <select id="disciplina-select" class="filter-select" aria-label="Filtrar por disciplina">
+                    <option value="Todas">Todas las disciplinas</option>
+                </select>
+
+                <select id="filter-select" class="filter-select" aria-label="Filtrar por estado">
+                    <option value="Todos">Activos e inactivos</option>
+                    <option value="Activo">Alumnos activos</option>
+                    <option value="Inactivo">Alumnos inactivos</option>
+                    <option value="Por vencer">⚠️ Matrículas por vencer</option>
+                    <option value="Activa">Matrículas activas</option>
+                    <option value="Vencida">Matrículas vencidas</option>
+                    <option value="Reservada">Matrículas reservadas</option>
+                    <option value="Inhabilitado">Alumnos inhabilitados</option>
+                    <option value="Inhabilitada">Matrículas inhabilitadas</option>
+                </select>
+
+                <button type="button" id="btn-limpiar-filtro" class="btn-limpiar-filtro" title="Retirar filtro y ver lista completa">
+                    ✕ Limpiar filtro
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla principal ampliada para Dirección -->
         <div class="table-container">
             <table class="alumnos-table">
                 <thead>
                     <tr>
                         <th>Alumno</th>
+                        <th>Disciplina(s)</th>
+                        <th>Fecha de vencimiento</th>
                         <th>Estado de matrícula</th>
                         <th class="text-right">Acciones</th>
                     </tr>
@@ -44,18 +260,86 @@
         </div>
     </div>
 
-    <!-- PANEL LATERAL (SIDE DRAWER) T_20 -->
+    <!-- PANEL LATERAL (SIDE DRAWER) - INTERFAZ VIGENCIA DE MATRÍCULA -->
     <div class="side-panel-overlay" id="side-panel-overlay"></div>
-    <aside class="side-panel" id="side-panel">
+
+    <aside class="side-panel" id="side-panel" aria-labelledby="panel-title">
         <div class="side-panel-header">
-            <h3>DETALLE DEL ALUMNO</h3>
-            <button class="btn-close" id="btn-close-panel">✕</button>
+            <h3 id="panel-title">Vigencia de matrícula</h3>
+            <button class="btn-close" id="btn-close-panel" aria-label="Cerrar panel">✕</button>
         </div>
-        
+
         <div class="side-panel-content" id="side-panel-content">
             <div class="text-center text-muted mt-4">Cargando información...</div>
         </div>
     </aside>
+
+    <!-- MODAL DE CONFIRMACIÓN E INHABILITACIÓN TEMPORAL (HU-03) -->
+    <div class="modal-overlay" id="inhabilitarModal" aria-hidden="true">
+        <div class="modal modal-inhabilitar" role="dialog" aria-modal="true" aria-labelledby="inhabilitar-modal-title">
+            <div class="modal-inhabilitar-header">
+                <div class="modal-warning-badge">!</div>
+                <div>
+                    <span class="step-indicator">ACCIÓN ADMINISTRATIVA</span>
+                    <h3 id="inhabilitar-modal-title">Inhabilitar temporalmente al alumno</h3>
+                </div>
+                <button type="button" class="btn-close" id="btn-close-inhabilitar-modal" aria-label="Cerrar modal">✕</button>
+            </div>
+
+            <p class="modal-inhabilitar-desc">
+                Vas a inhabilitar temporalmente a <strong id="inhabilitar-alumno-nombre">---</strong>.
+                Su estado pasará a <strong>Inhabilitado</strong> durante el periodo indicado.
+            </p>
+
+            <div class="conservation-notice">
+                <span class="conservation-icon">🛡️</span>
+                <div>
+                    <strong>Conservación garantizada de datos y matrículas</strong>
+                    <p>Los datos personales, contactos e historial de matrículas del alumno se conservarán íntegramente en el sistema.</p>
+                </div>
+            </div>
+
+            <form id="inhabilitarForm" novalidate>
+                <input type="hidden" id="inhabilitar-alumno-id" name="id_alumno">
+
+                <div class="form-group mb-3">
+                    <label for="inhabilitar-duracion-preset">Duración rápida del periodo</label>
+                    <select id="inhabilitar-duracion-preset" class="filter-select" style="width: 100%; padding: 0.65rem 0.85rem;">
+                        <option value="custom">Personalizado (seleccionar fechas)</option>
+                        <option value="7">7 días</option>
+                        <option value="15" selected>15 días</option>
+                        <option value="30">1 mes (30 días)</option>
+                        <option value="60">2 meses (60 días)</option>
+                        <option value="90">3 meses (90 días)</option>
+                    </select>
+                </div>
+
+                <div class="grid-2-cols mb-3" style="gap: 1rem;">
+                    <div class="form-group">
+                        <label for="inhabilitar-fecha-inicio">Fecha de inicio <span class="asterisk">*</span></label>
+                        <input type="date" id="inhabilitar-fecha-inicio" name="fecha_inicio" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inhabilitar-fecha-fin">Fecha de fin <span class="asterisk">*</span></label>
+                        <input type="date" id="inhabilitar-fecha-fin" name="fecha_fin" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inhabilitar-motivo">Motivo de la inhabilitación <span class="asterisk">*</span></label>
+                    <textarea id="inhabilitar-motivo" name="motivo" rows="3" maxlength="90" placeholder="Ej: Solicitud de licencia médica temporal, viaje o medida disciplinaria..." required></textarea>
+                    <div class="char-counter" id="inhabilitar-motivo-counter">0 / 90 caracteres</div>
+                </div>
+
+                <div id="inhabilitar-error" class="error-message" style="display: none; text-align: left;"></div>
+
+                <div class="modal-actions modal-inhabilitar-actions">
+                    <button type="button" class="btn-cancel" id="btn-cancel-inhabilitar">Cancelar</button>
+                    <button type="submit" class="btn-submit btn-danger" id="btn-confirm-inhabilitar">Confirmar inhabilitación</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="/js/auth.js"></script>
     <script src="/js/alumnos.js"></script>

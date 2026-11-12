@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance de ingresos y pagos | Forca &amp; Fitness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/header.css">
+
+    <style>
+    /* ========================================================
+       ESTILOS EXCLUSIVOS: BALANCE DE INGRESOS Y PAGOS (HU-16)
+       ======================================================== */
+    .balance-container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 3.5rem;
+    }
+
+    /* Encabezado y Navegación */
+    .balance-top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .balance-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+    }
+
+    .balance-breadcrumb a {
+        color: #1a4f8b;
+        text-decoration: none;
+    }
+
+    .balance-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .btn-volver-pagos {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 600;
+        padding: 0.55rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .btn-volver-pagos:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #0f172a;
+    }
+
+    .balance-header-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.75rem 2rem;
+        margin-bottom: 1.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .balance-header-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 0.4rem 0;
+        letter-spacing: -0.02em;
+    }
+
+    .balance-header-desc {
+        font-size: 0.95rem;
+        color: #64748b;
+        margin: 0;
+        max-width: 720px;
+        line-height: 1.5;
+    }
+
+    .readonly-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        padding: 0.45rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    /* Panel de Periodo y Filtros */
+    .period-selector-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .period-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .period-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .period-icon {
+        font-size: 1.25rem;
+    }
+
+    .period-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .period-quick-presets {
+        display: flex;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-preset {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-preset:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+
+    .btn-preset.active {
+        background: #1a4f8b;
+        border-color: #1a4f8b;
+        color: #ffffff;
+    }
+
+    .period-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.2fr auto;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .form-field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .form-field-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .form-field-input,
+    .form-field-select {
+        height: 42px;
+        padding: 0 0.85rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        color: #0f172a;
+        background: #ffffff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-field-input:focus,
+    .form-field-select:focus {
+        outline: none;
+        border-color: #1a4f8b;
+        box-shadow: 0 0 0 3px rgba(26, 79, 139, 0.12);
+    }
+
+    .btn-consultar-balance {
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: #1a4f8b;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 0 1.5rem;
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s;
+        box-shadow: 0 2px 4px rgba(26, 79, 139, 0.2);
+        white-space: nowrap;
+    }
+
+    .btn-consultar-balance:hover {
+        background: #153e6d;
+    }
+
+    .btn-consultar-balance:active {
+        transform: scale(0.99);
+    }
+
+    .btn-consultar-balance:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    .balance-message {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .balance-message.error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #b91c1c;
+    }
+
+    .balance-message.info {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+    }
+
+    /* Tarjetas de Resumen KPI */
+    .balance-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .balance-kpi-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1.35rem 1.45rem;
+        display: flex;
+        align-items: center;
+        gap: 1.15rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .balance-kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+
+    .balance-kpi-card.kpi-total::before { background: #1a4f8b; }
+    .balance-kpi-card.kpi-ops::before { background: #3b82f6; }
+    .balance-kpi-card.kpi-efectivo::before { background: #10b981; }
+    .balance-kpi-card.kpi-mp::before { background: #0284c7; }
+
+    .balance-kpi-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+
+    .kpi-icon-ingresos { background: #eff6ff; color: #1a4f8b; }
+    .kpi-icon-ops { background: #f0fdf4; color: #16a34a; }
+    .kpi-icon-cash { background: #ecfdf5; color: #059669; }
+    .kpi-icon-digital { background: #f0f9ff; color: #0284c7; }
+
+    .balance-kpi-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .balance-kpi-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .balance-kpi-lbl {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #475569;
+        margin-top: 0.25rem;
+    }
+
+    .balance-kpi-sub {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 0.15rem;
+    }
+
+    /* Tabla de Operaciones */
+    .balance-table-section {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        margin-bottom: 2.5rem;
+    }
+
+    .balance-table-header {
+        padding: 1.25rem 1.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: #fafafa;
+    }
+
+    .balance-table-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .badge-count {
+        background: #e2e8f0;
+        color: #334155;
+        font-size: 0.78rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 12px;
+        font-weight: 700;
+    }
+
+    .balance-search-box {
+        position: relative;
+        min-width: 280px;
+    }
+
+    .balance-search-input {
+        width: 100%;
+        height: 38px;
+        padding: 0 0.85rem 0 2.2rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .balance-search-input:focus {
+        outline: none;
+        border-color: #1a4f8b;
+    }
+
+    .balance-search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.85rem;
+        color: #94a3b8;
+        pointer-events: none;
+    }
+
+    .balance-table-responsive {
+        overflow-x: auto;
+    }
+
+    .balance-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+        text-align: left;
+    }
+
+    .balance-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .balance-table td {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1e293b;
+        vertical-align: middle;
+    }
+
+    .balance-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .user-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar-sm {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #e0f2fe;
+        color: #0369a1;
+        font-weight: 700;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .user-name-title {
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .user-meta-sub {
+        font-size: 0.78rem;
+        color: #64748b;
+        margin: 0.15rem 0 0 0;
+    }
+
+    .badge-method {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .badge-method-cash {
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .badge-method-mp {
+        background: #f0f9ff;
+        color: #0284c7;
+        border: 1px solid #bae6fd;
+    }
+
+    .amount-cell {
+        font-weight: 800;
+        font-size: 0.98rem;
+        color: #0f172a;
+    }
+
+    .amount-green {
+        color: #059669;
+    }
+
+    .btn-action-detalle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f1f5f9;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-action-detalle:hover {
+        background: #1a4f8b;
+        border-color: #1a4f8b;
+        color: #ffffff;
+    }
+
+    /* Pie de página de consulta */
+    .balance-bottom-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .balance-footer-info {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    /* ========================================================
+       MODAL DE DETALLE DE OPERACIÓN: ESTRICTAMENTE MODO CONSULTA
+       (Sin botones de editar, modificar ni eliminar)
+       ======================================================== */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(3px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        padding: 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .modal-card-detalle {
+        background: #ffffff;
+        border-radius: 14px;
+        width: 100%;
+        max-width: 680px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        animation: scaleInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes scaleInModal {
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-detalle-header {
+        padding: 1.5rem 1.75rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: relative;
+    }
+
+    .modal-detalle-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .modal-detalle-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1a4f8b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .modal-detalle-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .modal-detalle-sub {
+        font-size: 0.82rem;
+        color: #64748b;
+        margin: 0.2rem 0 0 0;
+    }
+
+    .btn-close-modal {
+        background: #f1f5f9;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+
+    .btn-close-modal:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .modal-detalle-body {
+        padding: 1.5rem 1.75rem;
+    }
+
+    /* Banner informativo de modo solo lectura */
+    .readonly-notice {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-left: 4px solid #1a4f8b;
+        border-radius: 6px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        font-size: 0.82rem;
+        color: #334155;
+        line-height: 1.45;
+    }
+
+    .readonly-notice-icon {
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        color: #1a4f8b;
+    }
+
+    .detalle-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.15rem 1.5rem;
+        background: #ffffff;
+    }
+
+    .detalle-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .detalle-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .detalle-item-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+    }
+
+    .detalle-item-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.55rem 0.85rem;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+    }
+
+    .detalle-item-value.highlight-monto {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #065f46;
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+
+    .modal-detalle-footer {
+        padding: 1.15rem 1.75rem;
+        border-top: 1px solid #e2e8f0;
+        background: #fafafa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        border-bottom-left-radius: 14px;
+        border-bottom-right-radius: 14px;
+    }
+
+    .modal-footer-note {
+        font-size: 0.78rem;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .modal-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .modal-readonly-pill {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        padding: 0.28rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .detalle-section-heading {
+        grid-column: 1 / -1;
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #1a4f8b;
+        padding-bottom: 0.4rem;
+        margin-top: 0.35rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .btn-cerrar-detalle {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 0.6rem 1.35rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-cerrar-detalle:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+
+    /* Desglose Analítico y Cuadre de Balance */
+    .balance-analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .analytics-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.35rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .analytics-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .analytics-card-title {
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .channel-bar {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        overflow: hidden;
+        display: flex;
+    }
+
+    .channel-bar-cash {
+        background: #10b981;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .channel-bar-mp {
+        background: #0284c7;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .channel-legend {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.8rem;
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .legend-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 0.35rem;
+    }
+
+    .breakdown-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: 185px;
+        overflow-y: auto;
+    }
+
+    .breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.7rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.83rem;
+    }
+
+    .breakdown-row-label {
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .breakdown-row-meta {
+        font-size: 0.74rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .breakdown-row-val {
+        font-weight: 700;
+        color: #059669;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .net-balance-footer {
+        margin-top: auto;
+        padding: 0.8rem 1rem;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .net-balance-title {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 700;
+        color: #1e40af;
+        display: block;
+    }
+
+    .net-balance-letters {
+        font-size: 0.78rem;
+        color: #475569;
+        font-style: italic;
+    }
+
+    .net-balance-amount {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1a4f8b;
+    }
+
+    .reconcile-badge {
+        font-size: 0.74rem;
+        font-weight: 700;
+        padding: 0.2rem 0.55rem;
+        border-radius: 12px;
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .reconcile-badge.warning {
+        background: #fffbeb;
+        color: #b45309;
+        border-color: #fde68a;
+    }
+
+    /* Banner informativo del periodo consultado */
+    .period-active-banner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 0.85rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.86rem;
+        color: #1e3a8a;
+    }
+
+    .period-active-info {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+    }
+
+    .period-active-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .period-active-meta {
+        font-size: 0.78rem;
+        color: #475569;
+        font-weight: 500;
+    }
+
+    /* Controles de búsqueda y ordenamiento en tabla */
+    .balance-table-tools {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .balance-sort-select {
+        height: 38px;
+        padding: 0 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.84rem;
+        color: #1e293b;
+        background: #ffffff;
+        cursor: pointer;
+    }
+
+    .balance-sort-select:focus {
+        outline: none;
+        border-color: #1a4f8b;
+    }
+
+    .balance-table tfoot td {
+        background: #f8fafc;
+        border-top: 2px solid #cbd5e1;
+        border-bottom: none;
+        padding: 0.95rem 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .tfoot-total-amount {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #065f46;
+        white-space: nowrap;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .balance-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .period-form-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .balance-analytics-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .balance-container {
+            padding: 1.25rem 1rem 2.5rem;
+        }
+        .balance-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+        .period-form-grid {
+            grid-template-columns: 1fr;
+        }
+        .detalle-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    </style>
+</head>
+<body class="treasury-page" data-menu="/balance.html">
+    <header id="app-header"></header>
+
+    <main class="balance-container">
+        <!-- Barra superior de navegación y retorno -->
+        <div class="balance-top-bar">
+            <div class="balance-breadcrumb">
+                <a href="/tesoreria.html" id="breadcrumb-pagos" data-nav-volver="pagos">Pagos</a>
+                <span>›</span>
+                <span>Tesorería</span>
+                <span>›</span>
+                <strong>Balance financiero</strong>
+            </div>
+
+            <!-- Botón Volver a la interfaz de pagos (Criterio 4) -->
+            <a href="/tesoreria.html" id="btn-volver-pagos-top" class="btn-volver-pagos" data-nav-volver="pagos" aria-label="Volver a la interfaz de pagos" title="Volver a la interfaz de pagos">
+                ← Volver
+            </a>
+        </div>
+
+        <!-- Encabezado de la página: Balance de ingresos y pagos (Criterio 1) -->
+        <div class="balance-header-card">
+            <div>
+                <h1 class="balance-header-title">Balance de ingresos y pagos</h1>
+                <p class="balance-header-desc">
+                    Consulta el balance de recaudación y operaciones de la academia. Filtra por rango de fechas para verificar los ingresos netos obtenidos por caja en efectivo y pasarela digital.
+                </p>
+            </div>
+            <div class="readonly-badge" title="Módulo exclusivo de verificación y consulta financiera">
+                <span>🔒</span> Modo consulta (solo lectura)
+            </div>
+        </div>
+
+        <!-- Selector de periodo y filtros de consulta (Criterio 2) -->
+        <section class="period-selector-panel" aria-label="Filtro de periodo de consulta">
+            <div class="period-panel-header">
+                <div class="period-title-group">
+                    <span class="period-icon">📅</span>
+                    <h2 class="period-title">Periodo de consulta</h2>
+                </div>
+
+                <!-- Accesos directos a rangos rápidos -->
+                <div class="period-quick-presets" aria-label="Selección rápida de periodos">
+                    <button type="button" class="btn-preset" data-preset="hoy">Hoy</button>
+                    <button type="button" class="btn-preset" data-preset="semana">Esta semana</button>
+                    <button type="button" class="btn-preset active" data-preset="mes">Este mes</button>
+                    <button type="button" class="btn-preset" data-preset="mes-ant">Mes anterior</button>
+                    <button type="button" class="btn-preset" data-preset="anio">Este año</button>
+                </div>
+            </div>
+
+            <form id="form-consulta-balance" class="period-form-grid" onsubmit="event.preventDefault();">
+                <div class="form-field-group">
+                    <label for="fecha-inicio" class="form-field-label">Fecha inicio:</label>
+                    <input type="date" id="fecha-inicio" name="fecha-inicio" class="form-field-input" required>
+                </div>
+
+                <div class="form-field-group">
+                    <label for="fecha-fin" class="form-field-label">Fecha fin:</label>
+                    <input type="date" id="fecha-fin" name="fecha-fin" class="form-field-input" required>
+                </div>
+
+                <div class="form-field-group">
+                    <label for="filtro-medio" class="form-field-label">Medio de pago:</label>
+                    <select id="filtro-medio" name="filtro-medio" class="form-field-select">
+                        <option value="">Todos los medios</option>
+                        <option value="EFECTIVO">💵 Solo Efectivo</option>
+                        <option value="MERCADO_PAGO">🌐 Solo Mercado Pago</option>
+                    </select>
+                </div>
+
+                <!-- Botón Consultar (Criterio 2) -->
+                <button type="submit" id="btn-consultar" class="btn-consultar-balance">
+                    <span>🔍</span> Consultar balance
+                </button>
+            </form>
+            <div id="balance-message" class="balance-message" role="status" aria-live="polite" hidden></div>
+        </section>
+
+        <!-- Indicador del periodo actualmente consultado -->
+        <div id="periodo-activo-banner" class="period-active-banner" aria-live="polite">
+            <div class="period-active-info">
+                <span id="periodo-activo-texto">📅 Consultando periodo seleccionado...</span>
+                <span id="periodo-activo-medio" class="period-active-tag">Todos los medios</span>
+                <span id="periodo-activo-pendientes" class="period-active-tag" style="display: none;"></span>
+            </div>
+            <span id="periodo-activo-actualizacion" class="period-active-meta"></span>
+        </div>
+
+        <!-- Tarjetas de Balance Financiero (KPIs de Criterio 2) -->
+        <section class="balance-kpi-grid" aria-label="Resumen de balance financiero">
+            <!-- Total Ingresos -->
+            <div class="balance-kpi-card kpi-total">
+                <div class="balance-kpi-icon kpi-icon-ingresos">💰</div>
+                <div class="balance-kpi-info">
+                    <span id="kpi-total-ingresos" class="balance-kpi-val">S/ 0.00</span>
+                    <span class="balance-kpi-lbl">Total Ingresos</span>
+                    <span class="balance-kpi-sub" id="kpi-rango-sub">Periodo seleccionado</span>
+                </div>
+            </div>
+
+            <!-- Operaciones Totales -->
+            <div class="balance-kpi-card kpi-ops">
+                <div class="balance-kpi-icon kpi-icon-ops">📋</div>
+                <div class="balance-kpi-info">
+                    <span id="kpi-total-operaciones" class="balance-kpi-val">0</span>
+                    <span class="balance-kpi-lbl">Operaciones</span>
+                    <span class="balance-kpi-sub" id="kpi-ops-sub">Pagos aprobados</span>
+                </div>
+            </div>
+
+            <!-- Ingresos por Efectivo -->
+            <div class="balance-kpi-card kpi-efectivo">
+                <div class="balance-kpi-icon kpi-icon-cash">💵</div>
+                <div class="balance-kpi-info">
+                    <span id="kpi-ingresos-efectivo" class="balance-kpi-val">S/ 0.00</span>
+                    <span class="balance-kpi-lbl">En Efectivo</span>
+                    <span class="balance-kpi-sub" id="kpi-ops-efectivo">0 transacciones</span>
+                </div>
+            </div>
+
+            <!-- Ingresos por Mercado Pago -->
+            <div class="balance-kpi-card kpi-mp">
+                <div class="balance-kpi-icon kpi-icon-digital">🌐</div>
+                <div class="balance-kpi-info">
+                    <span id="kpi-ingresos-mp" class="balance-kpi-val">S/ 0.00</span>
+                    <span class="balance-kpi-lbl">Mercado Pago</span>
+                    <span class="balance-kpi-sub" id="kpi-ops-mp">0 transacciones</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Desglose del cálculo del balance financiero -->
+        <section class="balance-analytics-grid" aria-label="Cálculo detallado y desglose del balance">
+            <!-- Distribución por medio y disciplinas -->
+            <article class="analytics-card">
+                <div class="analytics-card-header">
+                    <h3 class="analytics-card-title"><span>📊</span> Distribución por Medio y Disciplina</h3>
+                </div>
+
+                <div>
+                    <div class="channel-bar" role="img" aria-label="Proporción entre Efectivo y Mercado Pago">
+                        <div id="bar-efectivo" class="channel-bar-cash" style="width: 0%;"></div>
+                        <div id="bar-mp" class="channel-bar-mp" style="width: 0%;"></div>
+                    </div>
+                    <div class="channel-legend" style="margin-top: 0.55rem;">
+                        <span><span class="legend-dot" style="background: #10b981;"></span>Efectivo: <strong id="leg-efectivo">0%</strong></span>
+                        <span><span class="legend-dot" style="background: #0284c7;"></span>Mercado Pago: <strong id="leg-mp">0%</strong></span>
+                    </div>
+                </div>
+
+                <ul id="desglose-conceptos-list" class="breakdown-list">
+                    <li class="breakdown-row" style="justify-content: center; color: #64748b;">
+                        Sin ingresos registrados en este periodo
+                    </li>
+                </ul>
+            </article>
+
+            <!-- Flujo diario y cuadre del balance neto -->
+            <article class="analytics-card">
+                <div class="analytics-card-header">
+                    <h3 class="analytics-card-title"><span>📆</span> Flujo Diario y Balance Neto</h3>
+                    <span id="badge-conciliacion" class="reconcile-badge">✓ Conciliado</span>
+                </div>
+
+                <ul id="flujo-diario-list" class="breakdown-list">
+                    <li class="breakdown-row" style="justify-content: center; color: #64748b;">
+                        Sin movimientos diarios en este periodo
+                    </li>
+                </ul>
+
+                <div class="net-balance-footer">
+                    <div>
+                        <span class="net-balance-title">Balance neto del periodo</span>
+                        <span id="net-balance-letras" class="net-balance-letters">Cero y 00/100 soles</span>
+                    </div>
+                    <span id="net-balance-amount" class="net-balance-amount">S/ 0.00</span>
+                </div>
+            </article>
+        </section>
+
+        <!-- Lista de operaciones incluidas en el periodo seleccionado (Criterio 2) -->
+        <section class="balance-table-section" aria-label="Listado de operaciones del balance">
+            <div class="balance-table-header">
+                <h3 class="balance-table-title">
+                    <span>🧾</span> Operaciones del periodo
+                    <span id="badge-operaciones-count" class="badge-count">0 registros</span>
+                </h3>
+
+                <div class="balance-table-tools">
+                    <select id="orden-operaciones" class="balance-sort-select" aria-label="Ordenar operaciones">
+                        <option value="fecha_desc">Más recientes primero</option>
+                        <option value="fecha_asc">Más antiguos primero</option>
+                        <option value="monto_desc">Mayor monto primero</option>
+                        <option value="monto_asc">Menor monto primero</option>
+                    </select>
+                    <div class="balance-search-box">
+                        <span class="balance-search-icon">🔍</span>
+                        <input type="search" id="input-buscar-operacion" class="balance-search-input" placeholder="Buscar por alumno, DNI o N° recibo...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="balance-table-responsive">
+                <table class="balance-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha y hora</th>
+                            <th>Alumno / Documento</th>
+                            <th>Matrícula / Disciplina</th>
+                            <th>Medio de pago</th>
+                            <th>N° Comprobante / Ref</th>
+                            <th>Precio original</th>
+                            <th>Descuento</th>
+                            <th>Total cobrado</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="balance-tbody">
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                                📅 Selecciona un periodo y pulsa <strong>"Consultar balance"</strong> para visualizar las operaciones.
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="balance-tfoot" style="display: none;">
+                        <tr>
+                            <td colspan="7" id="tfoot-label">Total del periodo</td>
+                            <td class="tfoot-total-amount" id="tfoot-total-monto">S/ 0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- Barra inferior con botón Volver (Criterio 4) -->
+        <div class="balance-bottom-nav">
+            <span class="balance-footer-info">
+                Forca &amp; Fitness • Sistema de Gestión y Balance Financiero de Tesorería
+            </span>
+            <a href="/tesoreria.html" id="btn-volver-pagos-bottom" class="btn-volver-pagos" data-nav-volver="pagos" aria-label="Volver a la interfaz de pagos" title="Regresar a la gestión de cobros y pagos">
+                ← Volver a la interfaz de pagos
+            </a>
+        </div>
+    </main>
+
+    <!-- ========================================================
+         MODAL: VER DETALLE DE OPERACIÓN (CRITERIO 3)
+         Estrictamente en MODO CONSULTA (Sin editar ni borrar)
+         ======================================================== -->
+    <div id="modal-detalle-operacion" class="modal-overlay" style="display: none;" hidden role="dialog" aria-modal="true" aria-labelledby="modal-detalle-title">
+        <div class="modal-card-detalle">
+            <!-- Encabezado del modal -->
+            <div class="modal-detalle-header">
+                <div class="modal-detalle-title-group">
+                    <div class="modal-detalle-icon">📑</div>
+                    <div>
+                        <h3 id="modal-detalle-title" class="modal-detalle-title">Detalle de Operación Financiera</h3>
+                        <p class="modal-detalle-sub">Registro de cobro verificado en sistema</p>
+                    </div>
+                </div>
+                <div class="modal-header-actions">
+                    <span class="modal-readonly-pill">🔒 Solo lectura</span>
+                    <button type="button" id="btn-cerrar-detalle-x" class="btn-close-modal" aria-label="Cerrar detalle">✕</button>
+                </div>
+            </div>
+
+            <!-- Cuerpo del modal (estrictamente solo lectura) -->
+            <div class="modal-detalle-body">
+                <!-- Aviso de solo consulta -->
+                <div class="readonly-notice">
+                    <span class="readonly-notice-icon">ℹ️</span>
+                    <div>
+                        <strong>Modo de consulta y verificación:</strong>
+                        Esta vista muestra la información oficial de la operación en modo solo lectura. No se permiten ediciones, ajustes de montos ni eliminaciones.
+                    </div>
+                </div>
+
+                <!-- Grilla de datos informativos -->
+                <div class="detalle-grid">
+                    <div class="detalle-section-heading">I. Información de Transacción y Auditoría</div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Código de Pago</span>
+                        <div id="det-id-pago" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">N° Registro de Cobro</span>
+                        <div id="det-id-operacion" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Fecha y Hora de Confirmación</span>
+                        <div id="det-fecha-hora" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Fecha de Solicitud</span>
+                        <div id="det-fecha-solicitud" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Estado de la Operación</span>
+                        <div id="det-estado" class="detalle-item-value" aria-readonly="true">
+                            <span style="color: #059669; font-weight: 700;">✓ APROBADO</span>
+                        </div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Medio de Pago</span>
+                        <div id="det-medio-pago" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">N° Comprobante / Recibo</span>
+                        <div id="det-comprobante" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Confirmado / Registrado por</span>
+                        <div id="det-registrado-por" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item full-width">
+                        <span class="detalle-item-label">Referencia de Transacción</span>
+                        <div id="det-referencia" class="detalle-item-value" style="font-family: monospace; font-size: 0.88rem;" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-section-heading">II. Datos del Alumno y Matrícula</div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Alumno</span>
+                        <div id="det-alumno" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Documento de Identidad</span>
+                        <div id="det-dni" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Correo Electrónico</span>
+                        <div id="det-correo" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Código de Matrícula</span>
+                        <div id="det-matricula" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Disciplina(s) / Concepto</span>
+                        <div id="det-disciplinas" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Vigencia de Matrícula</span>
+                        <div id="det-vigencia" class="detalle-item-value" aria-readonly="true">—</div>
+                    </div>
+
+                    <div class="detalle-section-heading">III. Importe Verificado</div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Precio original</span>
+                        <div id="det-monto-original" class="detalle-item-value" aria-readonly="true">S/ 0.00</div>
+                    </div>
+
+                    <div class="detalle-item">
+                        <span class="detalle-item-label">Descuento aplicado</span>
+                        <div id="det-monto-descuento" class="detalle-item-value" aria-readonly="true">Sin descuento</div>
+                    </div>
+
+                    <div class="detalle-item full-width">
+                        <span class="detalle-item-label">Monto Total Cobrado</span>
+                        <div id="det-monto" class="detalle-item-value highlight-monto" aria-readonly="true">S/ 0.00</div>
+                    </div>
+
+                    <div class="detalle-item full-width">
+                        <span class="detalle-item-label">Monto en Letras</span>
+                        <div id="det-monto-letras" class="detalle-item-value" style="font-style: italic; color: #475569;" aria-readonly="true">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie del modal: Solo botón de cierre (Sin botones de modificación ni eliminación) -->
+            <div class="modal-detalle-footer">
+                <span class="modal-footer-note">🔒 Operación inmutable — solo verificación</span>
+                <button type="button" id="btn-cerrar-detalle" class="btn-cerrar-detalle">
+                    Cerrar consulta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de autenticación y lógica -->
+    <script src="/js/auth.js"></script>
+    <script src="/js/balance.js"></script>
+</body>
+</html>

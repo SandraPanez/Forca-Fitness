@@ -11,6 +11,11 @@ async function buscarPorPago(idPago) {
       p."Id_Pago" AS id_pago,
       p."Estado_Pago" AS estado_pago,
       p."Monto" AS monto,
+      COALESCE(cobro."Monto", p."Monto") AS monto_cobrado,
+      COALESCE(cobro."Monto_Original", p."Monto") AS monto_original,
+      COALESCE(cobro."Tipo_Descuento", NULL) AS tipo_descuento,
+      cobro."Valor_Descuento" AS valor_descuento,
+      COALESCE(cobro."Monto_Descuento", 0) AS monto_descuento,
       UPPER(mp."Nombre_Metodo") AS metodo_pago,
       cobro."Referencia_Operacion" AS referencia,
       COALESCE(cobro."Fecha_Hora", p."Fecha_Pago") AS fecha_emision,
@@ -39,7 +44,9 @@ async function buscarPorPago(idPago) {
     JOIN ${SCHEMA}."Alumno" a ON a."Id_alumno" = m."Id_alumno"
     JOIN ${SCHEMA}."Persona" per ON per."Id_Persona" = a."Id_Persona"
     LEFT JOIN LATERAL (
-      SELECT rc."Fecha_Hora", rc."Referencia_Operacion"
+      SELECT rc."Fecha_Hora", rc."Referencia_Operacion", rc."Monto",
+        rc."Monto_Original", rc."Tipo_Descuento", rc."Valor_Descuento",
+        rc."Monto_Descuento"
       FROM ${SCHEMA}."Registro_Cobro" rc
       WHERE rc."Id_Pago" = p."Id_Pago"
         AND rc."Resultado" = 'APROBADO'

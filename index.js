@@ -1,4 +1,5 @@
-﻿require('dotenv').config();
+
+require('dotenv').config();
 
 const express = require('express');
 const db = require('./src/shared/config/database');
@@ -25,7 +26,6 @@ app.use(
   queuesDashboard.router
 );
 
-
 // Primera página del sistema = Login
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -38,6 +38,27 @@ app.get(
   (req, res) => res.sendFile(path.join(__dirname, 'public', 'tesoreria.html'))
 );
 
+app.get(
+  '/administracion-accesos.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion-accesos.html'))
+);
+
+app.get(
+  '/editar-acceso.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.ADMINISTRAR_ACCESOS),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'editar-acceso.html'))
+);
+
+app.get(
+  '/reservas.html',
+  autenticarDashboard,
+  autorizar(PERMISOS.VER_PROPIA_MATRICULA),
+  (req, res) => res.sendFile(path.join(__dirname, 'public', 'reservas.html'))
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/control-acceso', (req, res) => {
@@ -45,6 +66,7 @@ app.get('/control-acceso', (req, res) => {
 });
 
 // Registrar módulos (Rutas)
+// Se conservan las rutas de HU-22 y develop.
 const {
   matriculasRoutes,
   alumnosRoutes,
@@ -53,7 +75,8 @@ const {
   pagosRoutes,
   comprobantesRoutes,
   perfilRoutes,
-  horariosRoutes
+  horariosRoutes,
+  personalRoutes
 } = require('./src/modules');
 
 app.use('/api/matriculas', matriculasRoutes);
@@ -63,7 +86,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pagos', pagosRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
 app.use('/api/perfil', perfilRoutes);
+
+// HU-22: Modificar horarios de clases
 app.use('/api/horarios', horariosRoutes);
+
+// develop: Administración de personal
+app.use('/api/personal', personalRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -89,19 +117,39 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
 const EXPIRATION_CHECK_INTERVAL = 5 * 60 * 1000;
-const expirationCheck = setInterval(async () => {
+
+async function ejecutarTareasPeriodicas() {
   try {
     const expired = await require('./src/modules/pagos/pagos.service')
       .anularSolicitudesEfectivoVencidas();
+
     if (expired > 0) {
       console.log(`Solicitudes de efectivo anuladas por vencimiento: ${expired}`);
     }
+
+    const activadas = await require('./src/modules/pagos/pagos.service')
+      .activarReservasIniciadas();
+
+    if (activadas > 0) {
+      console.log(`Reservas activadas automáticamente al iniciar periodo: ${activadas}`);
+    }
   } catch (error) {
-    console.error('Error al anular solicitudes de efectivo vencidas:', error);
+    console.warn(`Tareas periódicas: Base de datos no disponible temporalmente (${error.message || 'error de conexión'}).`);
   }
-}, EXPIRATION_CHECK_INTERVAL);
+}
+
+const expirationCheck = setInterval(
+  ejecutarTareasPeriodicas,
+  EXPIRATION_CHECK_INTERVAL
+);
+
 expirationCheck.unref();
+
+// HU-20: recordatorios de vencimiento por correo (una vez al día).
+require('./src/modules/notificaciones/recordatorios-vencimiento.job')
+  .iniciarJobRecordatoriosVencimiento();
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
+  ejecutarTareasPeriodicas();
 });

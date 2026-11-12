@@ -1,36 +1,172 @@
+
 const matriculasService = require('./matriculas.service');
-const { successResponse, errorResponse } = require('../../shared/utils/response.util');
+const {
+  successResponse,
+  errorResponse
+} = require('../../shared/utils/response.util');
 
 class MatriculasController {
+
+  // Obtener disciplinas disponibles
   async getDisciplinas(req, res) {
     try {
-      const disciplinas = await matriculasService.getDisciplinasDisponibles();
-      return successResponse(res, 200, disciplinas, 'Disciplinas obtenidas correctamente');
+      const disciplinas =
+        await matriculasService.getDisciplinasDisponibles();
+
+      return successResponse(
+        res,
+        200,
+        disciplinas,
+        'Disciplinas obtenidas correctamente'
+      );
+
     } catch (error) {
       console.error('Error en getDisciplinas:', error);
-      return errorResponse(res, 500, 'Error interno al obtener las disciplinas');
+
+      return errorResponse(
+        res,
+        500,
+        'Error interno al obtener las disciplinas'
+      );
     }
   }
 
+  // Obtener horarios por disciplina o de todas las disciplinas
   async getHorariosPorDisciplina(req, res) {
     try {
       const { id } = req.params;
-      const horarios = await matriculasService.getHorariosPorDisciplina(id);
-      return successResponse(res, 200, horarios, 'Horarios obtenidos correctamente');
+      const { periodo } = req.query;
+
+      if (
+        id === 'todas' ||
+        id === 'todos' ||
+        id === 'all'
+      ) {
+        const resultado =
+          await matriculasService.getHorariosTodasLasDisciplinas(periodo);
+
+        return successResponse(
+          res,
+          200,
+          resultado,
+          'Horarios de todas las disciplinas obtenidos correctamente'
+        );
+      }
+
+      const resultado =
+        await matriculasService.getHorariosPorDisciplina(
+          id,
+          periodo
+        );
+
+      return successResponse(
+        res,
+        200,
+        resultado,
+        'Horarios obtenidos correctamente'
+      );
+
     } catch (error) {
-      console.error('Error en getHorariosPorDisciplina:', error);
-      const isUserError = error.message.includes('obligatorio');
-      return errorResponse(res, isUserError ? 400 : 500, error.message || 'Error al obtener los horarios');
+      console.error(
+        'Error en getHorariosPorDisciplina:',
+        error
+      );
+
+      const isUserError =
+        error.message.includes('obligatorio') ||
+        error.message.includes('periodo');
+
+      return errorResponse(
+        res,
+        isUserError ? 400 : 500,
+        error.message || 'Error al obtener los horarios'
+      );
     }
   }
 
+  // Validar disponibilidad de cupos para una reserva
+  async validarReserva(req, res) {
+    try {
+      const { disciplina, periodo } = req.query;
+
+      if (!disciplina) {
+        return errorResponse(
+          res,
+          400,
+          'El ID de la disciplina es obligatorio para validar la reserva.'
+        );
+      }
+
+      const resultado =
+        await matriculasService.validarTopeCuposReserva(
+          disciplina,
+          periodo
+        );
+
+      return successResponse(
+        res,
+        200,
+        resultado,
+        'Validación de reserva completada'
+      );
+
+    } catch (error) {
+      console.error('Error en validarReserva:', error);
+
+      return errorResponse(
+        res,
+        400,
+        error.message || 'Error al validar la reserva'
+      );
+    }
+  }
+
+  // Crear una reserva de cupo
+  async crearReserva(req, res) {
+    try {
+      const {
+        id_disciplina,
+        id_disc_horario,
+        periodo
+      } = req.body;
+
+      const id_usuario = req.user.id;
+
+      const resultado =
+        await matriculasService.crearReservaCupo({
+          id_usuario,
+          id_disciplina,
+          id_disc_horario,
+          periodo
+        });
+
+      return successResponse(
+        res,
+        201,
+        resultado,
+        'Reserva de cupo creada exitosamente'
+      );
+
+    } catch (error) {
+      console.error('Error en crearReserva:', error);
+
+      return errorResponse(
+        res,
+        400,
+        error.message || 'Error al crear la reserva de cupo'
+      );
+    }
+  }
+
+  // Obtener las matrículas del alumno autenticado
   async getMisMatriculas(req, res) {
     try {
       const idUsuario = req.user.id;
 
-      const matriculas = await matriculasService.getMatriculasPorUsuario(
-        idUsuario
-      );
+      const matriculas =
+        await matriculasService.getMatriculasPorUsuario(
+          idUsuario
+        );
 
       return successResponse(
         res,
@@ -38,10 +174,12 @@ class MatriculasController {
         matriculas,
         'Matrículas obtenidas correctamente'
       );
+
     } catch (error) {
       console.error('Error en getMisMatriculas:', error);
 
-      const isUserError = error.message.includes('obligatorio');
+      const isUserError =
+        error.message.includes('obligatorio');
 
       return errorResponse(
         res,
@@ -51,30 +189,115 @@ class MatriculasController {
     }
   }
 
-  async renovarMatricula(req, res) {
+  // Obtener las reservas del alumno
+  // Funcionalidad conservada de develop
+  async getMisReservas(req, res) {
     try {
-      const resultado = await matriculasService.renovarMatricula(req.user.id, req.params.idDetalle);
-      return successResponse(res, 201, resultado, 'Renovación preparada. Falta confirmar el pago.');
+      const reservas =
+        await matriculasService.getReservasPorUsuario(
+          req.user.id
+        );
+
+      return successResponse(
+        res,
+        200,
+        reservas,
+        'Reservas obtenidas correctamente'
+      );
+
     } catch (error) {
-      console.error('Error al preparar renovación:', error);
-      return errorResponse(res, error.status || 500, error.status ? error.message : 'No se pudo preparar la renovación.');
+      console.error('Error en getMisReservas:', error);
+
+      const isUserError =
+        error.message.includes('obligatorio');
+
+      return errorResponse(
+        res,
+        isUserError ? 400 : 500,
+        error.message || 'Error interno al obtener las reservas'
+      );
     }
   }
 
+  // Renovar una matrícula
+  // Funcionalidad conservada de main
+  async renovarMatricula(req, res) {
+    try {
+      const resultado =
+        await matriculasService.renovarMatricula(
+          req.user.id,
+          req.params.idDetalle
+        );
+
+      return successResponse(
+        res,
+        201,
+        resultado,
+        'Renovación preparada. Falta confirmar el pago.'
+      );
+
+    } catch (error) {
+      console.error(
+        'Error al preparar renovación:',
+        error
+      );
+
+      return errorResponse(
+        res,
+        error.status || 500,
+        error.status
+          ? error.message
+          : 'No se pudo preparar la renovación.'
+      );
+    }
+  }
+
+  // Registrar una nueva matrícula
   async registrarMatricula(req, res) {
     try {
       const datosMatricula = req.body;
-      const resultado = await matriculasService.registrarMatricula(datosMatricula);
-      return successResponse(res, 201, resultado, 'Matrícula registrada exitosamente');
+
+      const resultado =
+        await matriculasService.registrarMatricula(
+          datosMatricula
+        );
+
+      return successResponse(
+        res,
+        201,
+        resultado,
+        'Matrícula registrada exitosamente'
+      );
+
     } catch (error) {
       console.error('Error en registrarMatricula:', error);
-      let mensaje = error.message || 'Error al registrar la matrícula';
-      if (mensaje.includes('UQ_Usuario_Correo') || (mensaje.includes('unique constraint') && mensaje.includes('Correo'))) {
-        mensaje = 'El correo electrónico ya se encuentra registrado con otra cuenta.';
-      } else if (mensaje.includes('unique constraint') && mensaje.includes('Documento')) {
-        mensaje = 'El número de documento ya se encuentra registrado.';
+
+      let mensaje =
+        error.message || 'Error al registrar la matrícula';
+
+      if (
+        mensaje.includes('UQ_Usuario_Correo') ||
+        (
+          mensaje.includes('unique constraint') &&
+          mensaje.includes('Correo')
+        )
+      ) {
+        mensaje =
+          'El correo electrónico ya se encuentra registrado con otra cuenta.';
+
+      } else if (
+        mensaje.includes('unique constraint') &&
+        mensaje.includes('Documento')
+      ) {
+        mensaje =
+          'El número de documento ya se encuentra registrado.';
       }
-      return errorResponse(res, 400, mensaje);
+
+      return errorResponse(
+        res,
+        400,
+        mensaje
+      );
     }
   }
 }

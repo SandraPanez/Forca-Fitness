@@ -148,7 +148,7 @@ class HorariosService {
     );
 
     const claseActual = clases.find(
-      clase => clase.id_disc_horario === idDiscHorario
+      clase => String(clase.id_disc_horario) === String(idDiscHorario)
     );
 
     if (!claseActual) {
@@ -177,7 +177,7 @@ class HorariosService {
     for (const otraClase of clases) {
 
       if (
-        otraClase.id_disc_horario === idDiscHorario
+        String(otraClase.id_disc_horario) === String(idDiscHorario)
       ) {
         continue;
       }

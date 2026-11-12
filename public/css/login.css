@@ -162,16 +162,6 @@ body {
     background: #205b9e;
 }
 
-.forgot-link {
-    display: block;
-    margin-top: 18px;
-    text-align: right;
-    color: #315f93;
-    font-size: 13px;
-    text-decoration: none;
-    font-weight: 600;
-}
-
 .login-divider {
     display: flex;
     align-items: center;
