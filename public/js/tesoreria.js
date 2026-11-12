@@ -382,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ────────────────────────────────────────────────────────────
   // HU: Vista "Por alumno" y "Balance financiero" (Exclusiva para rol TESORERO)
   // ────────────────────────────────────────────────────────────
+  let todosLosAlumnos = [];
   const esTesorero = rolesUsuario.includes('TESORERO');
   const directorPendingPaymentsAction = document.getElementById('director-pending-payments-action');
   const tabTodos = document.getElementById('tab-todos');

@@ -136,6 +136,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
+                // Criterio 1: al marcar o quitar un rol se activan o retiran los permisos de ese rol.
+                const permisosOtrosRoles = new Set(
+                    [...estadoEdicion.roles].flatMap(rol => trabajador.permisosPorRol?.[rol] || [])
+                );
+                (trabajador.permisosPorRol?.[control.value] || []).forEach(permiso => {
+                    if (control.checked) {
+                        estadoEdicion.permisos.add(permiso);
+                    } else if (!permisosOtrosRoles.has(permiso)) {
+                        estadoEdicion.permisos.delete(permiso);
+                    }
+                });
+                permisosContainer.querySelectorAll('input[type="checkbox"]').forEach(casilla => {
+                    casilla.checked = estadoEdicion.permisos.has(casilla.value);
+                });
+
                 rolesMensaje.textContent = '';
                 roles.textContent = [...estadoEdicion.roles]
                     .map(rol => NOMBRE_ROL[rol] || rol)

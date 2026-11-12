@@ -72,6 +72,11 @@ psql -U postgres -d forca_fitness -f "src/modules/matriculas/Forca&Fitness Diagr
   `src/modules/pagos/hu15-descuentos-migration.sql` contra la base existente.
   La migración agrega los campos de auditoría a `Registro_Cobro` y es segura
   para volver a ejecutar.
+- Para los precios y ofertas de HU-26, ejecuta una vez
+  `src/modules/matriculas/hu26-precios-promociones-migration.sql`. Agrega las
+  columnas de promoción a `Disciplina` y `Tarifa_Aplicada` a `Detalles_Matricula`;
+  también la necesita la lista de disciplinas del registro (HU-01). Es segura
+  para volver a ejecutar.
 - `src/modules/pagos/pagos.schema version 2.sql` es una copia del mismo
   esquema: no ejecutes los dos, el segundo falla porque las tablas ya existen.
 - El esquema crea las tablas vacías. Los roles, métodos de pago, disciplinas,
@@ -109,8 +114,8 @@ variable `PORT` que Render inyecta. Para el servicio web en Render:
    resto de variables de la tabla de arriba, con `APP_URL` igual a la
    dirección pública del servicio. No subas `.env` ni copies una URL con
    credenciales al repositorio.
-3. Ejecuta una vez el esquema base y las migraciones de permisos y descuentos
-   de la sección "Base de datos" contra esa base.
+3. Ejecuta una vez el esquema base y las migraciones de permisos, descuentos
+   y precios de la sección "Base de datos" contra esa base.
 4. Configura `/api/health` como health check del servicio.
 
 La imagen no crea tablas automáticamente: el esquema debe ejecutarse una vez

@@ -150,14 +150,54 @@ const INICIO_POR_ROL = {
     ALUMNO: '/mis-matriculas.html'
 };
 
+// HU-24: opciones del menú que dependen de un permiso que el Director puede dar o quitar a una persona
+const PERMISO_DEL_MENU = {
+    '/alumnos.html': 'VER_TODOS_ALUMNOS',
+    '/tesoreria.html': 'GESTIONAR_PAGOS'
+};
+
+// Opciones de los roles del usuario sin las de un permiso que se le quitó,
+// más la de un permiso que se le dio aunque su rol no lo tenga. Sin repetir.
+function opcionesDelMenu(usuario, roles) {
+    const permisos = Array.isArray(usuario?.permisos) ? usuario.permisos : null;
+    const propias = Object.keys(MENU_POR_ROL)
+        .filter(rol => roles.includes(rol))
+        .flatMap(rol => MENU_POR_ROL[rol]);
+    const candidatas = permisos ? [...propias, ...MENU_POR_ROL.TESORERO] : propias;
+    const textos = new Set();
+
+    return candidatas.filter(opcion => {
+        const [texto, href] = opcion;
+        const permiso = PERMISO_DEL_MENU[href];
+        const visible = !permisos
+            || (propias.includes(opcion)
+                ? !permiso || permisos.includes(permiso)
+                : !!permiso && permisos.includes(permiso));
+
+        return visible && !textos.has(texto) && textos.add(texto);
+    });
+}
+
 // Pantalla principal de quien usa el sistema (sin sesión, el login)
 function paginaDeInicio() {
-    const roles = obtenerToken() ? obtenerRolesUsuario() : [];
+    const usuario = obtenerToken() ? obtenerUsuario() : null;
+    const roles = obtenerRolesUsuario(usuario);
 
     const rol = Object.keys(INICIO_POR_ROL)
         .find(rolInicio => roles.includes(rolInicio));
+    const inicio = INICIO_POR_ROL[rol];
 
-    return INICIO_POR_ROL[rol] || '/';
+    if (!inicio) {
+        return '/';
+    }
+
+    // Si se le quitó el permiso de su pantalla de inicio, entra a la primera opción que conserva
+    const permiso = PERMISO_DEL_MENU[inicio];
+    if (permiso && Array.isArray(usuario?.permisos) && !usuario.permisos.includes(permiso)) {
+        return opcionesDelMenu(usuario, roles)[0]?.[1] || '/';
+    }
+
+    return inicio;
 }
 
 // Opción del menú que corresponde a la página actual.
@@ -201,12 +241,7 @@ function pintarEncabezado() {
         return;
     }
 
-    // Las opciones de todos los roles del usuario, sin repetir
-    const textos = new Set();
-
-    const opciones = rolesConMenu
-        .flatMap(rol => MENU_POR_ROL[rol])
-        .filter(([texto]) => !textos.has(texto) && textos.add(texto));
+    const opciones = opcionesDelMenu(usuario, roles);
 
     const activa = opcionActiva(opciones);
 

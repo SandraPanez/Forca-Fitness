@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSiCancelar  = document.getElementById('btn-si-cancelar');
 
     const userName       = document.querySelector('.app-usuario-nombre');
+    const userRole       = document.querySelector('.app-usuario-rol');
     const fechaNacimiento = document.getElementById('fecha_nacimiento');
     fechaNacimiento.max = new Date().toLocaleDateString('en-CA');
     let datosCargados = false;

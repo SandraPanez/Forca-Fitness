@@ -187,7 +187,7 @@ function inicializarBalanceView() {
     inputInicio?.addEventListener('change', sincronizarPresetsManual);
     inputFin?.addEventListener('change', sincronizarPresetsManual);
 
-    // Acción principal "Consultar balance" (Criterio 2)
+    // Acción principal "Consultar" (Criterio 2)
     form?.addEventListener('submit', (event) => {
         event.preventDefault();
         consultarBalancePorPeriodo();
@@ -320,7 +320,7 @@ async function consultarBalancePorPeriodo() {
         consultaEnCurso = false;
         if (btnConsultar) {
             btnConsultar.disabled = false;
-            btnConsultar.innerHTML = '<span>🔍</span> Consultar balance';
+            btnConsultar.innerHTML = '<span>🔍</span> Consultar';
         }
     }
 }

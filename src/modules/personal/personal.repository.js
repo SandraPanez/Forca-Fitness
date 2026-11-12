@@ -1,5 +1,4 @@
 const db = require('../../shared/config/database');
-const { PERMISOS } = require('../../shared/constants/permisos');
 const matriculasRepository = require('../matriculas/matriculas.repository');
 const ROLES = require('../../shared/constants/roles');
 
@@ -217,7 +216,7 @@ async function obtenerDetallePersonal(idUsuario) {
   return result.rows[0] || null;
 }
 
-async function guardarAccesos(idUsuario, roles, permisosActivos) {
+async function guardarAccesos(idUsuario, roles, excepciones) {
   const client = await db.pool.connect();
 
   try {
@@ -293,14 +292,16 @@ async function guardarAccesos(idUsuario, roles, permisosActivos) {
       }
     }
 
-    const permisosSeleccionados = new Set(permisosActivos);
-    for (const permiso of Object.values(PERMISOS)) {
+    // Se reemplazan los permisos individuales anteriores por las excepciones nuevas.
+    await client.query(
+      `DELETE FROM ${SCHEMA}."Usuario_Permiso" WHERE "Id_Usuario" = $1`,
+      [idUsuario]
+    );
+    for (const { permiso, habilitado } of excepciones) {
       await client.query(
         `INSERT INTO ${SCHEMA}."Usuario_Permiso" ("Id_Usuario", "Permiso", "Habilitado")
-         VALUES ($1, $2, $3)
-         ON CONFLICT ("Id_Usuario", "Permiso")
-         DO UPDATE SET "Habilitado" = EXCLUDED."Habilitado"`,
-        [idUsuario, permiso, permisosSeleccionados.has(permiso)]
+         VALUES ($1, $2, $3)`,
+        [idUsuario, permiso, habilitado]
       );
     }
 

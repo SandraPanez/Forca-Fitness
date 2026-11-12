@@ -5,6 +5,13 @@ const { PERMISOS, PERMISOS_POR_ROL } = require('../../shared/constants/permisos'
 const permisosRepository = require('../../shared/repositories/permisos.repository');
 const bcrypt = require('bcryptjs');
 
+// HU-24: el Director ajusta solo los permisos de los roles operativos (Profesor y Tesorero).
+// "Administrar accesos" no se ofrece: solo el Director modifica roles y permisos.
+// "Consultar balance" tampoco: HU-16 lo reserva al rol Tesorero.
+const ROLES_OPERATIVOS = [ROLES.PROFESOR, ROLES.TESORERO];
+const PERMISOS_EDITABLES = [...new Set(ROLES_OPERATIVOS.flatMap(rol => PERMISOS_POR_ROL[rol]))]
+  .filter(permiso => permiso !== PERMISOS.CONSULTAR_BALANCE);
+
 async function inactivarPersonal(idUsuario, idDirector) {
   if (typeof idUsuario !== 'string' || !idUsuario.trim() || idUsuario.length > 10) {
     throw Object.assign(new Error('El identificador del trabajador no es válido.'), { status: 400 });
@@ -141,12 +148,13 @@ async function obtenerDetalle(idUsuario) {
   return {
     ...persona,
     nombre: persona.nombre || 'Sin nombre registrado',
-    permisos: Object.values(PERMISOS).filter(permiso =>
+    permisos: PERMISOS_EDITABLES.filter(permiso =>
       permisosGuardados.has(permiso)
         ? permisosGuardados.get(permiso)
         : permisosPorRol.has(permiso)
     ),
-    permisosDisponibles: Object.values(PERMISOS),
+    permisosDisponibles: PERMISOS_EDITABLES,
+    permisosPorRol: Object.fromEntries(ROLES_OPERATIVOS.map(rol => [rol, PERMISOS_POR_ROL[rol]])),
     disciplinas: persona.roles.includes(ROLES.PROFESOR) ? persona.disciplinas : []
   };
 }
@@ -158,9 +166,9 @@ async function actualizarAccesos(idUsuario, datos) {
     throw error;
   }
 
-  const rolesPermitidos = [ROLES.PROFESOR, ROLES.TESORERO];
+  const rolesPermitidos = ROLES_OPERATIVOS;
   const roles = [...new Set(datos.roles)];
-  const permisosPermitidos = Object.values(PERMISOS);
+  const permisosPermitidos = PERMISOS_EDITABLES;
   const permisos = [...new Set(datos.permisos)];
 
   if (
@@ -182,7 +190,15 @@ async function actualizarAccesos(idUsuario, datos) {
     throw error;
   }
 
-  await personalRepository.guardarAccesos(idUsuario, roles, permisos);
+  // Solo se guardan las diferencias con los permisos de sus roles: así, al asignar un rol
+  // se activan sus módulos y cada permiso marcado o desmarcado afecta solo a esta persona.
+  const permisosDeRoles = new Set(roles.flatMap(rol => PERMISOS_POR_ROL[rol]));
+  const seleccion = new Set(permisos);
+  const excepciones = PERMISOS_EDITABLES
+    .filter(permiso => seleccion.has(permiso) !== permisosDeRoles.has(permiso))
+    .map(permiso => ({ permiso, habilitado: seleccion.has(permiso) }));
+
+  await personalRepository.guardarAccesos(idUsuario, roles, excepciones);
   return { mensaje: 'Roles y permisos guardados correctamente.' };
 }
 
